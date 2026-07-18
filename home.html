@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MDECO Submittals Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="./auth-guard.js"></script>
+    <style>
+        :root {
+            --primary: #1e40af;
+            --primary-hover: #1d4ed8;
+            --primary-light: #eff6ff;
+            --bg-main: #f8fafc;
+            --bg-card: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --success: #10b981;
+            --danger: #ef4444;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--bg-main);
+            color: var(--text-main);
+            box-sizing: border-box;
+        }
+
+        *, *:before, *:after {
+            box-sizing: inherit;
+        }
+
+        .header {
+            background: var(--primary);
+            color: #fff;
+            padding: 18px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            font-size: 24px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
+            position: relative;
+        }
+
+        .nav-container {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap; /* للسماح للأزرار بالنزول لسطر جديد في الشاشات الصغيرة */
+            gap: 16px;
+            background: var(--bg-card);
+            padding: 14px;
+            box-shadow: var(--shadow-sm);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .nav-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 15px;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .nav-btn:hover {
+            background: var(--primary-light);
+            color: var(--primary);
+        }
+
+        .nav-badge {
+            position: absolute;
+            top: -6px;
+            right: -6px;
+            background: var(--danger);
+            color: #fff;
+            font-size: 11px;
+            font-weight: 700;
+            min-width: 18px;
+            height: 18px;
+            border-radius: 999px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 0 4px;
+            line-height: 1;
+        }
+
+        .welcome-hero {
+            background: linear-gradient(135deg, #0f172a, #1e293b);
+            color: #ffffff;
+            text-align: center;
+            padding: 35px 24px;
+            box-shadow: var(--shadow-md);
+        }
+
+        .welcome-hero h1 {
+            margin: 0 0 8px 0;
+            font-size: 30px;
+            font-weight: 800;
+        }
+
+        .welcome-hero p {
+            margin: 0;
+            font-size: 15px;
+            color: #94a3b8;
+            font-weight: 400;
+        }
+
+        .container {
+            display: flex;
+            height: calc(100vh - 245px);
+            flex-direction: row;
+        }
+
+        .sidebar {
+            width: 300px;
+            background: var(--bg-card);
+            padding: 15px;
+            overflow-y: auto;
+            border-right: 1px solid var(--border);
+            box-shadow: 2px 0 8px rgba(0,0,0,0.02);
+            flex-shrink: 0;
+        }
+
+        .content {
+            flex: 1;
+            padding: 24px;
+            overflow-y: auto;
+            width: 100%;
+        }
+
+        .employee {
+            padding: 12px 16px;
+            margin: 8px 0;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .emp-open-badge {
+            background: #fef3c7;
+            color: #b45309;
+            font-size: 12px;
+            font-weight: 700;
+            min-width: 22px;
+            height: 22px;
+            border-radius: 999px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 6px;
+            flex-shrink: 0;
+        }
+
+        .employee.active .emp-open-badge {
+            background: #dbeafe;
+            color: var(--primary);
+        }
+
+        .employee:hover {
+            background: #f1f5f9;
+            border-color: #cbd5e1;
+        }
+
+        .employee.active {
+            background: #eff6ff;
+            border-color: #bfdbfe;
+            color: var(--primary);
+        }
+
+        .card {
+            background: var(--bg-card);
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .card h2 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            font-size: 20px;
+            color: var(--text-main);
+        }
+
+        .filter-group {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            background: #f1f5f9;
+            color: var(--text-main);
+            border: 1px solid var(--border);
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        button:hover {
+            background: #e2e8f0;
+        }
+
+        button.active-filter {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .search-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .task {
+            background: var(--bg-card);
+            padding: 20px;
+            margin-bottom: 16px;
+            border-radius: 12px;
+            border-left: 5px solid var(--primary);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .task-activity {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 6px;
+        }
+
+        .title {
+            font-size: 15px;
+            color: var(--text-main);
+            margin: 6px 0;
+            line-height: 1.4;
+        }
+
+        .small {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .meta-tags {
+            display: flex;
+            gap: 10px;
+            margin-top: 4px;
+            margin-bottom: 8px;
+            flex-wrap: wrap; /* التفاف الكلمات في الشاشات الصغيرة */
+        }
+
+        .tag {
+            font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 600;
+            background: #e2e8f0;
+            color: #475569;
+        }
+
+        .revision-box {
+            margin-top: 12px;
+            padding: 12px;
+            background: #f8fafc;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+        }
+
+        .revision-box.is-pending {
+            background: #fffbeb;
+            border-color: #fde68a;
+        }
+
+        .revision-header {
+            display: flex;
+            justify-content: space-between;
+            font-weight: 600;
+            font-size: 13px;
+            margin-bottom: 4px;
+        }
+
+        .code-tag {
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+        .code-success { background: #ecfdf5; color: #10b981; } 
+        .code-danger { background: #fef2f2; color: #ef4444; }  
+        .code-pending { background: #fffbeb; color: #b45309; } 
+        .code-open { background: #fef9c3; color: #a16207; }    
+        .code-review { background: #fef3c7; color: #b45309; }
+
+        .status-container {
+            margin-top: 15px;
+            padding-top: 12px;
+            border-top: 1px solid var(--border);
+            font-size: 14px;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+
+        .closed { background: #ecfdf5; color: var(--success); }
+        .open { background: #fef9c3; color: #a16207; } 
+        .delay { background: #fef2f2; color: var(--danger); }
+
+        .link-btn {
+            display: inline-block;
+            margin-top: 8px;
+            padding: 6px 12px;
+            background: var(--primary);
+            color: white;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: 500;
+            transition: background 0.2s;
+            margin-right: 5px;
+            border: none;
+            cursor: pointer;
+        }
+
+        .link-btn:hover {
+            background: var(--primary-hover);
+        }
+        
+        .upload-btn { background: #22c55e; }
+        .upload-btn:hover { background: #16a34a; }
+        .view-btn { background: #6366f1; }
+        .view-btn:hover { background: #4f46e5; }
+        .pending-btn { background: #f59e0b; }
+
+        /* =========================================
+           إعدادات التجاوب (Responsive Media Queries)
+           ========================================= */
+
+        /* للهواتف والشاشات الصغيرة (الوضع الطولي) */
+        @media screen and (max-width: 768px) {
+            .header {
+                font-size: 20px;
+                padding: 14px 16px;
+            }
+
+            .container {
+                flex-direction: column;
+                height: auto;
+                min-height: calc(100vh - 245px);
+            }
+
+            /* تحويل القائمة الجانبية لشريط تمرير أفقي بالأعلى */
+            .sidebar {
+                width: 100%;
+                max-height: 85px;
+                display: flex;
+                flex-direction: row;
+                overflow-x: auto;
+                overflow-y: hidden;
+                border-right: none;
+                border-bottom: 1px solid var(--border);
+                padding: 10px;
+                align-items: center;
+                white-space: nowrap;
+            }
+
+            .employee {
+                margin: 0 8px 0 0;
+                flex-shrink: 0; /* لمنع العناصر من الانضغاط */
+            }
+
+            .content {
+                padding: 15px;
+            }
+
+            .revision-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+        }
+
+        /* للأجهزة اللوحية (التابلت) في الوضع العمودي */
+        @media screen and (max-width: 1024px) and (orientation: portrait) {
+            .sidebar {
+                width: 200px; /* تصغير عرض القائمة الجانبية قليلاً */
+            }
+        }
+    </style>
+</head>
+<body>
+
+<!-- حقل الرفع المخفي العام -->
+<input type="file" id="global-file-input" style="display: none;" onchange="handleFileSelection(this)">
+
+<div class="header">
+    <i class="fa-solid fa-folder-open"></i> MDECO SUBMITTALS DASHBOARD
+</div>
+
+<div class="nav-container">
+    <a href="home.html" class="nav-btn">
+        <i class="fa-solid fa-house"></i> الرئيسية
+    </a>
+    <a href="summary.html" class="nav-btn">
+        <i class="fa-solid fa-chart-column"></i> الملخص
+    </a>
+    <a href="task.html" class="nav-btn">
+        <i class="fa-solid fa-list-check"></i> المهام
+    </a>
+    <a href="general_by_activity.html" class="nav-btn">
+        <i class="fa-solid fa-layer-group"></i> عام
+    </a>
+    <a href="approvals.html" class="nav-btn">
+        <i class="fa-solid fa-clipboard-check"></i> طلبات الموافقة
+        <span id="pendingNavBadge" class="nav-badge">0</span>
+    </a>
+    <a href="team_overview.html" class="nav-btn">
+        <i class="fa-solid fa-users"></i> نظرة عامة على الموظفين
+    </a>
+</div>
+
+<div class="welcome-hero">
+    <h1>Welcome to MDECO </h1>
+    <p>Centralized Engineering Consultancy & Document Control Management System</p>
+</div>
+
+<div class="container">
+    <div class="sidebar" id="sidebar">Loading Employees...</div>
+    
+    <div class="content">
+        <div class="card">
+            <h2 id="empName">Select Employee</h2>
+            <div class="filter-group">
+                <button id="btn-all" class="active-filter" onclick="setFilter('all')">All</button>
+                <button id="btn-open" onclick="setFilter('open')">Open</button>
+                <button id="btn-closed" onclick="setFilter('closed')">Closed</button>
+                <button id="btn-delay" onclick="setFilter('delay')">Delay</button>
+            </div>
+            <input id="search" class="search-input" placeholder="Search by No, Title, Discipline or Activity..." onkeyup="render()">
+        </div>
+        <div id="tasks"></div>
+    </div>
+</div>
+
+<script>
+let data = {};
+let selected = [];
+let filter = "all";
+let currentEmployee = "";
+
+// خريطة الطلبات المعلّقة: المفتاح = taskKey + '||' + revisionName
+let pendingMap = {};
+
+let currentUploadTaskKey = "";
+let currentUploadRevName = "";
+let currentUploadRawNo = "";
+let currentUploadTaskTitle = "";
+let currentUploadEmployee = "";
+
+const SUPABASE_URL = "https://uhhtvpxtpayovbtmnstz.supabase.co";
+const SUPABASE_KEY = "sb_publishable_QsS0UhLBORy6mOaBDgW62g_9OacC3oO";
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const GOOGLE_SCRIPT_UPLOAD_URL = "https://script.google.com/macros/s/AKfycbwrwlISUUIiWYcw52AuuWdgbv4qRGP5swhJuDGd2V2NMuzcmbxQx_3qlyxUe0mjZIioyw/exec";
+
+// كل قد ايه (بالثواني) الشارة والبيانات المعلّقة بتتحدّث تلقائيًا
+const PENDING_POLL_INTERVAL = 20000;
+
+function generateTaskKey(row) {
+    let no = (row.no || "").trim();
+    if (no && no !== "-") {
+        return no.toLowerCase();
+    }
+    let fallback = `${row.title}_${row.discipline}_${row.activity}`.replace(/\s+/g, '').toLowerCase();
+    return fallback;
+}
+
+// جلب بيانات جدول المهام مباشرة من Supabase
+async function loadTasks() {
+    try {
+        const { data: rows, error } = await supabaseClient
+            .from('submittals')
+            .select('*');
+
+        if (error) throw error;
+        build(rows || []);
+    } catch (err) {
+        console.error("Error loading submittals:", err);
+        document.getElementById('sidebar').innerHTML = "Failed to load data.";
+    }
+}
+
+// جلب الطلبات المعلّقة فقط (status = pending) وبناء الخريطة + تحديث الشارة
+async function loadPendingRequests() {
+    try {
+        const { data: rows, error } = await supabaseClient
+            .from('upload_requests')
+            .select('*')
+            .eq('status', 'pending');
+
+        if (error) throw error;
+
+        pendingMap = {};
+        (rows || []).forEach(r => {
+            let key = `${r.task_key}||${r.revision_name.trim().toLowerCase()}`;
+            pendingMap[key] = r;
+        });
+
+        updatePendingBadge((rows || []).length);
+        render();
+    } catch (err) {
+        console.error("Error loading pending requests:", err);
+    }
+}
+
+function updatePendingBadge(count) {
+    let badge = document.getElementById('pendingNavBadge');
+    if (!badge) return;
+    if (count > 0) {
+        badge.textContent = count > 99 ? "99+" : count;
+        badge.style.display = "flex";
+    } else {
+        badge.style.display = "none";
+    }
+}
+
+loadTasks();
+loadPendingRequests();
+setInterval(loadPendingRequests, PENDING_POLL_INTERVAL);
+
+function handleFileSelection(input) {
+    if (input.files.length === 0) return;
+    let file = input.files[0];
+
+    alert("جاري رفع الملف الآن... الرجاء الانتظار ثواني، وهيتبعت للمراجعة قبل ما يظهر.");
+
+    let reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = function () {
+        let rawLog = reader.result.split(',')[1];
+
+        fetch(GOOGLE_SCRIPT_UPLOAD_URL, {
+            method: "POST",
+            headers: { "Content-Type": "text/plain" },
+            body: JSON.stringify({
+                filename: file.name,
+                mimeType: file.type,
+                data: rawLog,
+                taskNo: currentUploadTaskKey,
+                revName: currentUploadRevName,
+                // بيانات إضافية تستخدمها الأداة السكربت لإرسال إيميل الإشعار
+                notify: true,
+                taskTitle: currentUploadTaskTitle,
+                employee: currentUploadEmployee
+            })
+        })
+        .then(res => res.json())
+        .then(async (result) => {
+            if (!result.url) {
+                alert("خطأ أثناء الرفع: " + (result.error || "فشل الرفع"));
+                return;
+            }
+
+            let uploadedUrl = result.url;
+
+            let columnTarget = "link";
+            let currentRevClean = currentUploadRevName.trim().toLowerCase();
+            if (currentRevClean === "revision 1") columnTarget = "link_1";
+            else if (currentRevClean === "revision 2") columnTarget = "link_2";
+            else if (currentRevClean === "revision 3") columnTarget = "link_3";
+
+            // بدل تحديث submittals مباشرة، بننشئ "طلب موافقة" معلّق
+            const { data: insertedRows, error: insertError } = await supabaseClient
+                .from('upload_requests')
+                .insert({
+                    task_key: currentUploadTaskKey,
+                    raw_no: currentUploadRawNo,
+                    task_title: currentUploadTaskTitle,
+                    employee: currentUploadEmployee,
+                    revision_name: currentUploadRevName,
+                    column_target: columnTarget,
+                    file_name: file.name,
+                    file_link: uploadedUrl,
+                    status: 'pending'
+                })
+                .select();
+
+            if (insertError) {
+                console.error("Failed to create approval request:", insertError);
+                alert("تم رفع الملف على جوجل درايف، لكن فشل إنشاء طلب المراجعة في قاعدة البيانات.");
+                return;
+            }
+
+            // تحديث فوري للواجهة من غير ما ننتظر إعادة تحميل من السيرفر
+            let newReq = (insertedRows && insertedRows[0]) ? insertedRows[0] : {
+                task_key: currentUploadTaskKey,
+                revision_name: currentUploadRevName,
+                file_name: file.name,
+                file_link: uploadedUrl,
+                status: 'pending'
+            };
+            let key = `${newReq.task_key}||${newReq.revision_name.trim().toLowerCase()}`;
+            pendingMap[key] = newReq;
+            render();
+            updatePendingBadge(Object.keys(pendingMap).length);
+
+            alert("تم إرسال الملف بنجاح لمراجعة المسؤول. هيظهر الرابط بعد الموافقة عليه.");
+            loadPendingRequests();
+        })
+        .catch(err => {
+            alert("حدث خطأ أثناء الاتصال بسكربت الرفع.");
+            console.error(err);
+        });
+    };
+    input.value = "";
+}
+
+function build(rows) {
+    data = {}; 
+    rows.forEach(row => {
+        let emp = (row.action_by || "Unknown").trim();
+        if (!data[emp]) data[emp] = [];
+
+        let taskKey = generateTaskKey(row);
+
+        data[emp].push({
+            taskKey: taskKey,
+            no: row.no,
+            title: row.title,
+            discipline: row.discipline,
+            rev: row.rev,
+            activity: row.activity,
+            employee: emp,
+            revisions: [
+                { name: "Original", submitted: row.submitted_on, received: row.received_on, duration: row.duration, code: row.code, link: row.link },
+                { name: "Revision 1", submitted: row.submitted_on_1, received: row.received_on_1, duration: row.duration_1, code: row.code_1, link: row.link_1 },
+                { name: "Revision 2", submitted: row.submitted_on_2, received: row.received_on_2, duration: row.duration_2, code: row.code_2, link: row.link_2 },
+                { name: "Revision 3", submitted: row.submitted_on_3, received: row.received_on_3, duration: row.duration_3, code: row.code_3, link: row.link_3 }
+            ]
+        });
+    });
+
+    // لو المستخدم مش Admin، يشوف بس التاسكات المرتبطة باسمه هو
+    if (window.currentUserRole && window.currentUserRole !== 'admin') {
+        let myName = (window.currentUsername || '').trim().toLowerCase();
+        let matchedKey = Object.keys(data).find(emp => emp.trim().toLowerCase() === myName);
+        let filtered = {};
+        if (matchedKey) filtered[matchedKey] = data[matchedKey];
+        data = filtered;
+    }
+
+    renderSidebar();
+    if (currentEmployee && data[currentEmployee]) {
+        selected = data[currentEmployee];
+        render();
+    } else if (window.currentUserRole && window.currentUserRole !== 'admin') {
+        // اختيار تلقائي لتاسكات المستخدم نفسه (مفيش سايدبار يدوي له)
+        let onlyKey = Object.keys(data)[0];
+        if (onlyKey) selectEmployee(onlyKey);
+    }
+}
+
+function renderSidebar() {
+    let isAdmin = !window.currentUserRole || window.currentUserRole === 'admin';
+    let html = "";
+    Object.keys(data).forEach(emp => {
+        let activeClass = emp === currentEmployee ? "active" : "";
+        let openCount = data[emp].filter(t => computeTaskStatus(t) === "OPEN").length;
+        let badgeHtml = openCount > 0 ? `<span class="emp-open-badge">${openCount}</span>` : "";
+        html += `<div class="employee ${activeClass}" onclick="selectEmployee('${emp}')">
+            <span>${emp}</span>${badgeHtml}
+        </div>`;
+    });
+    if (!isAdmin && Object.keys(data).length === 0) {
+        html = `<div style="padding:14px; color:var(--text-muted); font-size:13px;">
+            لا يوجد تاسكات مرتبطة باسم المستخدم بتاعك. تواصل مع الأدمن.
+        </div>`;
+    }
+    document.getElementById('sidebar').innerHTML = html;
+}
+
+function selectEmployee(emp) {
+    currentEmployee = emp;
+    selected = data[emp];
+    document.getElementById('empName').innerHTML = emp;
+    renderSidebar();
+    render();
+}
+
+function setFilter(f) {
+    filter = f;
+    document.querySelectorAll('.filter-group button').forEach(btn => btn.classList.remove('active-filter'));
+    document.getElementById(`btn-${f}`).classList.add('active-filter');
+    render();
+}
+
+function validLink(link) {
+    if (!link) return false;
+    let cleanLink = link.trim();
+    return cleanLink.length > 3 && (cleanLink.startsWith("http") || cleanLink.includes(".com") || cleanLink.includes("drive.google"));
+}
+
+// بيحسب حالة أي تاسك (OPEN / CLOSED / DELAY) بناءً على آخر Revision عندها بيانات
+function computeTaskStatus(t) {
+    let activeRevisions = [];
+    t.revisions.forEach(rev => {
+        let submitted = (rev.submitted || "").trim();
+        if (!submitted) return;
+        activeRevisions.push({
+            code: (rev.code || "").trim(),
+            received: (rev.received || "").trim(),
+            delay: Number(rev.duration) || 0
+        });
+    });
+
+    let status = "OPEN";
+    if (activeRevisions.length > 0) {
+        let latestRev = activeRevisions[activeRevisions.length - 1];
+        if (latestRev.code !== "" && latestRev.received !== "") {
+            status = "CLOSED";
+        } else if (latestRev.delay > 0) {
+            status = "DELAY";
+        } else {
+            status = "OPEN";
+        }
+    }
+    return status;
+}
+
+function buildRevision(rev, taskKey, rawNo, taskTitle, employee) {
+    let submitted = (rev.submitted || "").trim();
+    let pendingKey = `${taskKey}||${rev.name.trim().toLowerCase()}`;
+    let pendingRequest = pendingMap[pendingKey];
+
+    if (!submitted && !pendingRequest) {
+        return { html: "", delay: 0, hasData: false };
+    }
+
+    let code = (rev.code || "").trim().toUpperCase();
+    let link = (rev.link || "").trim();
+    let received = (rev.received || "").trim();
+    let delay = Number(rev.duration) || 0;
+
+    let codeClass = "code-open"; 
+    let codeText = "OPEN / PENDING";
+
+    if (code !== "" || received !== "") {
+        codeText = code || "Received";
+        if (code === "A" || code === "B") {
+            codeClass = "code-success"; 
+        } else if (code === "C" || code === "D") {
+            codeClass = "code-danger"; 
+        } else {
+            codeClass = "code-pending"; 
+        }
+    }
+
+    // لو فيه طلب معلّق لسه ما اتوافقش عليه، بنطغّي على المؤشر ونمنع الرفع المزدوج
+    if (pendingRequest) {
+        codeClass = "code-review";
+        codeText = "قيد المراجعة";
+    }
+
+    let viewButtonHtml = validLink(link) 
+        ? `<a class="link-btn view-btn" href="${link}" target="_blank">🔗 عرض الملف</a>` 
+        : `<button class="link-btn view-btn" style="opacity:0.5; cursor:not-allowed;" disabled>🔗 لا يوجد ملف</button>`;
+
+    let uploadButtonHtml;
+    if (pendingRequest) {
+        uploadButtonHtml = `<button class="link-btn pending-btn" style="opacity:0.7; cursor:not-allowed;" disabled>⏳ في انتظار الموافقة</button>`;
+    } else {
+        uploadButtonHtml = `<button class="link-btn upload-btn" onclick="triggerUpload('${taskKey}', '${rev.name}', '${rawNo || '-'}', '${(taskTitle || '').replace(/'/g, "\\'")}', '${(employee || '').replace(/'/g, "\\'")}')">📁 رفع ملف</button>`;
+    }
+
+    let submittedLine = submitted
+        ? `Submitted: ${submitted} ${received ? " | Received: " + received : ""}`
+        : (pendingRequest ? `ملف جديد بانتظار مراجعة المسؤول (${pendingRequest.file_name || ''})` : "");
+
+    let html = `
+    <div class="revision-box ${pendingRequest ? 'is-pending' : ''}">
+        <div class="revision-header">
+            <span>${rev.name}</span>
+            <span class="code-tag ${codeClass}">${pendingRequest ? codeText : 'Code: ' + codeText}</span>
+        </div>
+        <div class="small">
+            ${submittedLine}
+        </div>
+        ${delay > 0 ? `<div class="small" style="color:var(--danger); font-weight:600; margin-top:4px;">Delay: ${delay} Days</div>` : ""}
+        <div style="margin-top: 8px;">
+            ${uploadButtonHtml}
+            ${viewButtonHtml}
+        </div>
+    </div>
+    `;
+
+    return { html: html, delay: delay, hasData: true };
+}
+
+function triggerUpload(taskKey, revName, rawNo, taskTitle, employee) {
+    currentUploadTaskKey = taskKey;
+    currentUploadRevName = revName;
+    currentUploadRawNo = rawNo;
+    currentUploadTaskTitle = taskTitle;
+    currentUploadEmployee = employee;
+    document.getElementById('global-file-input').click();
+}
+
+function render() {
+    let html = "";
+    let keyword = document.getElementById('search').value.toLowerCase();
+    let tasksContainer = document.getElementById('tasks');
+
+    selected.forEach(t => {
+        let revHTML = "";
+        let activeRevisions = [];
+
+        t.revisions.forEach(rev => {
+            let result = buildRevision(rev, t.taskKey, t.no, t.title, t.employee);
+            if (result.hasData) {
+                revHTML += result.html;
+                activeRevisions.push({
+                    code: (rev.code || "").trim(),
+                    received: (rev.received || "").trim(),
+                    delay: Number(rev.duration) || 0
+                });
+            }
+        });
+
+        let status = "OPEN"; 
+        if (activeRevisions.length > 0) {
+            let latestRev = activeRevisions[activeRevisions.length - 1];
+            if (latestRev.code !== "" && latestRev.received !== "") {
+                status = "CLOSED";
+            } else if (latestRev.delay > 0) {
+                status = "DELAY";
+            } else {
+                status = "OPEN";
+            }
+        }
+
+        if (filter == "closed" && status != "CLOSED") return;
+        if (filter == "open" && status != "OPEN") return;
+        if (filter == "delay" && status != "DELAY") return;
+
+        let text = ((t.no || "") + " " + (t.title || "") + " " + (t.discipline || "") + " " + (t.activity || "")).toLowerCase();
+        if (keyword && !text.includes(keyword)) return;
+
+        html += `
+        <div class="task">
+            <div class="task-activity">${t.activity}</div>
+            <div class="title">${t.title}</div>
+            <div class="meta-tags">
+                <span class="tag">No: ${t.no || "-"}</span>
+                <span class="tag">Discipline: ${t.discipline || "-"}</span>
+                <span class="tag">Rev: ${t.rev || "-"}</span>
+            </div>
+            ${revHTML}
+            <div class="status-container">
+                <b>Status:</b>
+                <span class="status-badge ${status.toLowerCase()}">${status}</span>
+            </div>
+        </div>
+        `;
+    });
+
+    tasksContainer.innerHTML = html || `<div style="text-align:center; color:var(--text-muted); margin-top:20px;">No Submittals found.</div>`;
+}
+</script>
+</body>
+</html>

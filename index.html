@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en" id="html-tag">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MDECO Portal - Login</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --primary-light: #eff6ff;
+            --bg-main: #f8fafc;
+            --bg-card: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --error: #ef4444;
+            --success: #10b981;
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--bg-main);
+            color: var(--text-main);
+            -webkit-font-smoothing: antialiased;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1e3a8a, #2563eb);
+            color: #fff;
+            padding: 30px 24px;
+            text-align: center;
+            font-size: 28px;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            box-shadow: var(--shadow-md);
+            position: relative;
+        }
+
+        .header p {
+            margin: 8px 0 0 0;
+            font-size: 15px;
+            font-weight: 400;
+            opacity: 0.85;
+        }
+
+        .lang-container {
+            position: absolute;
+            top: 20px;
+            right: 24px;
+        }
+        html[dir="rtl"] .lang-container {
+            right: auto;
+            left: 24px;
+        }
+
+        .lang-btn {
+            background: rgba(255, 255, 255, 0.15);
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            padding: 8px 16px;
+            font-size: 14px;
+            font-weight: 600;
+            border-radius: 6px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+        .lang-btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        .main-container {
+            flex-grow: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 24px;
+            box-sizing: border-box;
+        }
+
+        .login-card {
+            background: var(--bg-card);
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--border);
+            width: 100%;
+            max-width: 420px;
+            box-sizing: border-box;
+        }
+
+        .login-card h2 {
+            margin: 0 0 8px 0;
+            font-size: 22px;
+            font-weight: 700;
+            text-align: center;
+        }
+
+        .login-card .subtitle {
+            color: var(--text-muted);
+            font-size: 14px;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text-main);
+        }
+
+        .input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .input-wrapper i {
+            position: absolute;
+            left: 14px;
+            color: var(--text-muted);
+            font-size: 16px;
+        }
+        html[dir="rtl"] .input-wrapper i {
+            left: auto;
+            right: 14px;
+        }
+
+        .input-wrapper input {
+            width: 100%;
+            padding: 12px 12px 12px 40px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 15px;
+            background: #f8fafc;
+            color: var(--text-main);
+            outline: none;
+            box-sizing: border-box;
+            transition: all 0.2s;
+        }
+        html[dir="rtl"] .input-wrapper input {
+            padding: 12px 40px 12px 12px;
+        }
+
+        .input-wrapper input:focus {
+            border-color: var(--primary);
+            background: #fff;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 12px;
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-top: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-submit:hover {
+            background: var(--primary-dark);
+        }
+
+        .btn-submit:disabled {
+            background: #94a3b8;
+            cursor: not-allowed;
+        }
+
+        .message-box {
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            display: none;
+            text-align: center;
+        }
+        .message-box.error {
+            background: #fee2e2;
+            color: var(--error);
+            border: 1px solid #fca5a5;
+            display: block;
+        }
+        .message-box.success {
+            background: #d1fae5;
+            color: var(--success);
+            border: 1px solid #6ee7b7;
+            display: block;
+        }
+
+        .footer {
+            background: #0f172a;
+            color: #94a3b8;
+            text-align: center;
+            padding: 20px;
+            font-size: 14px;
+            border-top: 1px solid #1e293b;
+        }
+
+        .footer-project {
+            font-weight: 700;
+            color: #f8fafc;
+            margin-bottom: 6px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    MDECO SUBMITTALS LOG
+    <p id="sub-header">Management & Document Control System</p>
+    <div class="lang-container">
+        <div class="lang-btn" onclick="toggleLanguage()">
+            <i class="fa-solid fa-globe"></i> <span id="lang-text">العربية</span>
+        </div>
+    </div>
+</div>
+
+<div class="main-container" style="flex-direction: column;">
+    <div style="position:relative; width:100%; max-width:900px; border-radius:16px; overflow:hidden; box-shadow: var(--shadow-lg); margin-bottom:28px;">
+        <img src="./images/spark-building .jpeg" alt="ECODAN Offices - Spark Project"
+             style="width:100%; display:block; max-height:340px; object-fit:cover;">
+        <div style="position:absolute; inset:0; background:linear-gradient(to top, rgba(15,23,42,0.85) 0%, rgba(15,23,42,0.2) 55%, transparent 80%);"></div>
+        <div style="position:absolute; bottom:0; left:0; right:0; padding:22px 28px; color:#fff;">
+            <div style="font-size:22px; font-weight:800; letter-spacing:0.5px;">ECODAN OFFICES COMPLEX</div>
+            <div style="font-size:13px; opacity:0.85; margin-top:4px;">SPARK Project — Administrative Offices Complex</div>
+        </div>
+    </div>
+    <div class="login-card">
+        <h2 id="login-title">Account Login</h2>
+        <div class="subtitle" id="login-subtitle">Enter your credentials to access the portal</div>
+        
+        <div id="message-id" class="message-box"></div>
+
+        <form id="login-form" onsubmit="handleLogin(event)">
+            <div class="form-group">
+                <label id="lbl-username">Username</label>
+                <div class="input-wrapper">
+                    <i class="fa-solid fa-user"></i>
+                    <input type="text" id="username" required autocomplete="username">
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label id="lbl-password">Password</label>
+                <div class="input-wrapper">
+                    <i class="fa-solid fa-lock"></i>
+                    <input type="password" id="password" required autocomplete="current-password">
+                </div>
+            </div>
+
+            <button type="submit" class="btn-submit" id="btn-submit">
+                <span id="btn-inner">Login</span>
+            </button>
+        </form>
+    </div>
+</div>
+
+<div class="footer">
+    <div class="footer-project" id="footer-proj">Administrative Offices Project in Aspark</div>
+    <div style="margin-top: 8px; font-size: 12px; color: #64748b; letter-spacing: 0.3px;">
+        Developed by <span style="color:#e2e8f0; font-weight:600;">Mohamed Reda</span>
+        &nbsp;|&nbsp; WhatsApp: 0591413789
+        &nbsp;|&nbsp; <span style="opacity:0.8;">Revision 1</span>
+    </div>
+</div>
+
+<script>
+    // بيانات الاتصال بـ Supabase
+    const SUPABASE_URL = "https://uhhtvpxtpayovbtmnstz.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_QsS0UhLBORy6mOaBDgW62g_9OacC3oO";
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    const translations = {
+        en: {
+            dir: "ltr",
+            subHeader: "Management & Document Control System",
+            langText: "العربية",
+            loginTitle: "Account Login",
+            loginSubtitle: "Enter your credentials to access the portal",
+            lblUsername: "Username",
+            lblPassword: "Password",
+            btnInner: "Login",
+            btnLoading: "Verifying...",
+            errFail: "Invalid username or password.",
+            errConn: "Connection error. Please try again later.",
+            succOk: "Login successful! Redirecting...",
+            footerProj: "Administrative Offices Project in Aspark"
+        },
+        ar: {
+            dir: "rtl",
+            subHeader: "نظام إدارة ومتابعة المستندات والـ Submittals",
+            langText: "English",
+            loginTitle: "تسجيل الدخول",
+            loginSubtitle: "أدخل بيانات حسابك للوصول إلى البوابة الإلكترونية",
+            lblUsername: "اسم المستخدم",
+            lblPassword: "كلمة المرور",
+            btnInner: "تسجيل الدخول",
+            btnLoading: "جاري التحقق...",
+            errFail: "اسم المستخدم أو كلمة المرور غير صحيحة.",
+            errConn: "خطأ في الاتصال بالنظام. حاول مرة أخرى لاحقاً.",
+            succOk: "تم تسجيل الدخول بنجاح! جاري التوجيه...",
+            footerProj: "مشروع المكاتب الإدارية في أسبارك"
+        }
+    };
+
+    let currentLang = 'en';
+
+    function toggleLanguage() {
+        currentLang = (currentLang === 'en') ? 'ar' : 'en';
+        applyLanguage(currentLang);
+    }
+
+    function applyLanguage(lang) {
+        const t = translations[lang];
+        document.getElementById('html-tag').setAttribute('dir', t.dir);
+        document.getElementById('html-tag').setAttribute('lang', lang);
+
+        document.getElementById('sub-header').innerText = t.subHeader;
+        document.getElementById('lang-text').innerText = t.langText;
+        document.getElementById('login-title').innerText = t.loginTitle;
+        document.getElementById('login-subtitle').innerText = t.loginSubtitle;
+        document.getElementById('lbl-username').innerText = t.lblUsername;
+        document.getElementById('lbl-password').innerText = t.lblPassword;
+        document.getElementById('btn-inner').innerText = t.btnInner;
+        document.getElementById('footer-proj').innerText = t.footerProj;
+        
+        document.getElementById('message-id').className = "message-box";
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+        applyLanguage(currentLang);
+    });
+
+    async function handleLogin(event) {
+        event.preventDefault();
+        
+        const userInp = document.getElementById('username').value.trim();
+        const passInp = document.getElementById('password').value.trim();
+        const msgBox = document.getElementById('message-id');
+        const btnSubmit = document.getElementById('btn-submit');
+        const btnInner = document.getElementById('btn-inner');
+        const t = translations[currentLang];
+
+        msgBox.className = "message-box";
+        btnInner.innerText = t.btnLoading;
+        btnSubmit.disabled = true;
+
+        // التحقق من بيانات الدخول مباشرة من Supabase
+        try {
+            const { data: users, error } = await supabaseClient
+                .from('users')
+                .select('username, permissions, password')
+                .eq('username', userInp)
+                .limit(1);
+
+            if (error) throw error;
+
+            const matchedUser = (users && users.length > 0 && users[0].password === passInp) ? users[0] : null;
+
+            if (matchedUser) {
+                msgBox.innerText = t.succOk;
+                msgBox.className = "message-box success";
+                // تخزين اسم المستخدم + الصلاحيات كاملة (مش بس فلاج "active")
+                localStorage.setItem("userSession", JSON.stringify({
+                    username: matchedUser.username,
+                    permissions: matchedUser.permissions
+                }));
+                setTimeout(() => { window.location.href = "home.html"; }, 1500);
+            } else {
+                msgBox.innerText = t.errFail;
+                msgBox.className = "message-box error";
+                btnInner.innerText = t.btnInner;
+                btnSubmit.disabled = false;
+            }
+        } catch (err) {
+            console.error("Login Error:", err);
+            msgBox.innerText = t.errConn;
+            msgBox.className = "message-box error";
+            btnInner.innerText = t.btnInner;
+            btnSubmit.disabled = false;
+        }
+    }
+</script>
+
+</body>
+</html>
