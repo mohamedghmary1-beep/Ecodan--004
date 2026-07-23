@@ -8,14 +8,20 @@
       <script src="auth-guard.js"></script>
 
   It reads the session saved by index.html (localStorage "userSession":
-  { username, permissions }) and enforces 3 roles based on the value stored
+  { username, permissions }) and enforces roles based on the value stored
   in the "permissions" column of the users table:
 
-    - "admin"  (or empty/NULL)  -> sees everything. Use window.guardUpload()
-                                    to require a password re-check before any
+    - "administrator"           -> super-admin. Sees everything, INCLUDING the
+                                    ADMIN_ONLY_PAGES below (task/approvals/team
+                                    overview). Use window.guardUpload() to
+                                    require a password re-check before any
                                     add/upload action.
-    - "no_files"                -> sees every page, but any element marked
-                                    class="file-protected" is hidden.
+    - "admin"  (or empty/NULL)  -> sees everything EXCEPT the pages listed in
+                                    ADMIN_ONLY_PAGES, which are reserved for
+                                    "administrator" only.
+    - "no_files"                -> sees every page (except ADMIN_ONLY_PAGES),
+                                    but any element marked class="file-protected"
+                                    is hidden.
     - "limited"                 -> only sees pages listed in LIMITED_PAGES
                                     below. Everything else -> access denied.
     - anything else / logged out -> blocked / redirected to index.html.
@@ -29,11 +35,13 @@
     // you add new pages that should stay admin/no_files-only.
     const LIMITED_PAGES = ['home.html', 'summary.html', 'general.html'];
 
-    // Pages that ONLY the "admin" role can open. Every other role
-    // (no_files, limited) gets the access-denied screen automatically,
-    // and the matching nav-btn link is hidden for them too.
-    // Add more page filenames here any time you need to lock a page to admins.
-    const ADMIN_ONLY_PAGES = ['task.html', 'approvals.html', 'team_overview.html'];
+    // Pages that ONLY the "administrator" (super-admin) role can open.
+    // Regular "admin" users, along with no_files and limited, get the
+    // access-denied screen automatically, and the matching nav-btn link
+    // is hidden for them too.
+    // Add more page filenames here any time you need to lock a page to
+    // the administrator role.
+    const ADMIN_ONLY_PAGES = ['approvals.html'];
 
     function currentPage() {
         let path = window.location.pathname.split('/').pop();
@@ -63,7 +71,9 @@
 
     const rawPerm = (session.permissions || '').trim().toLowerCase();
     let role;
-    if (rawPerm === 'admin' || rawPerm === '') {
+    if (rawPerm === 'administrator') {
+        role = 'super_admin';
+    } else if (rawPerm === 'admin' || rawPerm === '') {
         role = 'admin';
     } else if (rawPerm === 'no_files') {
         role = 'no_files';
@@ -75,9 +85,9 @@
 
     window.currentUserRole = role;
     window.currentUsername = session.username;
-    // Who can see file/attachment links: admin can, no_files cannot, limited can
+    // Who can see file/attachment links: admin/super_admin can, no_files cannot, limited can
     // (change this line if "limited" users should also lose file access)
-    window.canAccessFiles = (role === 'admin' || role === 'limited');
+    window.canAccessFiles = (role === 'admin' || role === 'super_admin' || role === 'limited');
 
     function showAccessDenied() {
         document.body.innerHTML = `
@@ -98,7 +108,7 @@
         return;
     }
 
-    if (ADMIN_ONLY_PAGES.includes(page) && role !== 'admin') {
+    if (ADMIN_ONLY_PAGES.includes(page) && role !== 'super_admin') {
         document.addEventListener('DOMContentLoaded', showAccessDenied);
         return;
     }
@@ -119,7 +129,7 @@
         document.querySelectorAll('.nav-btn[href]').forEach(function (a) {
             let href = a.getAttribute('href');
             if (!href) return;
-            if (ADMIN_ONLY_PAGES.includes(href) && role !== 'admin') {
+            if (ADMIN_ONLY_PAGES.includes(href) && role !== 'super_admin') {
                 a.style.display = 'none';
                 return;
             }
