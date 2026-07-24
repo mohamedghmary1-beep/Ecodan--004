@@ -33,7 +33,9 @@
 
     // Pages a "limited" user is allowed to open. Edit this list any time
     // you add new pages that should stay admin/no_files-only.
-    const LIMITED_PAGES = ['home.html', 'summary.html', 'general.html'];
+    // performance.html (the project dashboard) is listed here so EVERY role
+    // (admin, super_admin, no_files, limited) can view it.
+    const LIMITED_PAGES = ['home.html', 'summary.html', 'general.html', 'performance.html'];
 
     // Pages that ONLY the "administrator" (super-admin) role can open.
     // Regular "admin" users, along with no_files and limited, get the
@@ -88,6 +90,9 @@
     // Who can see file/attachment links: admin/super_admin can, no_files cannot, limited can
     // (change this line if "limited" users should also lose file access)
     window.canAccessFiles = (role === 'admin' || role === 'super_admin' || role === 'limited');
+    // Who can edit/save dashboard data (e.g. performance.html "Edit Data" + "Save" buttons):
+    // admin and super_admin only. no_files and limited can VIEW the dashboard but not edit it.
+    window.canEditDashboard = (role === 'admin' || role === 'super_admin');
 
     function showAccessDenied() {
         document.body.innerHTML = `
@@ -125,6 +130,13 @@
                 el.style.display = 'none';
             });
         }
+        // Hide edit/save controls (e.g. dashboard "Edit Data" button) for roles that
+        // cannot edit — mark those elements with class="admin-only" in the page HTML.
+        if (!window.canEditDashboard) {
+            document.querySelectorAll('.admin-only').forEach(function (el) {
+                el.style.display = 'none';
+            });
+        }
         // Hide nav links this role isn't allowed to open
         document.querySelectorAll('.nav-btn[href]').forEach(function (a) {
             let href = a.getAttribute('href');
@@ -154,6 +166,13 @@
     //         });
     //     };
     window.guardUpload = function (onConfirmed) {
+        // Defense-in-depth: even if a hidden button gets triggered some other way,
+        // block the save here too if this role isn't allowed to edit.
+        if (window.canEditDashboard === false) {
+            alert('ماعندكش صلاحية تحفظ أو تعدّل البيانات دي.');
+            return;
+        }
+
         let modal = document.createElement('div');
         modal.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.55);' +
             'display:flex;align-items:center;justify-content:center;z-index:9999;';
