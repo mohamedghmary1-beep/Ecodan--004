@@ -98,8 +98,7 @@
 
   .grid{
     display:grid;
-    grid-template-columns: 1.05fr 1.6fr;
-    grid-template-rows: auto auto;
+    grid-template-columns: 1fr 1fr;
     gap:14px;
     padding:0 20px;
   }
@@ -137,8 +136,8 @@
 
   .perf-row{display:flex;justify-content:space-around;align-items:center;margin:6px 0 4px;}
   .gauge-label{text-align:center;font-size:12px;font-weight:800;margin-top:4px;}
-  .gauge-label.actual{color:var(--primary);}
-  .gauge-label.planned{color:var(--success);}
+  .gauge-label.actual{color:var(--success);}
+  .gauge-label.planned{color:var(--primary);}
 
   .manpower-box label{font-size:11px;font-weight:700;color:var(--text-muted);}
   .manpower-input{
@@ -235,7 +234,7 @@
     </div>
 
     <div class="topbar-title-wrap">
-      <h1>ECODAN Offices (Itqan Al-arabia) </h1>
+      <h1>ECODAN OFFICES COMPLEX Project </h1>
     </div>
 
     <!-- RIGHT LOGO + COMPANY NAME: set the img src and the name text below -->
@@ -325,7 +324,7 @@
 
     <!-- RIGHT: Planned vs Actual -->
     <div class="panel">
-      <h2 class="section-title">Project Planned Vs Actual Within 02 weeks</h2>
+      <h2 class="section-title">Project Planned Vs Actual </h2>
       <div style="display:grid;grid-template-columns:1.3fr 1fr;gap:12px;">
         <div class="chart-box" style="height:200px;">
           <canvas id="plannedActualChart"></canvas>
@@ -342,7 +341,7 @@
     </div>
   </div>
 
-  <div class="grid" style="grid-template-columns:1.05fr 2.6fr;margin-top:10px;align-items:start;">
+  <div class="grid" style="margin-top:10px;align-items:start;">
     <!-- Performance % + Manpower -->
     <div class="panel">
       <h2 class="section-title">Projects Performance %</h2>
@@ -488,16 +487,23 @@ function fmtDate(d) {
 function drawDonutGauge(canvasId, percentValue, color) {
   const ctx = document.getElementById(canvasId).getContext('2d');
   const pct = Math.max(0, Math.min(100, percentValue));
+  const numSegments = 20;
+  const filledCount = pct > 0 ? Math.max(1, Math.round((pct / 100) * numSegments)) : 0;
+  const segmentData = new Array(numSegments).fill(1);
+  const segmentColors = new Array(numSegments).fill(0).map((_, i) => i < filledCount ? color : '#e2e8f0');
   new Chart(ctx, {
     type: 'doughnut',
     data: {
       datasets: [{
-        data: [pct, 100 - pct],
-        backgroundColor: [color, '#e2e8f0'],
-        borderWidth: 0,
+        data: segmentData,
+        backgroundColor: segmentColors,
+        borderWidth: 3,
+        borderColor: '#ffffff',
       }]
     },
     options: {
+      responsive: true,
+      maintainAspectRatio: false,
       cutout: '72%',
       plugins: { legend: { display: false }, tooltip: { enabled: false } },
       animation: false,
@@ -535,6 +541,8 @@ function drawSpiGauge(spi) {
       }]
     },
     options: {
+      responsive: true,
+      maintainAspectRatio: false,
       cutout: '65%',
       plugins: { legend: { display: false }, tooltip: { enabled: false } },
       animation: false,
@@ -572,6 +580,8 @@ function renderPlannedActualChart(rows) {
       ]
     },
     options: {
+      responsive: true,
+      maintainAspectRatio: false,
       plugins: { legend: { display: false } },
       animation: false,
       scales: { y: { display: false }, x: { grid: { display: false } } }
@@ -586,11 +596,13 @@ function renderScurve(rows) {
     data: {
       labels: rows.map(r => r.week),
       datasets: [
-        { label: 'Planned Value Cost', data: rows.map(r => r.planned_cost), backgroundColor: '#1e40af', barPercentage: 0.5, categoryPercentage: 0.6 },
-        { label: 'Actual Value Cost', data: rows.map(r => r.actual_cost), backgroundColor: '#10b981', barPercentage: 0.5, categoryPercentage: 0.6 },
+        { label: 'Planned Value Cost', data: rows.map(r => r.planned_cost), backgroundColor: '#1e40af', barPercentage: 0.9, categoryPercentage: 0.9 },
+        { label: 'Actual Value Cost', data: rows.map(r => r.actual_cost), backgroundColor: '#10b981', barPercentage: 0.9, categoryPercentage: 0.9 },
       ]
     },
     options: {
+      responsive: true,
+      maintainAspectRatio: false,
       animation: false,
       plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 9 } } } },
       scales: {
@@ -608,11 +620,13 @@ function renderManpower(rows) {
     data: {
       labels: rows.map(r => r.week),
       datasets: [
-        { label: 'Planned', data: rows.map(r => r.planned), backgroundColor: '#1e40af', barPercentage: 0.5, categoryPercentage: 0.6 },
-        { label: 'Actual', data: rows.map(r => r.actual), backgroundColor: '#10b981', barPercentage: 0.5, categoryPercentage: 0.6 },
+        { label: 'Planned', data: rows.map(r => r.planned), backgroundColor: '#1e40af', barPercentage: 0.9, categoryPercentage: 0.9 },
+        { label: 'Actual', data: rows.map(r => r.actual), backgroundColor: '#10b981', barPercentage: 0.9, categoryPercentage: 0.9 },
       ]
     },
     options: {
+      responsive: true,
+      maintainAspectRatio: false,
       animation: false,
       plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 9 } } } },
       scales: {
@@ -862,8 +876,8 @@ async function loadDashboard() {
 
     // Gauges - latest week's actual/planned %
     const latest = weekly[weekly.length - 1] || { actual: 0, plan: 0 };
-    drawDonutGauge('actualGauge', latest.actual, '#1e40af');
-    drawDonutGauge('plannedGauge', latest.plan, '#10b981');
+    drawDonutGauge('actualGauge', latest.actual, '#10b981');
+    drawDonutGauge('plannedGauge', latest.plan, '#1e40af');
 
     // Manpower this week
     document.getElementById('manpowerPlanned').textContent = data.manpower_planned ?? '-';
