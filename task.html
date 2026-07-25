@@ -675,8 +675,9 @@ function build(rows) {
         });
     });
 
-    // لو المستخدم مش Admin، يشوف بس التاسكات المرتبطة باسمه هو
-    if (window.currentUserRole && window.currentUserRole !== 'admin') {
+    // لو المستخدم مش Admin ولا Administrator (super_admin)، يشوف بس التاسكات المرتبطة باسمه هو
+    let isFullAccessRole = !window.currentUserRole || window.currentUserRole === 'admin' || window.currentUserRole === 'super_admin';
+    if (!isFullAccessRole) {
         let myName = (window.currentUsername || '').trim().toLowerCase();
         let matchedKey = Object.keys(data).find(emp => emp.trim().toLowerCase() === myName);
         let filtered = {};
@@ -688,7 +689,7 @@ function build(rows) {
     if (currentEmployee && data[currentEmployee]) {
         selected = data[currentEmployee];
         render();
-    } else if (window.currentUserRole && window.currentUserRole !== 'admin') {
+    } else if (!isFullAccessRole) {
         // اختيار تلقائي لتاسكات المستخدم نفسه (مفيش سايدبار يدوي له)
         let onlyKey = Object.keys(data)[0];
         if (onlyKey) selectEmployee(onlyKey);
@@ -696,7 +697,7 @@ function build(rows) {
 }
 
 function renderSidebar() {
-    let isAdmin = !window.currentUserRole || window.currentUserRole === 'admin';
+    let isAdmin = !window.currentUserRole || window.currentUserRole === 'admin' || window.currentUserRole === 'super_admin';
     let html = "";
     Object.keys(data).forEach(emp => {
         let activeClass = emp === currentEmployee ? "active" : "";
