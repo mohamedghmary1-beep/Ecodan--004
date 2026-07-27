@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="./auth-guard.js"></script>
+    <script src="./lang.js"></script>
     <style>
         :root {
             --primary: #1e40af;
@@ -80,6 +81,14 @@
         .nav-btn:hover {
             background: #eff6ff;
             color: var(--primary);
+        }
+
+        .translate-btn {
+            background: #eff6ff;
+            color: var(--primary);
+            border: none;
+            cursor: pointer;
+            font-family: inherit;
         }
 
         .container {
@@ -189,35 +198,41 @@
 <body>
 
 <div class="header">
-    <i class="fa-solid fa-clipboard-check"></i> طلبات الموافقة على الملفات المرفوعة
+    <i class="fa-solid fa-clipboard-check"></i> <span data-i18n="pageTitle">طلبات الموافقة على الملفات المرفوعة</span>
 </div>
 
 <div class="nav-container">
     <a href="home.html" class="nav-btn">
-        <i class="fa-solid fa-house"></i> الرئيسية
+        <i class="fa-solid fa-house"></i> <span data-i18n="navHome">الرئيسية</span>
     </a>
     <a href="summary.html" class="nav-btn">
-        <i class="fa-solid fa-chart-column"></i> الملخص
+        <i class="fa-solid fa-chart-column"></i> <span data-i18n="navSummary">الملخص</span>
     </a>
     <a href="task.html" class="nav-btn">
-        <i class="fa-solid fa-list-check"></i> المهام
+        <i class="fa-solid fa-list-check"></i> <span data-i18n="navTasks">المهام</span>
     </a>
     <a href="general_by_activity.html" class="nav-btn">
-        <i class="fa-solid fa-layer-group"></i> عام
+        <i class="fa-solid fa-layer-group"></i> <span data-i18n="navGeneral">عام</span>
     </a>
     <a href="approvals.html" class="nav-btn">
-        <i class="fa-solid fa-clipboard-check"></i> طلبات الموافقة
+        <i class="fa-solid fa-clipboard-check"></i> <span data-i18n="navApprovals">طلبات الموافقة</span>
     </a>
     <a href="team_overview.html" class="nav-btn">
-        <i class="fa-solid fa-users"></i> نظرة عامة على الموظفين
+        <i class="fa-solid fa-users"></i> <span data-i18n="navTeam">نظرة عامة على الموظفين</span>
     </a>
+    <a href="performance.html" class="nav-btn">
+        <i class="fa-solid fa-chart-column"></i> <span data-i18n="navDashboard">لوحة التحكم</span>
+    </a>
+    <button onclick="toggleLanguage()" class="nav-btn translate-btn">
+        <i class="fa-solid fa-language"></i> <span id="lang-btn-text">English</span>
+    </button>
 </div>
 
 <div class="container">
     <div class="tabs">
-        <button class="tab-btn active" id="tab-pending" onclick="setTab('pending')">قيد المراجعة</button>
-        <button class="tab-btn" id="tab-approved" onclick="setTab('approved')">تمت الموافقة</button>
-        <button class="tab-btn" id="tab-rejected" onclick="setTab('rejected')">مرفوضة</button>
+        <button class="tab-btn active" id="tab-pending" onclick="setTab('pending')" data-i18n="tabPending">قيد المراجعة</button>
+        <button class="tab-btn" id="tab-approved" onclick="setTab('approved')" data-i18n="tabApproved">تمت الموافقة</button>
+        <button class="tab-btn" id="tab-rejected" onclick="setTab('rejected')" data-i18n="tabRejected">مرفوضة</button>
     </div>
 
     <div id="list"></div>
@@ -228,11 +243,82 @@ const SUPABASE_URL = "https://uhhtvpxtpayovbtmnstz.supabase.co";
 const SUPABASE_KEY = "sb_publishable_QsS0UhLBORy6mOaBDgW62g_9OacC3oO";
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+let currentLang = (typeof window.getCurrentLang === 'function') ? window.getCurrentLang() : 'ar';
+
+const dictionary = {
+    ar: {
+        pageTitle: "طلبات الموافقة على الملفات المرفوعة",
+        tabPending: "قيد المراجعة",
+        tabApproved: "تمت الموافقة",
+        tabRejected: "مرفوضة",
+        loading: "جاري التحميل...",
+        loadError: "حدث خطأ أثناء تحميل الطلبات.",
+        noPending: "لا يوجد طلبات معلّقة.",
+        noApproved: "لا يوجد طلبات تمت الموافقة عليها.",
+        noRejected: "لا يوجد طلبات مرفوضة.",
+        taskNo: "رقم التاسك",
+        employee: "الموظف",
+        revision: "المراجعة",
+        fileLabel: "الملف",
+        requestedAt: "تاريخ الطلب",
+        reviewedAt: "تمت المراجعة",
+        viewFile: "عرض الملف",
+        approve: "موافقة",
+        reject: "رفض",
+        statusPending: "قيد المراجعة",
+        statusApproved: "تمت الموافقة",
+        statusRejected: "مرفوض",
+        confirmApprove: "تأكيد الموافقة على ملف",
+        confirmApproveEnd: "وتحديث الرابط الرسمي؟",
+        confirmReject: "تأكيد رفض هذا الملف؟",
+        errUpdateRow: "تعذر تحديد الصف المطلوب تحديثه في جدول submittals.",
+        errUpdateLink: "فشل تحديث الرابط الرسمي.",
+        errUpdateStatusAfterLink: "تم تحديث الرابط الرسمي، لكن فشل تحديث حالة الطلب.",
+        errReject: "فشل رفض الطلب."
+    },
+    en: {
+        pageTitle: "Uploaded Files Approval Requests",
+        tabPending: "Pending",
+        tabApproved: "Approved",
+        tabRejected: "Rejected",
+        loading: "Loading...",
+        loadError: "An error occurred while loading the requests.",
+        noPending: "No pending requests.",
+        noApproved: "No approved requests.",
+        noRejected: "No rejected requests.",
+        taskNo: "Task No.",
+        employee: "Employee",
+        revision: "Revision",
+        fileLabel: "File",
+        requestedAt: "Requested at",
+        reviewedAt: "Reviewed at",
+        viewFile: "View File",
+        approve: "Approve",
+        reject: "Reject",
+        statusPending: "Pending",
+        statusApproved: "Approved",
+        statusRejected: "Rejected",
+        confirmApprove: "Confirm approving the file",
+        confirmApproveEnd: "and updating the official link?",
+        confirmReject: "Confirm rejecting this file?",
+        errUpdateRow: "Could not determine which row to update in the submittals table.",
+        errUpdateLink: "Failed to update the official link.",
+        errUpdateStatusAfterLink: "The official link was updated, but updating the request status failed.",
+        errReject: "Failed to reject the request."
+    }
+};
+window.registerDictionary(dictionary);
+
+window.onLanguageChanged = function (lang) {
+    currentLang = lang;
+    render();
+};
+
 let currentTab = "pending";
 let requests = [];
 
 async function loadRequests() {
-    document.getElementById('list').innerHTML = `<div class="empty-state">جاري التحميل...</div>`;
+    document.getElementById('list').innerHTML = `<div class="empty-state">${dictionary[currentLang].loading}</div>`;
     const { data: rows, error } = await supabaseClient
         .from('upload_requests')
         .select('*')
@@ -240,7 +326,7 @@ async function loadRequests() {
 
     if (error) {
         console.error(error);
-        document.getElementById('list').innerHTML = `<div class="empty-state">حدث خطأ أثناء تحميل الطلبات.</div>`;
+        document.getElementById('list').innerHTML = `<div class="empty-state">${dictionary[currentLang].loadError}</div>`;
         return;
     }
     requests = rows || [];
@@ -258,9 +344,11 @@ function setTab(tab) {
 function render() {
     let filtered = requests.filter(r => r.status === currentTab);
     let listEl = document.getElementById('list');
+    let t = dictionary[currentLang];
 
     if (filtered.length === 0) {
-        listEl.innerHTML = `<div class="empty-state">لا يوجد طلبات ${currentTab === 'pending' ? 'معلّقة' : currentTab === 'approved' ? 'تمت الموافقة عليها' : 'مرفوضة'}.</div>`;
+        let emptyMsg = currentTab === 'pending' ? t.noPending : currentTab === 'approved' ? t.noApproved : t.noRejected;
+        listEl.innerHTML = `<div class="empty-state">${emptyMsg}</div>`;
         return;
     }
 
@@ -270,21 +358,21 @@ function render() {
                 <div>
                     <div class="request-title">${r.task_title || r.task_key}</div>
                     <div class="request-meta">
-                        رقم التاسك: ${r.raw_no || '-'} &nbsp;|&nbsp;
-                        الموظف: ${r.employee || '-'} &nbsp;|&nbsp;
-                        المراجعة: ${r.revision_name}<br>
-                        الملف: ${r.file_name || '-'} &nbsp;|&nbsp;
-                        تاريخ الطلب: ${new Date(r.requested_at).toLocaleString('ar-EG')}
-                        ${r.reviewed_at ? `<br>تمت المراجعة: ${new Date(r.reviewed_at).toLocaleString('ar-EG')}` : ''}
+                        ${t.taskNo}: ${r.raw_no || '-'} &nbsp;|&nbsp;
+                        ${t.employee}: ${r.employee || '-'} &nbsp;|&nbsp;
+                        ${t.revision}: ${r.revision_name}<br>
+                        ${t.fileLabel}: ${r.file_name || '-'} &nbsp;|&nbsp;
+                        ${t.requestedAt}: ${new Date(r.requested_at).toLocaleString(currentLang === 'ar' ? 'ar-EG' : 'en-US')}
+                        ${r.reviewed_at ? `<br>${t.reviewedAt}: ${new Date(r.reviewed_at).toLocaleString(currentLang === 'ar' ? 'ar-EG' : 'en-US')}` : ''}
                     </div>
                 </div>
-                <span class="status-pill ${r.status}">${r.status === 'pending' ? 'قيد المراجعة' : r.status === 'approved' ? 'تمت الموافقة' : 'مرفوض'}</span>
+                <span class="status-pill ${r.status}">${r.status === 'pending' ? t.statusPending : r.status === 'approved' ? t.statusApproved : t.statusRejected}</span>
             </div>
             <div class="actions">
-                <a class="btn btn-view" href="${r.file_link}" target="_blank"><i class="fa-solid fa-eye"></i> عرض الملف</a>
+                <a class="btn btn-view" href="${r.file_link}" target="_blank"><i class="fa-solid fa-eye"></i> ${t.viewFile}</a>
                 ${r.status === 'pending' ? `
-                    <button class="btn btn-approve" onclick="approveRequest(${r.id})"><i class="fa-solid fa-check"></i> موافقة</button>
-                    <button class="btn btn-reject" onclick="rejectRequest(${r.id})"><i class="fa-solid fa-xmark"></i> رفض</button>
+                    <button class="btn btn-approve" onclick="approveRequest(${r.id})"><i class="fa-solid fa-check"></i> ${t.approve}</button>
+                    <button class="btn btn-reject" onclick="rejectRequest(${r.id})"><i class="fa-solid fa-xmark"></i> ${t.reject}</button>
                 ` : ''}
             </div>
         </div>
@@ -294,7 +382,8 @@ function render() {
 async function approveRequest(id) {
     let req = requests.find(r => r.id === id);
     if (!req) return;
-    if (!confirm(`تأكيد الموافقة على ملف "${req.file_name}" وتحديث الرابط الرسمي؟`)) return;
+    let t = dictionary[currentLang];
+    if (!confirm(`${t.confirmApprove} "${req.file_name}" ${t.confirmApproveEnd}`)) return;
 
     // 1) تحديث العمود الأصلي في جدول submittals
     let updateQuery = supabaseClient
@@ -306,14 +395,14 @@ async function approveRequest(id) {
     } else if (req.task_title) {
         updateQuery = updateQuery.eq('title', req.task_title);
     } else {
-        alert('تعذر تحديد الصف المطلوب تحديثه في جدول submittals.');
+        alert(t.errUpdateRow);
         return;
     }
 
     const { error: updateError } = await updateQuery;
     if (updateError) {
         console.error(updateError);
-        alert('فشل تحديث الرابط الرسمي.');
+        alert(t.errUpdateLink);
         return;
     }
 
@@ -325,14 +414,15 @@ async function approveRequest(id) {
 
     if (statusError) {
         console.error(statusError);
-        alert('تم تحديث الرابط الرسمي، لكن فشل تحديث حالة الطلب.');
+        alert(t.errUpdateStatusAfterLink);
     }
 
     loadRequests();
 }
 
 async function rejectRequest(id) {
-    if (!confirm('تأكيد رفض هذا الملف؟')) return;
+    let t = dictionary[currentLang];
+    if (!confirm(t.confirmReject)) return;
 
     const { error } = await supabaseClient
         .from('upload_requests')
@@ -341,7 +431,7 @@ async function rejectRequest(id) {
 
     if (error) {
         console.error(error);
-        alert('فشل رفض الطلب.');
+        alert(t.errReject);
         return;
     }
     loadRequests();

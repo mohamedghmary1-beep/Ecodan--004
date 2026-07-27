@@ -6,6 +6,7 @@
     <title>MDECO Submittals - General (By Activity)</title>
    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="./auth-guard.js"></script>
+<script src="./lang.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
@@ -362,6 +363,9 @@
     <a href="summary.html" class="nav-btn"><i class="fa-solid fa-chart-column"></i> <span data-i18n="navSummary">الملخص</span></a>
     <a href="task.html" class="nav-btn"><i class="fa-solid fa-list-check"></i> <span data-i18n="navTasks">المهام</span></a>
     <a href="general_by_activity.html" class="nav-btn" style="background:var(--primary-light);color:var(--primary);"><i class="fa-solid fa-layer-group"></i> <span data-i18n="navGeneral">عام</span></a>
+    <a href="approvals.html" class="nav-btn"><i class="fa-solid fa-clipboard-check"></i> <span data-i18n="navApprovals">طلبات الموافقة</span></a>
+    <a href="team_overview.html" class="nav-btn"><i class="fa-solid fa-users"></i> <span data-i18n="navTeam">نظرة عامة على الموظفين</span></a>
+    <a href="performance.html" class="nav-btn"><i class="fa-solid fa-chart-column"></i> <span data-i18n="navDashboard">لوحة التحكم</span></a>
     <button onclick="toggleLanguage()" class="nav-btn translate-btn">
         <i class="fa-solid fa-language"></i> <span id="lang-btn-text">English</span>
     </button>
@@ -393,7 +397,7 @@
     <div class="search-area-container">
         <div class="search-wrapper">
             <i class="fa-solid fa-magnifying-glass search-icon"></i>
-            <input id="search-bar" class="search-input" placeholder="اكتب للبحث... (رقم المعاملة، العنوان، التخصص، أو النشاط)" onkeyup="onSearchInputChange()" autocomplete="off">
+            <input id="search-bar" class="search-input" data-i18n-placeholder="searchPlaceholder" placeholder="اكتب للبحث... (رقم المعاملة، العنوان، التخصص، أو النشاط)" onkeyup="onSearchInputChange()" autocomplete="off">
         </div>
     </div>
 
@@ -408,7 +412,7 @@
 
 <script>
 let allRows = [];
-let currentLang = 'ar';
+let currentLang = (typeof window.getCurrentLang === 'function') ? window.getCurrentLang() : 'ar';
 
 const SUPABASE_URL = "https://uhhtvpxtpayovbtmnstz.supabase.co";
 const SUPABASE_KEY = "sb_publishable_QsS0UhLBORy6mOaBDgW62g_9OacC3oO";
@@ -416,13 +420,11 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const dictionary = {
     ar: {
-        navHome: "الرئيسية",
-        navSummary: "الملخص",
-        navTasks: "المهام",
         kpiTotal: "إجمالي النتائج",
         kpiDisciplines: "عدد التخصصات",
         kpiActivities: "عدد الأنشطة",
         groupedTitle: "مستندات General مصنّفة حسب النشاط (Activity)",
+        searchPlaceholder: "اكتب للبحث... (رقم المعاملة، العنوان، التخصص، أو النشاط)",
         noRecords: "لا توجد سجلات.",
         refLabel: "المرجع",
         techDoc: "المرفق",
@@ -431,13 +433,11 @@ const dictionary = {
         received: "تاريخ الاستلام"
     },
     en: {
-        navHome: "Home",
-        navSummary: "Summary",
-        navTasks: "Tasks",
         kpiTotal: "Total Results",
         kpiDisciplines: "Disciplines",
         kpiActivities: "Activities",
         groupedTitle: "General Documents Grouped by Activity",
+        searchPlaceholder: "Type to search... (Ref No, Title, Discipline, or Activity)",
         noRecords: "No records found.",
         refLabel: "Ref",
         techDoc: "Attachment",
@@ -446,6 +446,7 @@ const dictionary = {
         received: "Received"
     }
 };
+window.registerDictionary(dictionary);
 
 // This page only ever shows rows where discipline = 'General'
 const DISCIPLINE_FILTER = 'General';
@@ -468,17 +469,11 @@ async function loadData() {
 }
 loadData();
 
-function toggleLanguage() {
-    currentLang = (currentLang === 'ar') ? 'en' : 'ar';
-    document.documentElement.dir = (currentLang === 'ar') ? 'rtl' : 'ltr';
-    document.documentElement.lang = currentLang;
-    document.getElementById('lang-btn-text').innerText = (currentLang === 'ar') ? 'English' : 'العربية';
-    document.querySelectorAll('[data-i18n]').forEach(el => {
-        let key = el.getAttribute('data-i18n');
-        if (dictionary[currentLang][key]) el.innerText = dictionary[currentLang][key];
-    });
+// lang.js يستدعي الدالة دي تلقائيًا كل ما اللغة تتغيّر (وأول ما الصفحة تحمّل)
+window.onLanguageChanged = function (lang) {
+    currentLang = lang;
     render();
-}
+};
 
 function getFilteredRows() {
     let searchKey = document.getElementById('search-bar').value.toLowerCase().trim();

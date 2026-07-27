@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="./auth-guard.js"></script>
+<script src="./lang.js"></script>
     <style>
         :root {
             --primary: #1e40af;
@@ -210,6 +211,35 @@
             flex-wrap: wrap;
         }
 
+        .stats-bar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+
+        .stat-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            border-radius: 999px;
+            font-size: 13px;
+            font-weight: 600;
+            background: #f1f5f9;
+            color: var(--text-main);
+            border: 1px solid var(--border);
+        }
+
+        .stat-pill b {
+            font-size: 14px;
+        }
+
+        .stat-total { background: #eef2ff; color: #4338ca; border-color: #e0e7ff; }
+        .stat-open { background: #fef9c3; color: #a16207; border-color: #fef08a; }
+        .stat-closed { background: #ecfdf5; color: var(--success); border-color: #d1fae5; }
+        .stat-delay { background: #fef2f2; color: var(--danger); border-color: #fecaca; }
+
         button {
             background: #f1f5f9;
             color: var(--text-main);
@@ -229,6 +259,12 @@
             background: var(--primary);
             color: white;
             border-color: var(--primary);
+        }
+
+        .translate-btn {
+            background: var(--primary-light) !important;
+            color: var(--primary) !important;
+            border-color: var(--primary-light) !important;
         }
 
         .search-input {
@@ -432,52 +468,63 @@
 <input type="file" id="global-file-input" style="display: none;" onchange="handleFileSelection(this)">
 
 <div class="header">
-    <i class="fa-solid fa-folder-open"></i> MDECO SUBMITTALS DASHBOARD
+    <i class="fa-solid fa-folder-open"></i> <span data-i18n="pageTitle">MDECO SUBMITTALS DASHBOARD</span>
 </div>
 
 <div class="nav-container">
     <a href="home.html" class="nav-btn">
-        <i class="fa-solid fa-house"></i> الرئيسية
+        <i class="fa-solid fa-house"></i> <span data-i18n="navHome">الرئيسية</span>
     </a>
     <a href="summary.html" class="nav-btn">
-        <i class="fa-solid fa-chart-column"></i> الملخص
+        <i class="fa-solid fa-chart-column"></i> <span data-i18n="navSummary">الملخص</span>
     </a>
     <a href="task.html" class="nav-btn">
-        <i class="fa-solid fa-list-check"></i> المهام
+        <i class="fa-solid fa-list-check"></i> <span data-i18n="navTasks">المهام</span>
     </a>
     <a href="general_by_activity.html" class="nav-btn">
-        <i class="fa-solid fa-layer-group"></i> عام
+        <i class="fa-solid fa-layer-group"></i> <span data-i18n="navGeneral">عام</span>
     </a>
     <a href="approvals.html" class="nav-btn">
-        <i class="fa-solid fa-clipboard-check"></i> طلبات الموافقة
+        <i class="fa-solid fa-clipboard-check"></i> <span data-i18n="navApprovals">طلبات الموافقة</span>
         <span id="pendingNavBadge" class="nav-badge">0</span>
     </a>
     <a href="team_overview.html" class="nav-btn">
-        <i class="fa-solid fa-users"></i> نظرة عامة على الموظفين
+        <i class="fa-solid fa-users"></i> <span data-i18n="navTeam">نظرة عامة على الموظفين</span>
     </a>
-     <a href="./performance .html" class="nav-btn">
-        <i class="fa-solid fa-chart-column"></i> <span data-i18n="navSummary">Dashborad</span>
+     <a href="performance.html" class="nav-btn">
+        <i class="fa-solid fa-chart-column"></i> <span data-i18n="navDashboard">لوحة التحكم</span>
     </a>
+    <button onclick="toggleLanguage()" class="nav-btn translate-btn">
+        <i class="fa-solid fa-language"></i> <span id="lang-btn-text">English</span>
+    </button>
 </div>
 
 <div class="welcome-hero">
-    <h1>Welcome to MDECO </h1>
-    <p>Centralized Engineering Consultancy & Document Control Management System</p>
+    <h1 data-i18n="welcomeTitle">Welcome to MDECO </h1>
+    <p data-i18n="welcomeSubtitle">Centralized Engineering Consultancy & Document Control Management System</p>
 </div>
 
 <div class="container">
-    <div class="sidebar" id="sidebar">Loading Employees...</div>
+    <div class="sidebar" id="sidebar" data-i18n="loadingEmployees">Loading Employees...</div>
     
     <div class="content">
         <div class="card">
-            <h2 id="empName">Select Employee</h2>
-            <div class="filter-group">
-                <button id="btn-all" class="active-filter" onclick="setFilter('all')">All</button>
-                <button id="btn-open" onclick="setFilter('open')">Open</button>
-                <button id="btn-closed" onclick="setFilter('closed')">Closed</button>
-                <button id="btn-delay" onclick="setFilter('delay')">Delay</button>
+            <h2 id="empName" data-i18n="selectEmployee">Select Employee</h2>
+            <div class="stats-bar" id="statsBar">
+                <span class="stat-pill stat-total"><span data-i18n="statTotal">إجمالي التاسكات</span>: <b id="statTotal">0</b></span>
             </div>
-            <input id="search" class="search-input" placeholder="Search by No, Title, Discipline or Activity..." onkeyup="render()">
+            <div class="stats-bar">
+                <span class="stat-pill stat-open"><span data-i18n="statOpen">مفتوح</span>: <b id="statOpen">0</b></span>
+                <span class="stat-pill stat-closed"><span data-i18n="statClosed">مغلق</span>: <b id="statClosed">0</b></span>
+                <span class="stat-pill stat-delay"><span data-i18n="statDelay">متأخر</span>: <b id="statDelay">0</b></span>
+            </div>
+            <div class="filter-group">
+                <button id="btn-all" class="active-filter" onclick="setFilter('all')" data-i18n="filterAll">All</button>
+                <button id="btn-open" onclick="setFilter('open')" data-i18n="filterOpen">Open</button>
+                <button id="btn-closed" onclick="setFilter('closed')" data-i18n="filterClosed">Closed</button>
+                <button id="btn-delay" onclick="setFilter('delay')" data-i18n="filterDelay">Delay</button>
+            </div>
+            <input id="search" class="search-input" data-i18n-placeholder="searchPlaceholder" placeholder="Search by No, Title, Discipline or Activity..." onkeyup="render()">
         </div>
         <div id="tasks"></div>
     </div>
@@ -506,6 +553,91 @@ const GOOGLE_SCRIPT_UPLOAD_URL = "https://script.google.com/macros/s/AKfycbwrwlI
 // كل قد ايه (بالثواني) الشارة والبيانات المعلّقة بتتحدّث تلقائيًا
 const PENDING_POLL_INTERVAL = 20000;
 
+const dictionary = {
+    ar: {
+        pageTitle: "MDECO SUBMITTALS DASHBOARD",
+        welcomeTitle: "أهلًا بك في MDECO",
+        welcomeSubtitle: "نظام إدارة ومتابعة المستندات والاستشارات الهندسية",
+        loadingEmployees: "جاري تحميل الموظفين...",
+        selectEmployee: "اختر موظف",
+        statTotal: "إجمالي التاسكات",
+        statOpen: "مفتوح",
+        statClosed: "مغلق",
+        statDelay: "متأخر",
+        filterAll: "الكل",
+        filterOpen: "مفتوح",
+        filterClosed: "مغلق",
+        filterDelay: "متأخر",
+        searchPlaceholder: "ابحث برقم التاسك، العنوان، التخصص أو النشاط...",
+        noTasksForUser: "لا يوجد تاسكات مرتبطة باسم المستخدم بتاعك. تواصل مع الأدمن.",
+        noSubmittals: "لا يوجد نتائج مطابقة.",
+        no: "رقم",
+        discipline: "التخصص",
+        rev: "المراجعة",
+        status: "الحالة",
+        statusOpen: "مفتوح",
+        statusClosed: "مغلق",
+        statusDelay: "متأخر",
+        submitted: "تاريخ الإرسال",
+        received: "تاريخ الاستلام",
+        delayDays: "التأخير",
+        days: "يوم",
+        codeOpenPending: "مفتوح / قيد الانتظار",
+        codeReview: "قيد المراجعة",
+        received2: "تم الاستلام",
+        viewFile: "عرض الملف",
+        noFile: "لا يوجد ملف",
+        uploadFile: "رفع ملف",
+        pendingApproval: "في انتظار الموافقة",
+        pendingUploadNote: "ملف جديد بانتظار مراجعة المسؤول",
+        failedToLoad: "فشل تحميل البيانات."
+    },
+    en: {
+        pageTitle: "MDECO SUBMITTALS DASHBOARD",
+        welcomeTitle: "Welcome to MDECO",
+        welcomeSubtitle: "Centralized Engineering Consultancy & Document Control Management System",
+        loadingEmployees: "Loading Employees...",
+        selectEmployee: "Select Employee",
+        statTotal: "Total Tasks",
+        statOpen: "Open",
+        statClosed: "Closed",
+        statDelay: "Delay",
+        filterAll: "All",
+        filterOpen: "Open",
+        filterClosed: "Closed",
+        filterDelay: "Delay",
+        searchPlaceholder: "Search by No, Title, Discipline or Activity...",
+        noTasksForUser: "No tasks linked to your username. Contact the admin.",
+        noSubmittals: "No Submittals found.",
+        no: "No",
+        discipline: "Discipline",
+        rev: "Rev",
+        status: "Status",
+        statusOpen: "OPEN",
+        statusClosed: "CLOSED",
+        statusDelay: "DELAY",
+        submitted: "Submitted",
+        received: "Received",
+        delayDays: "Delay",
+        days: "Days",
+        codeOpenPending: "OPEN / PENDING",
+        codeReview: "Under Review",
+        received2: "Received",
+        viewFile: "View File",
+        noFile: "No File",
+        uploadFile: "Upload File",
+        pendingApproval: "Awaiting Approval",
+        pendingUploadNote: "New file awaiting admin review",
+        failedToLoad: "Failed to load data."
+    }
+};
+window.registerDictionary(dictionary);
+
+window.onLanguageChanged = function () {
+    renderSidebar();
+    render();
+};
+
 function generateTaskKey(row) {
     let no = (row.no || "").trim();
     if (no && no !== "-") {
@@ -526,7 +658,7 @@ async function loadTasks() {
         build(rows || []);
     } catch (err) {
         console.error("Error loading submittals:", err);
-        document.getElementById('sidebar').innerHTML = "Failed to load data.";
+        document.getElementById('sidebar').innerHTML = T('failedToLoad');
     }
 }
 
@@ -680,8 +812,9 @@ function build(rows) {
         });
     });
 
-    // لو المستخدم مش Admin، يشوف بس التاسكات المرتبطة باسمه هو
-    if (window.currentUserRole && window.currentUserRole !== 'admin') {
+    // لو المستخدم مش Admin ولا Super Admin، يشوف بس التاسكات المرتبطة باسمه هو
+    let isFullAccessRole = !window.currentUserRole || window.currentUserRole === 'admin' || window.currentUserRole === 'super_admin';
+    if (!isFullAccessRole) {
         let myName = (window.currentUsername || '').trim().toLowerCase();
         let matchedKey = Object.keys(data).find(emp => emp.trim().toLowerCase() === myName);
         let filtered = {};
@@ -693,7 +826,7 @@ function build(rows) {
     if (currentEmployee && data[currentEmployee]) {
         selected = data[currentEmployee];
         render();
-    } else if (window.currentUserRole && window.currentUserRole !== 'admin') {
+    } else if (!isFullAccessRole) {
         // اختيار تلقائي لتاسكات المستخدم نفسه (مفيش سايدبار يدوي له)
         let onlyKey = Object.keys(data)[0];
         if (onlyKey) selectEmployee(onlyKey);
@@ -701,7 +834,7 @@ function build(rows) {
 }
 
 function renderSidebar() {
-    let isAdmin = !window.currentUserRole || window.currentUserRole === 'admin';
+    let isAdmin = !window.currentUserRole || window.currentUserRole === 'admin' || window.currentUserRole === 'super_admin';
     let html = "";
     Object.keys(data).forEach(emp => {
         let activeClass = emp === currentEmployee ? "active" : "";
@@ -713,7 +846,7 @@ function renderSidebar() {
     });
     if (!isAdmin && Object.keys(data).length === 0) {
         html = `<div style="padding:14px; color:var(--text-muted); font-size:13px;">
-            لا يوجد تاسكات مرتبطة باسم المستخدم بتاعك. تواصل مع الأدمن.
+            ${T('noTasksForUser')}
         </div>`;
     }
     document.getElementById('sidebar').innerHTML = html;
@@ -782,10 +915,10 @@ function buildRevision(rev, taskKey, rawNo, taskTitle, employee) {
     let delay = Number(rev.duration) || 0;
 
     let codeClass = "code-open"; 
-    let codeText = "OPEN / PENDING";
+    let codeText = T('codeOpenPending');
 
     if (code !== "" || received !== "") {
-        codeText = code || "Received";
+        codeText = code || T('received2');
         if (code === "A" || code === "B") {
             codeClass = "code-success"; 
         } else if (code === "C" || code === "D") {
@@ -798,23 +931,23 @@ function buildRevision(rev, taskKey, rawNo, taskTitle, employee) {
     // لو فيه طلب معلّق لسه ما اتوافقش عليه، بنطغّي على المؤشر ونمنع الرفع المزدوج
     if (pendingRequest) {
         codeClass = "code-review";
-        codeText = "قيد المراجعة";
+        codeText = T('codeReview');
     }
 
     let viewButtonHtml = validLink(link) 
-        ? `<a class="link-btn view-btn" href="${link}" target="_blank">🔗 عرض الملف</a>` 
-        : `<button class="link-btn view-btn" style="opacity:0.5; cursor:not-allowed;" disabled>🔗 لا يوجد ملف</button>`;
+        ? `<a class="link-btn view-btn" href="${link}" target="_blank">🔗 ${T('viewFile')}</a>` 
+        : `<button class="link-btn view-btn" style="opacity:0.5; cursor:not-allowed;" disabled>🔗 ${T('noFile')}</button>`;
 
     let uploadButtonHtml;
     if (pendingRequest) {
-        uploadButtonHtml = `<button class="link-btn pending-btn" style="opacity:0.7; cursor:not-allowed;" disabled>⏳ في انتظار الموافقة</button>`;
+        uploadButtonHtml = `<button class="link-btn pending-btn" style="opacity:0.7; cursor:not-allowed;" disabled>⏳ ${T('pendingApproval')}</button>`;
     } else {
-        uploadButtonHtml = `<button class="link-btn upload-btn" onclick="triggerUpload('${taskKey}', '${rev.name}', '${rawNo || '-'}', '${(taskTitle || '').replace(/'/g, "\\'")}', '${(employee || '').replace(/'/g, "\\'")}')">📁 رفع ملف</button>`;
+        uploadButtonHtml = `<button class="link-btn upload-btn" onclick="triggerUpload('${taskKey}', '${rev.name}', '${rawNo || '-'}', '${(taskTitle || '').replace(/'/g, "\\'")}', '${(employee || '').replace(/'/g, "\\'")}')">📁 ${T('uploadFile')}</button>`;
     }
 
     let submittedLine = submitted
-        ? `Submitted: ${submitted} ${received ? " | Received: " + received : ""}`
-        : (pendingRequest ? `ملف جديد بانتظار مراجعة المسؤول (${pendingRequest.file_name || ''})` : "");
+        ? `${T('submitted')}: ${submitted} ${received ? " | " + T('received') + ": " + received : ""}`
+        : (pendingRequest ? `${T('pendingUploadNote')} (${pendingRequest.file_name || ''})` : "");
 
     let html = `
     <div class="revision-box ${pendingRequest ? 'is-pending' : ''}">
@@ -825,7 +958,7 @@ function buildRevision(rev, taskKey, rawNo, taskTitle, employee) {
         <div class="small">
             ${submittedLine}
         </div>
-        ${delay > 0 ? `<div class="small" style="color:var(--danger); font-weight:600; margin-top:4px;">Delay: ${delay} Days</div>` : ""}
+        ${delay > 0 ? `<div class="small" style="color:var(--danger); font-weight:600; margin-top:4px;">${T('delayDays')}: ${delay} ${T('days')}</div>` : ""}
         <div style="margin-top: 8px;">
             ${uploadButtonHtml}
             ${viewButtonHtml}
@@ -845,10 +978,30 @@ function triggerUpload(taskKey, revName, rawNo, taskTitle, employee) {
     document.getElementById('global-file-input').click();
 }
 
+// بيحسب ويحدّث عدادات التاسكات (الكل / مفتوح / مغلق / متأخر) للموظف المختار حاليًا
+function updateStats() {
+    let total = selected.length;
+    let openCount = 0, closedCount = 0, delayCount = 0;
+
+    selected.forEach(t => {
+        let status = computeTaskStatus(t);
+        if (status === "OPEN") openCount++;
+        else if (status === "CLOSED") closedCount++;
+        else if (status === "DELAY") delayCount++;
+    });
+
+    document.getElementById('statTotal').textContent = total;
+    document.getElementById('statOpen').textContent = openCount;
+    document.getElementById('statClosed').textContent = closedCount;
+    document.getElementById('statDelay').textContent = delayCount;
+}
+
 function render() {
     let html = "";
     let keyword = document.getElementById('search').value.toLowerCase();
     let tasksContainer = document.getElementById('tasks');
+
+    updateStats();
 
     selected.forEach(t => {
         let revHTML = "";
@@ -885,25 +1038,27 @@ function render() {
         let text = ((t.no || "") + " " + (t.title || "") + " " + (t.discipline || "") + " " + (t.activity || "")).toLowerCase();
         if (keyword && !text.includes(keyword)) return;
 
+        let statusLabel = status === "OPEN" ? T('statusOpen') : status === "CLOSED" ? T('statusClosed') : T('statusDelay');
+
         html += `
         <div class="task">
             <div class="task-activity">${t.activity}</div>
             <div class="title">${t.title}</div>
             <div class="meta-tags">
-                <span class="tag">No: ${t.no || "-"}</span>
-                <span class="tag">Discipline: ${t.discipline || "-"}</span>
-                <span class="tag">Rev: ${t.rev || "-"}</span>
+                <span class="tag">${T('no')}: ${t.no || "-"}</span>
+                <span class="tag">${T('discipline')}: ${t.discipline || "-"}</span>
+                <span class="tag">${T('rev')}: ${t.rev || "-"}</span>
             </div>
             ${revHTML}
             <div class="status-container">
-                <b>Status:</b>
-                <span class="status-badge ${status.toLowerCase()}">${status}</span>
+                <b>${T('status')}:</b>
+                <span class="status-badge ${status.toLowerCase()}">${statusLabel}</span>
             </div>
         </div>
         `;
     });
 
-    tasksContainer.innerHTML = html || `<div style="text-align:center; color:var(--text-muted); margin-top:20px;">No Submittals found.</div>`;
+    tasksContainer.innerHTML = html || `<div style="text-align:center; color:var(--text-muted); margin-top:20px;">${T('noSubmittals')}</div>`;
 }
 </script>
 </body>

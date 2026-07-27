@@ -6,6 +6,7 @@
     <title>MDECO Portal - Login</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="./lang.js"></script>
     <style>
         :root {
             --primary: #2563eb;
@@ -332,12 +333,8 @@
         }
     };
 
-    let currentLang = 'en';
-
-    function toggleLanguage() {
-        currentLang = (currentLang === 'en') ? 'ar' : 'en';
-        applyLanguage(currentLang);
-    }
+    // اللغة الحالية دلوقتي بتتحفظ وتتشارك بين كل صفحات البوابة عن طريق lang.js
+    // toggleLanguage() بقت متعرّفة جوه lang.js (window.toggleLanguage)، مفيش داعي نعرّفها هنا تاني
 
     function applyLanguage(lang) {
         const t = translations[lang];
@@ -356,9 +353,7 @@
         document.getElementById('message-id').className = "message-box";
     }
 
-    window.addEventListener('DOMContentLoaded', () => {
-        applyLanguage(currentLang);
-    });
+    // lang.js بيستدعي applyLanguage() تلقائيًا بمجرد ما الصفحة تحمّل، باستخدام آخر لغة محفوظة
 
     async function handleLogin(event) {
         event.preventDefault();
@@ -368,7 +363,7 @@
         const msgBox = document.getElementById('message-id');
         const btnSubmit = document.getElementById('btn-submit');
         const btnInner = document.getElementById('btn-inner');
-        const t = translations[currentLang];
+        const t = translations[window.getCurrentLang()];
 
         msgBox.className = "message-box";
         btnInner.innerText = t.btnLoading;

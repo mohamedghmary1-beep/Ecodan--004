@@ -11,19 +11,18 @@
   { username, permissions }) and enforces roles based on the value stored
   in the "permissions" column of the users table:
 
-    - "administrator"           -> super-admin. Sees everything, INCLUDING the
-                                    ADMIN_ONLY_PAGES below (task/approvals/team
-                                    overview). Use window.guardUpload() to
-                                    require a password re-check before any
+    - "administrator"           -> super-admin. Sees EVERY page, including
+                                    ADMIN_ONLY_PAGES (approvals.html) and
+                                    everything else. Use window.guardUpload()
+                                    to require a password re-check before any
                                     add/upload action.
-    - "admin"  (or empty/NULL)  -> sees everything EXCEPT the pages listed in
+    - "admin"  (or empty/NULL)  -> sees every page EXCEPT the pages listed in
                                     ADMIN_ONLY_PAGES, which are reserved for
                                     "administrator" only.
-    - "no_files"                -> sees every page (except ADMIN_ONLY_PAGES),
-                                    but any element marked class="file-protected"
-                                    is hidden.
-    - "limited"                 -> only sees pages listed in LIMITED_PAGES
-                                    below. Everything else -> access denied.
+    - "no_files"                -> regular employee. Sees EVERY page EXCEPT
+                                    ADMIN_ONLY_PAGES (same restriction as "admin").
+    - "limited"                 -> regular employee. Same as "no_files": sees
+                                    every page except ADMIN_ONLY_PAGES.
     - anything else / logged out -> blocked / redirected to index.html.
 */
 (function () {
@@ -31,19 +30,14 @@
     const SUPABASE_KEY = "sb_publishable_QsS0UhLBORy6mOaBDgW62g_9OacC3oO";
     const guardClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    // Pages a "limited" user is allowed to open. Edit this list any time
-    // you add new pages that should stay admin/no_files-only.
-    // performance.html (the project dashboard) is listed here so EVERY role
-    // (admin, super_admin, no_files, limited) can view it.
-    const LIMITED_PAGES = ['home.html', 'summary.html', 'general.html', 'performance.html'];
-
     // Pages that ONLY the "administrator" (super-admin) role can open.
-    // Regular "admin" users, along with no_files and limited, get the
-    // access-denied screen automatically, and the matching nav-btn link
-    // is hidden for them too.
-    // Add more page filenames here any time you need to lock a page to
-    // the administrator role.
-    const ADMIN_ONLY_PAGES = ['approvals.html'];
+    // Every other role (admin, no_files, limited) gets the access-denied
+    // screen automatically, and the matching nav-btn link is hidden for
+    // them too. Add more page filenames here any time you need to lock a
+    // page to the administrator role.
+    // NOTE: change 'team_overview.html' below if your "نظرة عامة على الموظفين"
+    // page has a different filename.
+    const ADMIN_ONLY_PAGES = ['approvals.html', 'team_overview.html'];
 
     function currentPage() {
         let path = window.location.pathname.split('/').pop();
@@ -87,11 +81,10 @@
 
     window.currentUserRole = role;
     window.currentUsername = session.username;
-    // Who can see file/attachment links: admin/super_admin can, no_files cannot, limited can
-    // (change this line if "limited" users should also lose file access)
-    window.canAccessFiles = (role === 'admin' || role === 'super_admin' || role === 'limited');
+    // Who can see file/attachment links: admin/super_admin can, restricted roles cannot
+    window.canAccessFiles = (role === 'admin' || role === 'super_admin');
     // Who can edit/save dashboard data (e.g. performance.html "Edit Data" + "Save" buttons):
-    // admin and super_admin only. no_files and limited can VIEW the dashboard but not edit it.
+    // admin and super_admin only. Restricted roles can VIEW the dashboard but not edit it.
     window.canEditDashboard = (role === 'admin' || role === 'super_admin');
 
     function showAccessDenied() {
@@ -102,8 +95,8 @@
                 <div style="font-size:52px;">&#128683;</div>
                 <div style="font-size:20px;font-weight:800;color:#0f172a;">ماعندكش صلاحية تدخل الصفحة دي</div>
                 <div style="font-size:14px;color:#64748b;">You don't have permission to view this page.</div>
-                <a href="home.html" style="margin-top:8px;color:#2563eb;font-weight:700;text-decoration:none;
-                   background:#eff6ff;padding:10px 20px;border-radius:8px;">الرجوع للرئيسية</a>
+                <a href="performance.html" style="margin-top:8px;color:#2563eb;font-weight:700;text-decoration:none;
+                   background:#eff6ff;padding:10px 20px;border-radius:8px;">الرجوع للداشبورد</a>
             </div>
         `;
     }
@@ -113,12 +106,9 @@
         return;
     }
 
-    if (ADMIN_ONLY_PAGES.includes(page) && role !== 'super_admin') {
-        document.addEventListener('DOMContentLoaded', showAccessDenied);
-        return;
-    }
-
-    if (role === 'limited' && !LIMITED_PAGES.includes(page)) {
+    // super_admin: no restrictions at all, sees every page including ADMIN_ONLY_PAGES.
+    // Everyone else (admin, no_files, limited) is blocked from ADMIN_ONLY_PAGES.
+    if (role !== 'super_admin' && ADMIN_ONLY_PAGES.includes(page)) {
         document.addEventListener('DOMContentLoaded', showAccessDenied);
         return;
     }
@@ -141,11 +131,7 @@
         document.querySelectorAll('.nav-btn[href]').forEach(function (a) {
             let href = a.getAttribute('href');
             if (!href) return;
-            if (ADMIN_ONLY_PAGES.includes(href) && role !== 'super_admin') {
-                a.style.display = 'none';
-                return;
-            }
-            if (role === 'limited' && !LIMITED_PAGES.includes(href)) {
+            if (role !== 'super_admin' && ADMIN_ONLY_PAGES.includes(href)) {
                 a.style.display = 'none';
             }
         });

@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="./auth-guard.js"></script>
+    <script src="./lang.js"></script>
     <style>
         :root {
             --primary: #1e40af;
@@ -71,6 +72,14 @@
         .nav-btn:hover {
             background: var(--primary-light);
             color: var(--primary);
+        }
+
+        .translate-btn {
+            background: var(--primary-light);
+            color: var(--primary);
+            border: none;
+            cursor: pointer;
+            font-family: inherit;
         }
 
         .nav-badge {
@@ -223,59 +232,65 @@
 <body>
 
 <div class="header">
-    <i class="fa-solid fa-users"></i> نظرة عامة على الموظفين
+    <i class="fa-solid fa-users"></i> <span data-i18n="pageTitle">نظرة عامة على الموظفين</span>
 </div>
 
 <div class="nav-container">
     <a href="home.html" class="nav-btn">
-        <i class="fa-solid fa-house"></i> الرئيسية
+        <i class="fa-solid fa-house"></i> <span data-i18n="navHome">الرئيسية</span>
     </a>
     <a href="summary.html" class="nav-btn">
-        <i class="fa-solid fa-chart-column"></i> الملخص
+        <i class="fa-solid fa-chart-column"></i> <span data-i18n="navSummary">الملخص</span>
     </a>
     <a href="task.html" class="nav-btn">
-        <i class="fa-solid fa-list-check"></i> المهام
+        <i class="fa-solid fa-list-check"></i> <span data-i18n="navTasks">المهام</span>
     </a>
     <a href="general_by_activity.html" class="nav-btn">
-        <i class="fa-solid fa-layer-group"></i> عام
+        <i class="fa-solid fa-layer-group"></i> <span data-i18n="navGeneral">عام</span>
     </a>
     <a href="approvals.html" class="nav-btn">
-        <i class="fa-solid fa-clipboard-check"></i> طلبات الموافقة
+        <i class="fa-solid fa-clipboard-check"></i> <span data-i18n="navApprovals">طلبات الموافقة</span>
         <span id="pendingNavBadge" class="nav-badge">0</span>
     </a>
     <a href="team_overview.html" class="nav-btn">
-        <i class="fa-solid fa-users"></i> نظرة عامة على الموظفين
+        <i class="fa-solid fa-users"></i> <span data-i18n="navTeam">نظرة عامة على الموظفين</span>
     </a>
+    <a href="performance.html" class="nav-btn">
+        <i class="fa-solid fa-chart-column"></i> <span data-i18n="navDashboard">لوحة التحكم</span>
+    </a>
+    <button onclick="toggleLanguage()" class="nav-btn translate-btn">
+        <i class="fa-solid fa-language"></i> <span id="lang-btn-text">English</span>
+    </button>
 </div>
 
 <div class="container">
     <div class="summary-totals" id="totals">
-        <div class="stat-box total"><div class="num" id="totalAll">-</div><div class="lbl">إجمالي التاسكات</div></div>
-        <div class="stat-box open"><div class="num" id="totalOpen">-</div><div class="lbl">مفتوحة</div></div>
-        <div class="stat-box closed"><div class="num" id="totalClosed">-</div><div class="lbl">مقفولة</div></div>
-        <div class="stat-box delay"><div class="num" id="totalDelay">-</div><div class="lbl">متأخرة</div></div>
+        <div class="stat-box total"><div class="num" id="totalAll">-</div><div class="lbl" data-i18n="statTotal">إجمالي التاسكات</div></div>
+        <div class="stat-box open"><div class="num" id="totalOpen">-</div><div class="lbl" data-i18n="statOpen">مفتوحة</div></div>
+        <div class="stat-box closed"><div class="num" id="totalClosed">-</div><div class="lbl" data-i18n="statClosed">مقفولة</div></div>
+        <div class="stat-box delay"><div class="num" id="totalDelay">-</div><div class="lbl" data-i18n="statDelay">متأخرة</div></div>
     </div>
 
     <div class="card">
-        <h2>الموظفين</h2>
-        <input id="search" class="search-input" placeholder="ابحث باسم الموظف..." onkeyup="renderTable()">
+        <h2 data-i18n="employeesTitle">الموظفين</h2>
+        <input id="search" class="search-input" data-i18n-placeholder="searchPlaceholder" placeholder="ابحث باسم الموظف..." onkeyup="renderTable()">
     </div>
 
     <div class="card" style="padding:0; overflow-x:auto;">
         <table>
             <thead>
                 <tr>
-                    <th onclick="sortBy('name')">الموظف</th>
-                    <th onclick="sortBy('total')">إجمالي التاسكات</th>
-                    <th onclick="sortBy('open')">مفتوحة</th>
-                    <th onclick="sortBy('closed')">مقفولة</th>
-                    <th onclick="sortBy('delay')">متأخرة</th>
-                    <th style="width:160px;">التوزيع</th>
+                    <th onclick="sortBy('name')" data-i18n="colEmployee">الموظف</th>
+                    <th onclick="sortBy('total')" data-i18n="statTotal">إجمالي التاسكات</th>
+                    <th onclick="sortBy('open')" data-i18n="statOpen">مفتوحة</th>
+                    <th onclick="sortBy('closed')" data-i18n="statClosed">مقفولة</th>
+                    <th onclick="sortBy('delay')" data-i18n="statDelay">متأخرة</th>
+                    <th style="width:160px;" data-i18n="colDistribution">التوزيع</th>
                 </tr>
             </thead>
             <tbody id="tableBody"></tbody>
         </table>
-        <div id="emptyState" class="empty-state" style="display:none;">لا يوجد موظفين مطابقين للبحث.</div>
+        <div id="emptyState" class="empty-state" style="display:none;" data-i18n="emptyState">لا يوجد موظفين مطابقين للبحث.</div>
     </div>
 </div>
 
@@ -283,6 +298,38 @@
 const SUPABASE_URL = "https://uhhtvpxtpayovbtmnstz.supabase.co";
 const SUPABASE_KEY = "sb_publishable_QsS0UhLBORy6mOaBDgW62g_9OacC3oO";
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const dictionary = {
+    ar: {
+        pageTitle: "نظرة عامة على الموظفين",
+        statTotal: "إجمالي التاسكات",
+        statOpen: "مفتوحة",
+        statClosed: "مقفولة",
+        statDelay: "متأخرة",
+        employeesTitle: "الموظفين",
+        searchPlaceholder: "ابحث باسم الموظف...",
+        colEmployee: "الموظف",
+        colDistribution: "التوزيع",
+        emptyState: "لا يوجد موظفين مطابقين للبحث."
+    },
+    en: {
+        pageTitle: "Team Overview",
+        statTotal: "Total Tasks",
+        statOpen: "Open",
+        statClosed: "Closed",
+        statDelay: "Delayed",
+        employeesTitle: "Employees",
+        searchPlaceholder: "Search by employee name...",
+        colEmployee: "Employee",
+        colDistribution: "Distribution",
+        emptyState: "No employees match your search."
+    }
+};
+window.registerDictionary(dictionary);
+
+window.onLanguageChanged = function () {
+    renderTable();
+};
 
 let employeeStats = [];
 let sortKey = "open";

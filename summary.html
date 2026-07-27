@@ -8,6 +8,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="./auth-guard.js"></script>
+    <script src="./lang.js"></script>
     <!-- Font Awesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -581,13 +582,13 @@
         <i class="fa-solid fa-layer-group"></i> <span data-i18n="navGeneral">عام</span>
     </a>
     <a href="approvals.html" class="nav-btn">
-        <i class="fa-solid fa-clipboard-check"></i> طلبات الموافقة
+        <i class="fa-solid fa-clipboard-check"></i> <span data-i18n="navApprovals">طلبات الموافقة</span>
     </a>
     <a href="team_overview.html" class="nav-btn">
-        <i class="fa-solid fa-users"></i> نظرة عامة على الموظفين
+        <i class="fa-solid fa-users"></i> <span data-i18n="navTeam">نظرة عامة على الموظفين</span>
     </a>
-     <a href="./performance .html" class="nav-btn">
-        <i class="fa-solid fa-chart-column"></i> <span data-i18n="navSummary">Dashborad</span>
+     <a href="performance.html" class="nav-btn">
+        <i class="fa-solid fa-chart-column"></i> <span data-i18n="navDashboard">لوحة التحكم</span>
     </a>
     <!-- Translation Button Icon -->
     <button onclick="toggleLanguage()" class="nav-btn translate-btn">
@@ -629,7 +630,7 @@
     <div class="search-area-container">
         <div class="search-wrapper">
             <i class="fa-solid fa-magnifying-glass search-icon"></i>
-            <input id="search-bar" class="search-input" placeholder="اكتب للبحث... (رقم المعاملة، العنوان، التخصص، أو المجموعة)" onkeyup="onSearchInputChange()" autocomplete="off">
+            <input id="search-bar" class="search-input" data-i18n-placeholder="searchPlaceholder" placeholder="اكتب للبحث... (رقم المعاملة، العنوان، التخصص، أو المجموعة)" onkeyup="onSearchInputChange()" autocomplete="off">
         </div>
         <div id="suggestions-box" class="search-suggestions-list"></div>
     </div>
@@ -670,7 +671,7 @@ let allRows = [];
 let selectedActivity = null;
 let selectedDiscipline = null;
 let codesChartInstance = null;
-let currentLang = 'ar'; // Default language
+let currentLang = (typeof window.getCurrentLang === 'function') ? window.getCurrentLang() : 'ar';
 
 const SUPABASE_URL = "https://uhhtvpxtpayovbtmnstz.supabase.co";
 const SUPABASE_KEY = "sb_publishable_QsS0UhLBORy6mOaBDgW62g_9OacC3oO";
@@ -678,9 +679,6 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const dictionary = {
     ar: {
-        navHome: "الرئيسية",
-        navSummary: "الملخص",
-        navTasks: "المهام",
         kpiTotal: "إجمالي التصفية",
         kpiPending: "قيد الانتظار",
         searchPlaceholder: "اكتب للبحث... (رقم المعاملة، العنوان، التخصص، أو المجموعة)",
@@ -697,9 +695,6 @@ const dictionary = {
         noResults: "لا توجد نتائج مطابقة"
     },
     en: {
-        navHome: "Home",
-        navSummary: "Summary",
-        navTasks: "Tasks",
         kpiTotal: "Total Filtered",
         kpiPending: "Pending",
         searchPlaceholder: "Type to search... (Ref No, Title, Discipline, or Group)",
@@ -716,6 +711,7 @@ const dictionary = {
         noResults: "No matching results"
     }
 };
+window.registerDictionary(dictionary);
 
 // Initial Data Fetch
 async function loadSummaryData() {
@@ -746,32 +742,13 @@ function refreshDashboard() {
     updateChart(filtered);
 }
 
-function toggleLanguage() {
-    currentLang = (currentLang === 'ar') ? 'en' : 'ar';
-    
-    // Toggle HTML attributes
-    document.documentElement.dir = (currentLang === 'ar') ? 'rtl' : 'ltr';
-    document.documentElement.lang = currentLang;
-    
-    // Update Lang button text
-    document.getElementById('lang-btn-text').innerText = (currentLang === 'ar') ? 'English' : 'العربية';
-    
-    // Update placeholder
-    document.getElementById('search-bar').placeholder = dictionary[currentLang].searchPlaceholder;
-    
-    // Update static HTML elements with data-i18n
-    document.querySelectorAll('[data-i18n]').forEach(el => {
-        let key = el.getAttribute('data-i18n');
-        if (dictionary[currentLang][key]) {
-            el.innerText = dictionary[currentLang][key];
-        }
-    });
-
-    // Refresh dynamic layouts
+// lang.js يستدعي الدالة دي تلقائيًا كل ما اللغة تتغيّر (وأول ما الصفحة تحمّل)
+window.onLanguageChanged = function (lang) {
+    currentLang = lang;
     renderActivities();
     if (selectedActivity) renderDisciplines(selectedActivity);
     refreshDashboard();
-}
+};
 
 function getFilteredRows() {
     let filtered = allRows;
