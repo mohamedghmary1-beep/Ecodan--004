@@ -719,7 +719,7 @@ function handleFileSelection(input) {
                 filename: file.name,
                 mimeType: file.type,
                 data: rawLog,
-                taskNo: currentUploadRawNo && currentUploadRawNo !== "-" ? currentUploadRawNo : currentUploadTaskKey,
+                taskNo: currentUploadTaskKey,
                 revName: currentUploadRevName,
                 notify: true,
                 taskTitle: currentUploadTaskTitle,
