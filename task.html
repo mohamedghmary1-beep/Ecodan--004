@@ -543,11 +543,13 @@ let currentUploadRevName = "";
 let currentUploadRawNo = "";
 let currentUploadTaskTitle = "";
 let currentUploadEmployee = "";
+let currentUploadDiscipline = "";
+let currentUploadActivity = "";
 
 const SUPABASE_URL = "https://uhhtvpxtpayovbtmnstz.supabase.co";
 const SUPABASE_KEY = "sb_publishable_QsS0UhLBORy6mOaBDgW62g_9OacC3oO";
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-const GOOGLE_SCRIPT_UPLOAD_URL = "https://script.google.com/macros/s/AKfycbxEVEuRA3VPI8UGkigZTnbRCaBM3hQjIZXuezm5_foJaRF2NtwblKReADGd037dHd_kVg/exec";
+const GOOGLE_SCRIPT_UPLOAD_URL = "https://script.google.com/macros/s/AKfycbzevW2p63WoaXVuMOrsNHx05S9ki9AcrRK2hKaR3x4oahOdJAfbIMKNwEqsOjBc49Fjug/exec";
 
 // كل قد ايه (بالثواني) الشارة والبيانات المعلّقة بتتحدّث تلقائيًا
 const PENDING_POLL_INTERVAL = 20000;
@@ -717,11 +719,13 @@ function handleFileSelection(input) {
                 filename: file.name,
                 mimeType: file.type,
                 data: rawLog,
-                taskNo: currentUploadTaskKey,
+                taskNo: currentUploadRawNo && currentUploadRawNo !== "-" ? currentUploadRawNo : currentUploadTaskKey,
                 revName: currentUploadRevName,
                 notify: true,
                 taskTitle: currentUploadTaskTitle,
-                employee: currentUploadEmployee
+                employee: currentUploadEmployee,
+                discipline: currentUploadDiscipline,
+                activity: currentUploadActivity
             })
         })
         .then(res => res.json())
@@ -898,7 +902,7 @@ function computeTaskStatus(t) {
     return status;
 }
 
-function buildRevision(rev, taskKey, rawNo, taskTitle, employee) {
+function buildRevision(rev, taskKey, rawNo, taskTitle, employee, discipline, activity) {
     let submitted = (rev.submitted || "").trim();
     let pendingKey = `${taskKey}||${rev.name.trim().toLowerCase()}`;
     let pendingRequest = pendingMap[pendingKey];
@@ -939,7 +943,7 @@ function buildRevision(rev, taskKey, rawNo, taskTitle, employee) {
     if (pendingRequest) {
         uploadButtonHtml = `<button class="link-btn pending-btn" style="opacity:0.7; cursor:not-allowed;" disabled>⏳ ${T('pendingApproval')}</button>`;
     } else {
-        uploadButtonHtml = `<button class="link-btn upload-btn" onclick="triggerUpload('${taskKey}', '${rev.name}', '${rawNo || '-'}', '${(taskTitle || '').replace(/'/g, "\\'")}', '${(employee || '').replace(/'/g, "\\'")}')">📁 ${T('uploadFile')}</button>`;
+        uploadButtonHtml = `<button class="link-btn upload-btn" onclick="triggerUpload('${taskKey}', '${rev.name}', '${rawNo || '-'}', '${(taskTitle || '').replace(/'/g, "\\'")}', '${(employee || '').replace(/'/g, "\\'")}', '${(discipline || '').replace(/'/g, "\\'")}', '${(activity || '').replace(/'/g, "\\'")}')">📁 ${T('uploadFile')}</button>`;
     }
 
     let submittedLine = submitted
@@ -966,12 +970,14 @@ function buildRevision(rev, taskKey, rawNo, taskTitle, employee) {
     return { html: html, delay: delay, hasData: true };
 }
 
-function triggerUpload(taskKey, revName, rawNo, taskTitle, employee) {
+function triggerUpload(taskKey, revName, rawNo, taskTitle, employee, discipline, activity) {
     currentUploadTaskKey = taskKey;
     currentUploadRevName = revName;
     currentUploadRawNo = rawNo;
     currentUploadTaskTitle = taskTitle;
     currentUploadEmployee = employee;
+    currentUploadDiscipline = discipline;
+    currentUploadActivity = activity;
     document.getElementById('global-file-input').click();
 }
 
@@ -1005,7 +1011,7 @@ function render() {
         let activeRevisions = [];
 
         t.revisions.forEach(rev => {
-            let result = buildRevision(rev, t.taskKey, t.no, t.title, t.employee);
+            let result = buildRevision(rev, t.taskKey, t.no, t.title, t.employee, t.discipline, t.activity);
             if (result.hasData) {
                 revHTML += result.html;
                 activeRevisions.push({
