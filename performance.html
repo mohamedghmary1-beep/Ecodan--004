@@ -5,20 +5,19 @@
 <title>Project Performance Dashboard</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="auth-guard.js"></script>
-<script src="./lang.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <style>
   :root{
     --primary:#1e40af;
-    --primary-hover:#1d4ed8;
+    --primary-hover:#1032b9;
     --primary-light:#eff6ff;
     --bg-main:#f8fafc;
     --bg-card:#ffffff;
     --text-main:#1e293b;
     --text-muted:#64748b;
     --border:#e2e8f0;
-    --success:#10b981;
+    --success:#1d4ed8;
     --danger:#ef4444;
     --shadow-sm:0 1px 3px rgba(0,0,0,0.05);
     --shadow-md:0 4px 6px -1px rgba(0,0,0,0.05);
@@ -137,8 +136,8 @@
 
   .perf-row{display:flex;justify-content:space-around;align-items:center;margin:6px 0 4px;}
   .gauge-label{text-align:center;font-size:12px;font-weight:800;margin-top:4px;}
-  .gauge-label.actual{color:var(--success);}
-  .gauge-label.planned{color:var(--primary);}
+  .gauge-label.actual{color:#1e40af;}
+  .gauge-label.planned{color:#10b981;}
 
   .manpower-box label{font-size:11px;font-weight:700;color:var(--text-muted);}
   .manpower-input{
@@ -561,7 +560,7 @@ function renderWeeklyTable(rows) {
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${r.week}</td>
-      <td style="color:#2563eb;font-weight:700;">${r.actual.toFixed(2)}%</td>
+      <td style="color:#1e40af;font-weight:700;">${r.actual.toFixed(2)}%</td>
       <td style="color:#10b981;font-weight:700;">${r.plan.toFixed(2)}%</td>
       <td class="${up ? 'var-up' : 'var-down'}">${up ? '▲' : '▼'} ${Math.abs(variance).toFixed(2)}%</td>
     `;
@@ -576,8 +575,8 @@ function renderPlannedActualChart(rows) {
     data: {
       labels: rows.map(r => r.week),
       datasets: [
-        { label: 'Planned % This Period', data: rows.map(r => r.plan), backgroundColor: '#10b981' },
-        { label: 'Actual % This Period', data: rows.map(r => r.actual), backgroundColor: '#1e40af' },
+        { label: 'Planned % This Period', data: rows.map(r => r.plan), backgroundColor: '#10b981', barPercentage: 0.6, categoryPercentage: 0.6 },
+        { label: 'Actual % This Period', data: rows.map(r => r.actual), backgroundColor: '#1e40af', barPercentage: 0.6, categoryPercentage: 0.6 },
       ]
     },
     options: {
@@ -597,8 +596,8 @@ function renderScurve(rows) {
     data: {
       labels: rows.map(r => r.week),
       datasets: [
-        { label: 'Planned Value Cost', data: rows.map(r => r.planned_cost), backgroundColor: '#1e40af', barPercentage: 0.9, categoryPercentage: 0.9 },
-        { label: 'Actual Value Cost', data: rows.map(r => r.actual_cost), backgroundColor: '#10b981', barPercentage: 0.9, categoryPercentage: 0.9 },
+        { label: 'Planned Value Cost', data: rows.map(r => r.planned_cost), backgroundColor: '#10b981', barPercentage: 0.6, categoryPercentage: 0.6 },
+        { label: 'Actual Value Cost', data: rows.map(r => r.actual_cost), backgroundColor: '#1e40af', barPercentage: 0.6, categoryPercentage: 0.6 },
       ]
     },
     options: {
@@ -621,8 +620,8 @@ function renderManpower(rows) {
     data: {
       labels: rows.map(r => r.week),
       datasets: [
-        { label: 'Planned', data: rows.map(r => r.planned), backgroundColor: '#1e40af', barPercentage: 0.9, categoryPercentage: 0.9 },
-        { label: 'Actual', data: rows.map(r => r.actual), backgroundColor: '#10b981', barPercentage: 0.9, categoryPercentage: 0.9 },
+        { label: 'Planned', data: rows.map(r => r.planned), backgroundColor: '#10b981', barPercentage: 0.6, categoryPercentage: 0.6 },
+        { label: 'Actual', data: rows.map(r => r.actual), backgroundColor: '#1e40af', barPercentage: 0.6, categoryPercentage: 0.6 },
       ]
     },
     options: {
@@ -638,13 +637,29 @@ function renderManpower(rows) {
   });
 }
 
-// Nav bar translation is now handled globally by lang.js (COMMON_DICTIONARY),
-// which already ships these exact same nav labels/keys. lang.js calls
-// window.onLanguageChanged() automatically on load and on every toggle.
-window.onLanguageChanged = function (lang) {
-    // The rest of this dashboard intentionally stays in English; only the
-    // nav labels switch (handled generically by lang.js via data-i18n).
+// Nav bar translation (the rest of this dashboard stays in English; only the nav labels switch)
+const navTranslations = {
+  navHome:       { ar: 'الرئيسية',                 en: 'Home' },
+  navSummary:    { ar: 'الملخص',                    en: 'Summary' },
+  navTasks:      { ar: 'المهام',                    en: 'Tasks' },
+  navGeneral:    { ar: 'عام',                       en: 'General' },
+  navApprovals:  { ar: 'طلبات الموافقة',            en: 'Approvals' },
+  navTeam:       { ar: 'نظرة عامة على الموظفين',    en: 'Team Overview' },
+  navDashboard:  { ar: 'لوحة التحكم',                en: 'Dashboard' },
 };
+let currentNavLang = 'ar';
+
+function toggleLanguage() {
+  currentNavLang = currentNavLang === 'ar' ? 'en' : 'ar';
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    if (navTranslations[key]) {
+      el.textContent = navTranslations[key][currentNavLang];
+    }
+  });
+  const btn = document.getElementById('lang-btn-text');
+  if (btn) btn.textContent = currentNavLang === 'ar' ? 'English' : 'العربية';
+}
 
 let currentData = null;
 
@@ -861,8 +876,8 @@ async function loadDashboard() {
 
     // Gauges - latest week's actual/planned %
     const latest = weekly[weekly.length - 1] || { actual: 0, plan: 0 };
-    drawDonutGauge('actualGauge', latest.actual, '#10b981');
-    drawDonutGauge('plannedGauge', latest.plan, '#1e40af');
+    drawDonutGauge('actualGauge', latest.actual, '#1e40af');
+    drawDonutGauge('plannedGauge', latest.plan, '#10b981');
 
     // Manpower this week
     document.getElementById('manpowerPlanned').textContent = data.manpower_planned ?? '-';
