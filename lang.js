@@ -64,6 +64,7 @@
             navApprovals: "طلبات الموافقة",
             navTeam: "نظرة عامة على الموظفين",
             navDashboard: "لوحة التحكم",
+            navReport: "التقرير الأسبوعي",
             langBtnText: "English"
         },
         en: {
@@ -74,6 +75,7 @@
             navApprovals: "Approvals",
             navTeam: "Team Overview",
             navDashboard: "Dashboard",
+            navReport: "Weekly Report",
             langBtnText: "العربية"
         }
     };

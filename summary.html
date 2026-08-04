@@ -4,6 +4,48 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MDECO Submittals Advanced Search Dashboard</title>
+    <script>
+    // ----- Print-embed mode -----
+    // When this page is loaded inside the weekly report's combined print
+    // (weekly_report.html adds ?print=1), hide our own header/nav/search UI and
+    // tell the parent window when our data has finished loading and rendering,
+    // via postMessage (works even if the parent can't reach into this document
+    // directly, e.g. when both pages are opened locally via file://).
+    (function () {
+      if (new URLSearchParams(location.search).get('print') !== '1') return;
+
+      var style = document.createElement('style');
+      style.textContent =
+        '.topbar,.header,.nav-container,.search-area-container,.translate-btn{display:none !important;}' +
+        'body{margin:0 !important;padding:0 !important;}' +
+        '.dashboard-container{padding:10px 20px 20px !important;max-width:100% !important;}' +
+        '.wrap{padding:10px 20px 20px !important;max-width:100% !important;}';
+      document.head.appendChild(style);
+
+      function reportReady() {
+        try {
+          var height = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight, 1);
+          window.parent.postMessage({ type: 'print-page-ready', height: height }, '*');
+        } catch (e) { /* ignore */ }
+      }
+
+      var debounceTimer;
+      function scheduleReport() {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(reportReady, 500);
+      }
+
+      document.addEventListener('DOMContentLoaded', function () {
+        // Watch for the app's own async data rendering and re-report once it settles.
+        var mo = new MutationObserver(scheduleReport);
+        mo.observe(document.body, { childList: true, subtree: true, attributes: true });
+        scheduleReport();
+      });
+
+      // Hard safety net in case content never stabilizes (e.g. a failed fetch).
+      setTimeout(reportReady, 7000);
+    })();
+    </script>
     <!-- Chart.js for Analytics -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -591,6 +633,8 @@
         <i class="fa-solid fa-chart-column"></i> <span data-i18n="navDashboard">لوحة التحكم</span>
     </a>
     <!-- Translation Button Icon -->
+    <a href="weekly_report.html" class="nav-btn"><i class="fa-solid fa-file-lines"></i> <span data-i18n="navReport">التقرير الأسبوعي</span></a>
+    <a href="weekly_report_view.html" class="nav-btn"><i class="fa-solid fa-eye"></i> <span data-i18n="navReportView">عرض التقرير</span></a>
     <button onclick="toggleLanguage()" class="nav-btn translate-btn">
         <i class="fa-solid fa-language"></i> <span id="lang-btn-text">English</span>
     </button>
@@ -667,6 +711,12 @@
 </div>
 
 <script>
+if (typeof window.registerDictionary === 'function') {
+  window.registerDictionary({
+    ar: { navReportView: 'عرض التقرير' },
+    en: { navReportView: 'View Report' }
+  });
+}
 let allRows = [];
 let selectedActivity = null;
 let selectedDiscipline = null;

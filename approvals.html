@@ -152,6 +152,22 @@
             line-height: 1.6;
         }
 
+        .classification-line {
+            font-size: 13px;
+            font-weight: 700;
+            margin-top: 6px;
+            padding: 6px 10px;
+            border-radius: 6px;
+            background: #eff6ff;
+            color: var(--primary);
+            display: inline-block;
+        }
+
+        .classification-line.missing {
+            background: #fef2f2;
+            color: var(--danger);
+        }
+
         .status-pill {
             font-size: 12px;
             font-weight: 700;
@@ -223,6 +239,7 @@
     <a href="performance.html" class="nav-btn">
         <i class="fa-solid fa-chart-column"></i> <span data-i18n="navDashboard">لوحة التحكم</span>
     </a>
+    <a href="weekly_report.html" class="nav-btn"><i class="fa-solid fa-file-lines"></i> <span data-i18n="navReport">التقرير الأسبوعي</span></a>
     <button onclick="toggleLanguage()" class="nav-btn translate-btn">
         <i class="fa-solid fa-language"></i> <span id="lang-btn-text">English</span>
     </button>
@@ -258,6 +275,8 @@ const dictionary = {
         noRejected: "لا يوجد طلبات مرفوضة.",
         taskNo: "رقم التاسك",
         employee: "الموظف",
+        discipline: "التخصص",
+        activity: "النشاط",
         revision: "المراجعة",
         fileLabel: "الملف",
         requestedAt: "تاريخ الطلب",
@@ -268,8 +287,11 @@ const dictionary = {
         statusPending: "قيد المراجعة",
         statusApproved: "تمت الموافقة",
         statusRejected: "مرفوض",
+        missingClassification: "⚠️ تصنيف ناقص - راجع قبل الموافقة",
+        attachmentTag: "📎 مرفق إضافي",
         confirmApprove: "تأكيد الموافقة على ملف",
         confirmApproveEnd: "وتحديث الرابط الرسمي؟",
+        confirmApproveMissingClassification: "تنبيه: التصنيف (Discipline/Activity) ناقص لهذا الطلب. هل تريد الموافقة رغم ذلك؟",
         confirmReject: "تأكيد رفض هذا الملف؟",
         errUpdateRow: "تعذر تحديد الصف المطلوب تحديثه في جدول submittals.",
         errUpdateLink: "فشل تحديث الرابط الرسمي.",
@@ -288,6 +310,8 @@ const dictionary = {
         noRejected: "No rejected requests.",
         taskNo: "Task No.",
         employee: "Employee",
+        discipline: "Discipline",
+        activity: "Activity",
         revision: "Revision",
         fileLabel: "File",
         requestedAt: "Requested at",
@@ -298,8 +322,11 @@ const dictionary = {
         statusPending: "Pending",
         statusApproved: "Approved",
         statusRejected: "Rejected",
+        missingClassification: "⚠️ Missing classification - review before approving",
+        attachmentTag: "📎 Extra Attachment",
         confirmApprove: "Confirm approving the file",
         confirmApproveEnd: "and updating the official link?",
+        confirmApproveMissingClassification: "Warning: Discipline/Activity classification is missing for this request. Approve anyway?",
         confirmReject: "Confirm rejecting this file?",
         errUpdateRow: "Could not determine which row to update in the submittals table.",
         errUpdateLink: "Failed to update the official link.",
@@ -341,6 +368,11 @@ function setTab(tab) {
     render();
 }
 
+// تصنيف ناقص = مفيش discipline أو activity متسجلين للطلب ده
+function isClassificationMissing(r) {
+    return !r.discipline || !r.discipline.toString().trim() || !r.activity || !r.activity.toString().trim();
+}
+
 function render() {
     let filtered = requests.filter(r => r.status === currentTab);
     let listEl = document.getElementById('list');
@@ -352,11 +384,21 @@ function render() {
         return;
     }
 
-    listEl.innerHTML = filtered.map(r => `
+    listEl.innerHTML = filtered.map(r => {
+        let missing = isClassificationMissing(r);
+        let classificationHtml = missing
+            ? `<span class="classification-line missing">${t.missingClassification}</span>`
+            : `<span class="classification-line">${t.discipline}: ${r.discipline} &nbsp;›&nbsp; ${t.activity}: ${r.activity}</span>`;
+        let attachmentHtml = !r.column_target
+            ? `<span class="classification-line" style="background:#f1f5f9; color:var(--text-muted); margin-inline-start:6px;">${t.attachmentTag}</span>`
+            : '';
+
+        return `
         <div class="request-card ${r.status}">
             <div class="request-top">
                 <div>
                     <div class="request-title">${r.task_title || r.task_key}</div>
+                    <div>${classificationHtml}${attachmentHtml}</div>
                     <div class="request-meta">
                         ${t.taskNo}: ${r.raw_no || '-'} &nbsp;|&nbsp;
                         ${t.employee}: ${r.employee || '-'} &nbsp;|&nbsp;
@@ -376,34 +418,44 @@ function render() {
                 ` : ''}
             </div>
         </div>
-    `).join('');
+    `;
+    }).join('');
 }
 
 async function approveRequest(id) {
     let req = requests.find(r => r.id === id);
     if (!req) return;
     let t = dictionary[currentLang];
-    if (!confirm(`${t.confirmApprove} "${req.file_name}" ${t.confirmApproveEnd}`)) return;
 
-    // 1) تحديث العمود الأصلي في جدول submittals
-    let updateQuery = supabaseClient
-        .from('submittals')
-        .update({ [req.column_target]: req.file_link });
-
-    if (req.raw_no && req.raw_no !== '-') {
-        updateQuery = updateQuery.eq('no', req.raw_no);
-    } else if (req.task_title) {
-        updateQuery = updateQuery.eq('title', req.task_title);
+    if (isClassificationMissing(req)) {
+        if (!confirm(t.confirmApproveMissingClassification)) return;
     } else {
-        alert(t.errUpdateRow);
-        return;
+        if (!confirm(`${t.confirmApprove} "${req.file_name}" ${t.confirmApproveEnd}`)) return;
     }
 
-    const { error: updateError } = await updateQuery;
-    if (updateError) {
-        console.error(updateError);
-        alert(t.errUpdateLink);
-        return;
+    // 1) تحديث العمود الأصلي في جدول submittals
+    // لو الطلب ده "مرفق إضافي" (column_target فاضي)، متحاولش تحدث أي عمود -
+    // الملف اترفع في نفس الفولدر بس مش هو الرابط الرسمي للريفيجن.
+    if (req.column_target) {
+        let updateQuery = supabaseClient
+            .from('submittals')
+            .update({ [req.column_target]: req.file_link });
+
+        if (req.raw_no && req.raw_no !== '-') {
+            updateQuery = updateQuery.eq('no', req.raw_no);
+        } else if (req.task_title) {
+            updateQuery = updateQuery.eq('title', req.task_title);
+        } else {
+            alert(t.errUpdateRow);
+            return;
+        }
+
+        const { error: updateError } = await updateQuery;
+        if (updateError) {
+            console.error(updateError);
+            alert(t.errUpdateLink);
+            return;
+        }
     }
 
     // 2) تحديث حالة الطلب نفسه

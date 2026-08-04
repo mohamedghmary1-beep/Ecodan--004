@@ -464,7 +464,9 @@
 <body>
 
 <!-- حقل الرفع المخفي العام -->
-<input type="file" id="global-file-input" style="display: none;" onchange="handleFileSelection(this)">
+<input type="file" id="global-file-input" multiple
+       accept=".pdf,.xls,.xlsx,.xlsm,.csv,.doc,.docx,.dwg,.dxf,.dwf"
+       style="display: none;" onchange="handleFileSelection(this)">
 
 <div class="header">
     <i class="fa-solid fa-folder-open"></i> <span data-i18n="pageTitle">MDECO SUBMITTALS DASHBOARD</span>
@@ -493,6 +495,7 @@
     <a href="performance.html" class="nav-btn">
         <i class="fa-solid fa-chart-column"></i> <span data-i18n="navDashboard">لوحة التحكم</span>
     </a>
+    <a href="weekly_report.html" class="nav-btn"><i class="fa-solid fa-file-lines"></i> <span data-i18n="navReport">التقرير الأسبوعي</span></a>
     <button onclick="toggleLanguage()" class="nav-btn translate-btn">
         <i class="fa-solid fa-language"></i> <span id="lang-btn-text">English</span>
     </button>
@@ -549,7 +552,7 @@ let currentUploadActivity = "";
 const SUPABASE_URL = "https://uhhtvpxtpayovbtmnstz.supabase.co";
 const SUPABASE_KEY = "sb_publishable_QsS0UhLBORy6mOaBDgW62g_9OacC3oO";
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-const GOOGLE_SCRIPT_UPLOAD_URL = "https://script.google.com/macros/s/AKfycbzZyWOC0nzgL8Cftudl-FuFqZSlr6S2ZmVfXjT7DSHx5XTgVH3wy2QMf-tSPJpV6j8xDg/exec";
+const GOOGLE_SCRIPT_UPLOAD_URL = "https://script.google.com/macros/s/AKfycbxP9S7qbgK888SHhCejIGZUx-wXN7pFtJ0OHbFvAUV9ARbtfxtI1_KwUNaU3c-LTubKnw/exec";
 
 // كل قد ايه (بالثواني) الشارة والبيانات المعلّقة بتتحدّث تلقائيًا
 const PENDING_POLL_INTERVAL = 20000;
@@ -701,49 +704,107 @@ function updatePendingBadge(count) {
 loadPendingRequests();
 setInterval(loadPendingRequests, PENDING_POLL_INTERVAL);
 
-function handleFileSelection(input) {
-    if (input.files.length === 0) return;
-    let file = input.files[0];
+// بتقرأ ملف واحد وترفعه لجوجل درايف عن طريق الـ Apps Script، وترجع رابطه
+function uploadFileToDrive(file) {
+    return new Promise((resolve, reject) => {
+        let reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = function () {
+            let rawLog = reader.result.split(',')[1];
 
-    alert("جاري رفع الملف الآن... الرجاء الانتظار ثواني، وهيتبعت للمراجعة قبل ما يظهر.");
-
-    let reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = function () {
-        let rawLog = reader.result.split(',')[1];
-
-        fetch(GOOGLE_SCRIPT_UPLOAD_URL, {
-            method: "POST",
-            headers: { "Content-Type": "text/plain" },
-            body: JSON.stringify({
-                filename: file.name,
-                mimeType: file.type,
-                data: rawLog,
-                taskNo: currentUploadTaskKey,
-                revName: currentUploadRevName,
-                notify: true,
-                taskTitle: currentUploadTaskTitle,
-                employee: currentUploadEmployee,
-                discipline: currentUploadDiscipline,
-                activity: currentUploadActivity
+            fetch(GOOGLE_SCRIPT_UPLOAD_URL, {
+                method: "POST",
+                headers: { "Content-Type": "text/plain" },
+                body: JSON.stringify({
+                    filename: file.name,
+                    mimeType: file.type,
+                    data: rawLog,
+                    taskNo: currentUploadTaskKey,
+                    revName: currentUploadRevName,
+                    notify: true,
+                    taskTitle: currentUploadTaskTitle,
+                    employee: currentUploadEmployee,
+                    discipline: currentUploadDiscipline,
+                    activity: currentUploadActivity
+                })
             })
-        })
-        .then(res => res.json())
-        .then(async (result) => {
-            if (!result.url) {
-                alert("خطأ أثناء الرفع: " + (result.error || "فشل الرفع"));
-                return;
-            }
+            .then(res => res.json())
+            .then(result => {
+                if (!result.url) {
+                    reject(new Error(result.error || "فشل الرفع"));
+                    return;
+                }
+                resolve(result.url);
+            })
+            .catch(reject);
+        };
+        reader.onerror = reject;
+    });
+}
 
-            let uploadedUrl = result.url;
+// بترفع كل الملفات المختارة (الملف الرئيسي + أي مرفقات زياده) في نفس الفولدر
+// بتاع نفس التاسك/الريفيجن. أول ملف بيتسجل كـ "الملف الرئيسي" (بيحدث عمود
+// الرابط في الشيت بعد الموافقة)، والملفات الزيادة بتتسجل كمرفقات إضافية
+// بنفس الفولدر لكن من غير ما تحاول تكتب فوق عمود الشيت.
+// الامتدادات المسموح رفعها فقط: PDF - Excel - Word - CAD
+const ALLOWED_UPLOAD_EXTENSIONS = [
+    "pdf",                          // PDF
+    "xls", "xlsx", "xlsm", "csv",   // Excel
+    "doc", "docx",                  // Word
+    "dwg", "dxf", "dwf"             // CAD
+];
 
-            let columnTarget = "link";
-            let currentRevClean = currentUploadRevName.trim().toLowerCase();
-            if (currentRevClean === "revision 1") columnTarget = "link_1";
-            else if (currentRevClean === "revision 2") columnTarget = "link_2";
-            else if (currentRevClean === "revision 3") columnTarget = "link_3";
+function getFileExtension(filename) {
+    let parts = (filename || "").toString().trim().split(".");
+    return parts.length > 1 ? parts.pop().toLowerCase() : "";
+}
+
+function isAllowedFileType(file) {
+    return ALLOWED_UPLOAD_EXTENSIONS.includes(getFileExtension(file.name));
+}
+
+async function handleFileSelection(input) {
+    if (input.files.length === 0) return;
+    let allSelectedFiles = Array.from(input.files);
+    input.value = "";
+
+    // فلترة الملفات: اسمح بس بـ PDF / Excel / Word / CAD وارفض الباقي
+    let files = allSelectedFiles.filter(isAllowedFileType);
+    let rejectedFiles = allSelectedFiles.filter(f => !isAllowedFileType(f));
+
+    if (rejectedFiles.length > 0) {
+        let rejectedNames = rejectedFiles.map(f => f.name).join("، ");
+        alert(`مسموح برفع ملفات PDF / Excel / Word / CAD بس.\nتم تجاهل الملفات دي لأن امتدادها مش مسموح:\n${rejectedNames}`);
+    }
+
+    if (files.length === 0) return;
+
+    let isMultiple = files.length > 1;
+    alert(isMultiple
+        ? `جاري رفع ${files.length} ملفات الآن (الملف الرئيسي + مرفقات)... الرجاء الانتظار، وهيتبعتوا للمراجعة قبل ما يظهروا.`
+        : "جاري رفع الملف الآن... الرجاء الانتظار ثواني، وهيتبعت للمراجعة قبل ما يظهر.");
+
+    let columnTarget = "link";
+    let currentRevClean = currentUploadRevName.trim().toLowerCase();
+    if (currentRevClean === "revision 1") columnTarget = "link_1";
+    else if (currentRevClean === "revision 2") columnTarget = "link_2";
+    else if (currentRevClean === "revision 3") columnTarget = "link_3";
+
+    let successCount = 0;
+    let failCount = 0;
+
+    for (let i = 0; i < files.length; i++) {
+        let file = files[i];
+        let isMainFile = (i === 0); // أول ملف يتم اختياره هو الملف الرئيسي بتاع الريفيجن
+
+        try {
+            let uploadedUrl = await uploadFileToDrive(file);
 
             // بدل تحديث submittals مباشرة، بننشئ "طلب موافقة" معلّق
+            // مع تسجيل الـ discipline والـ activity عشان تظهر واضحة
+            // في صفحة الموافقات قبل ما الأدمن يوافق.
+            // الملف الرئيسي بس هو اللي بيحدث عمود الرابط في الشيت (column_target)،
+            // المرفقات الإضافية بتترفع في نفس الفولدر بس من غير ما تحدث أي عمود.
             const { data: insertedRows, error: insertError } = await supabaseClient
                 .from('upload_requests')
                 .insert({
@@ -751,8 +812,10 @@ function handleFileSelection(input) {
                     raw_no: currentUploadRawNo,
                     task_title: currentUploadTaskTitle,
                     employee: currentUploadEmployee,
+                    discipline: currentUploadDiscipline,
+                    activity: currentUploadActivity,
                     revision_name: currentUploadRevName,
-                    column_target: columnTarget,
+                    column_target: isMainFile ? columnTarget : null,
                     file_name: file.name,
                     file_link: uploadedUrl,
                     status: 'pending'
@@ -761,32 +824,46 @@ function handleFileSelection(input) {
 
             if (insertError) {
                 console.error("Failed to create approval request:", insertError);
-                alert("تم رفع الملف على جوجل درايف، لكن فشل إنشاء طلب المراجعة في قاعدة البيانات.");
-                return;
+                failCount++;
+                continue;
             }
 
-            // تحديث فوري للواجهة من غير ما ننتظر إعادة تحميل من السيرفر
             let newReq = (insertedRows && insertedRows[0]) ? insertedRows[0] : {
                 task_key: currentUploadTaskKey,
                 revision_name: currentUploadRevName,
+                discipline: currentUploadDiscipline,
+                activity: currentUploadActivity,
                 file_name: file.name,
                 file_link: uploadedUrl,
                 status: 'pending'
             };
-            let key = `${newReq.task_key}||${newReq.revision_name.trim().toLowerCase()}`;
-            pendingMap[key] = newReq;
-            render();
-            updatePendingBadge(Object.keys(pendingMap).length);
 
-            alert("تم إرسال الملف بنجاح لمراجعة المسؤول. هيظهر الرابط بعد الموافقة عليه.");
-            loadPendingRequests();
-        })
-        .catch(err => {
-            alert("حدث خطأ أثناء الاتصال بسكربت الرفع.");
-            console.error(err);
-        });
-    };
-    input.value = "";
+            // بنحدث pendingMap بمفتاح الريفيجن الأساسي بالملف الرئيسي بس
+            // (عشان زرار الرفع في الكارت يتحول لـ "في انتظار الموافقة")
+            if (isMainFile) {
+                let key = `${newReq.task_key}||${newReq.revision_name.trim().toLowerCase()}`;
+                pendingMap[key] = newReq;
+            }
+
+            successCount++;
+        } catch (err) {
+            console.error("Upload failed for file:", file.name, err);
+            failCount++;
+        }
+    }
+
+    render();
+    updatePendingBadge(Object.keys(pendingMap).length);
+
+    if (failCount === 0) {
+        alert(isMultiple
+            ? `تم إرسال ${successCount} ملفات بنجاح لمراجعة المسؤول. هتظهر بعد الموافقة عليها.`
+            : "تم إرسال الملف بنجاح لمراجعة المسؤول. هيظهر الرابط بعد الموافقة عليه.");
+    } else {
+        alert(`تم رفع ${successCount} ملف بنجاح، وفشل رفع ${failCount} ملف. راجع الـ Console لمزيد من التفاصيل.`);
+    }
+
+    loadPendingRequests();
 }
 
 function build(rows) {

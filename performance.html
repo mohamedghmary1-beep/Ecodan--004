@@ -3,6 +3,69 @@
 <head>
 <meta charset="UTF-8">
 <title>Project Performance Dashboard</title>
+<script>
+// ----- Print-embed mode -----
+// When this page is loaded inside the weekly report's combined print
+// (weekly_report.html adds ?print=1), hide our own header/nav/search UI and
+// tell the parent window when our data has finished loading and rendering,
+// via postMessage (works even if the parent can't reach into this document
+// directly, e.g. when both pages are opened locally via file://).
+(function () {
+  if (new URLSearchParams(location.search).get('print') !== '1') return;
+
+  var style = document.createElement('style');
+  style.textContent =
+    '.topbar,.header,.nav-container,.search-area-container,.translate-btn{display:none !important;}' +
+    'body{margin:0 !important;padding:0 !important;}' +
+    '.dashboard-container{padding:10px 20px 20px !important;max-width:100% !important;}' +
+    '.wrap{padding:10px 20px 20px !important;max-width:100% !important;}';
+  document.head.appendChild(style);
+
+  function reportReady() {
+    try {
+      var height = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight, 1);
+      window.parent.postMessage({ type: 'print-page-ready', height: height }, '*');
+    } catch (e) { /* ignore */ }
+  }
+
+  var debounceTimer;
+  function scheduleReport() {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(reportReady, 500);
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    var mo = new MutationObserver(scheduleReport);
+    mo.observe(document.body, { childList: true, subtree: true, attributes: true });
+    scheduleReport();
+  });
+
+  setTimeout(reportReady, 7000);
+})();
+</script>
+<script>
+// If this page's content is taller than one A4 page, shrink the whole page
+// proportionally (via CSS zoom) so everything still fits on a single sheet
+// instead of spilling onto a second, mostly-empty page. This mirrors the
+// same technique already used successfully in weekly_report.html — it's far
+// more reliable across browsers/print engines than switching to a named A3
+// @page mid-document, which many browsers don't honor consistently.
+(function () {
+  var A4_CONTENT_BUDGET = 1050; // approx usable px height for one A4 portrait page
+  function applyAutoPageFit() {
+    document.body.style.zoom = '';
+    var h = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight, 1);
+    if (h > A4_CONTENT_BUDGET) {
+      document.body.style.zoom = A4_CONTENT_BUDGET / h;
+    }
+  }
+  function resetPageFit() {
+    document.body.style.zoom = '';
+  }
+  window.addEventListener('beforeprint', applyAutoPageFit);
+  window.addEventListener('afterprint', resetPageFit);
+})();
+</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="auth-guard.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
@@ -201,6 +264,10 @@
   .save-status{font-size:12px;font-weight:700;margin-inline-end:auto;align-self:center;}
 
   @media print{
+    @page{ size:A4 portrait; margin:10mm; }
+    /* Page fitting is handled by the zoom-based script above (applyAutoPageFit),
+       which shrinks the whole page proportionally when content is taller than
+       one A4 sheet — more reliable across browsers than a named @page switch. */
     body{background:#fff;padding:0;}
     .topbar{background:#fff !important;color:var(--text-main) !important;box-shadow:none;border-bottom:2px solid var(--primary);}
     .topbar h1{color:var(--text-main) !important;}
@@ -270,6 +337,8 @@
     <a href="./performance.html" class="nav-btn">
         <i class="fa-solid fa-chart-column"></i> <span data-i18n="navDashboard">لوحة التحكم</span>
     </a>
+    <a href="weekly_report.html" class="nav-btn"><i class="fa-solid fa-file-lines"></i> <span data-i18n="navReport">التقرير الأسبوعي</span></a>
+    <a href="weekly_report_view.html" class="nav-btn"><i class="fa-solid fa-eye"></i> <span data-i18n="navReportView">عرض التقرير</span></a>
     <button onclick="toggleLanguage()" class="nav-btn translate-btn">
         <i class="fa-solid fa-language"></i> <span id="lang-btn-text">English</span>
     </button>
@@ -646,6 +715,8 @@ const navTranslations = {
   navApprovals:  { ar: 'طلبات الموافقة',            en: 'Approvals' },
   navTeam:       { ar: 'نظرة عامة على الموظفين',    en: 'Team Overview' },
   navDashboard:  { ar: 'لوحة التحكم',                en: 'Dashboard' },
+  navReport:     { ar: 'التقرير الأسبوعي',           en: 'Weekly Report' },
+  navReportView: { ar: 'عرض التقرير',                en: 'View Report' },
 };
 let currentNavLang = 'ar';
 
