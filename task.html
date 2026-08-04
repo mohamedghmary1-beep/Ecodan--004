@@ -890,21 +890,6 @@ function isAllowedFileType(file) {
     return ALLOWED_UPLOAD_EXTENSIONS.includes(getFileExtension(file.name));
 }
 
-// بتفتح المودال المنسق مباشرة في حالة خطأ فوري (زي امتداد ملف مش مسموح)
-// بدل ما تستخدم alert() البراوزر العادية، عشان كل الرسايل تبقى بنفس الشكل
-function showErrorModal(title, message) {
-    isUploadInProgress = false;
-    document.getElementById('uploadModal').classList.add('done');
-    document.getElementById('uploadModalSpinner').style.display = 'none';
-    let icon = document.getElementById('uploadModalIcon');
-    icon.style.display = 'block';
-    icon.className = 'upload-icon error';
-    icon.innerHTML = '⚠️';
-    document.getElementById('uploadModalTitle').textContent = title;
-    document.getElementById('uploadModalMessage').textContent = message || '';
-    document.getElementById('uploadLockOverlay').classList.add('active');
-}
-
 async function handleFileSelection(input) {
     if (input.files.length === 0) return;
     if (isUploadInProgress) return; // منع أي رفع تاني وقت رفع شغال بالفعل
@@ -914,10 +899,7 @@ async function handleFileSelection(input) {
 
     // تحقق من امتداد الملف: مسموح بس PDF / Excel / Word / CAD
     if (!isAllowedFileType(file)) {
-        showErrorModal(
-            "نوع الملف غير مسموح",
-            `مسموح برفع ملفات PDF / Excel / Word / CAD بس.\nالملف "${file.name}" امتداده مش مسموح.`
-        );
+        alert(`مسموح برفع ملفات PDF / Excel / Word / CAD بس.\nالملف "${file.name}" امتداده مش مسموح.`);
         return;
     }
 
