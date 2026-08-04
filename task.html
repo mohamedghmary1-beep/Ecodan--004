@@ -459,14 +459,102 @@
                 width: 200px; /* تصغير عرض القائمة الجانبية قليلاً */
             }
         }
+        /* ============================================
+           قفل الصفحة أثناء الرفع + مودال التأكيد في النص
+           ============================================ */
+        .upload-lock-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.55);
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .upload-lock-overlay.active {
+            display: flex;
+        }
+
+        .upload-modal {
+            background: var(--bg-card);
+            border-radius: 14px;
+            padding: 28px 32px;
+            width: min(90vw, 380px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.25);
+            text-align: center;
+        }
+
+        .upload-modal .spinner {
+            width: 42px;
+            height: 42px;
+            border: 4px solid var(--border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            margin: 0 auto 16px auto;
+            animation: upload-spin 0.8s linear infinite;
+        }
+
+        .upload-modal .upload-icon {
+            font-size: 38px;
+            margin-bottom: 12px;
+        }
+
+        .upload-modal .upload-icon.success { color: var(--success); }
+        .upload-modal .upload-icon.error { color: var(--danger); }
+
+        .upload-modal h3 {
+            margin: 0 0 8px 0;
+            font-size: 17px;
+            color: var(--text-main);
+        }
+
+        .upload-modal p {
+            margin: 0;
+            font-size: 14px;
+            color: var(--text-muted);
+            line-height: 1.6;
+            white-space: pre-line;
+        }
+
+        .upload-modal .upload-modal-close {
+            display: none;
+            margin-top: 18px;
+            padding: 10px 24px;
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .upload-modal.done .upload-modal-close {
+            display: inline-block;
+        }
+
+        @keyframes upload-spin {
+            to { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
 
 <!-- حقل الرفع المخفي العام -->
-<input type="file" id="global-file-input" multiple
+<input type="file" id="global-file-input"
        accept=".pdf,.xls,.xlsx,.xlsm,.csv,.doc,.docx,.dwg,.dxf,.dwf"
        style="display: none;" onchange="handleFileSelection(this)">
+
+<!-- خلفية قفل الصفحة أثناء الرفع + مودال التأكيد في نص الشاشة -->
+<div class="upload-lock-overlay" id="uploadLockOverlay">
+    <div class="upload-modal" id="uploadModal">
+        <div class="spinner" id="uploadModalSpinner"></div>
+        <div class="upload-icon" id="uploadModalIcon" style="display:none;"></div>
+        <h3 id="uploadModalTitle">جاري الرفع...</h3>
+        <p id="uploadModalMessage"></p>
+        <button class="upload-modal-close" id="uploadModalClose" onclick="closeUploadModal()">تمام</button>
+    </div>
+</div>
 
 <div class="header">
     <i class="fa-solid fa-folder-open"></i> <span data-i18n="pageTitle">MDECO SUBMITTALS DASHBOARD</span>
@@ -704,6 +792,48 @@ function updatePendingBadge(count) {
 loadPendingRequests();
 setInterval(loadPendingRequests, PENDING_POLL_INTERVAL);
 
+// ============================================
+// قفل الصفحة أثناء الرفع + مودال التأكيد في نص الشاشة
+// ============================================
+let isUploadInProgress = false;
+
+function openUploadModal(title, message) {
+    isUploadInProgress = true;
+    document.getElementById('uploadModal').classList.remove('done');
+    document.getElementById('uploadModalSpinner').style.display = 'block';
+    document.getElementById('uploadModalIcon').style.display = 'none';
+    document.getElementById('uploadModalTitle').textContent = title;
+    document.getElementById('uploadModalMessage').textContent = message || '';
+    document.getElementById('uploadLockOverlay').classList.add('active');
+    // تحذير لو حاول يقفل التاب أو يعمل رفرش أثناء الرفع
+    window.onbeforeunload = function () {
+        return 'في رفع ملف شغال دلوقتي، متقفلش الصفحة.';
+    };
+}
+
+function updateUploadModalMessage(message) {
+    document.getElementById('uploadModalMessage').textContent = message || '';
+}
+
+// بتقفل حالة "جاري الرفع" وتحول المودال لنتيجة نهائية (نجاح/فشل) بزرار إغلاق،
+// بدل ما تقفل المودال فورًا، عشان الموظف يشوف النتيجة بوضوح في نص الشاشة
+function finishUploadModal(success, title, message) {
+    isUploadInProgress = false;
+    window.onbeforeunload = null;
+    document.getElementById('uploadModal').classList.add('done');
+    document.getElementById('uploadModalSpinner').style.display = 'none';
+    let icon = document.getElementById('uploadModalIcon');
+    icon.style.display = 'block';
+    icon.className = 'upload-icon ' + (success ? 'success' : 'error');
+    icon.innerHTML = success ? '✅' : '⚠️';
+    document.getElementById('uploadModalTitle').textContent = title;
+    document.getElementById('uploadModalMessage').textContent = message || '';
+}
+
+function closeUploadModal() {
+    document.getElementById('uploadLockOverlay').classList.remove('active');
+}
+
 // بتقرأ ملف واحد وترفعه لجوجل درايف عن طريق الـ Apps Script، وترجع رابطه
 function uploadFileToDrive(file) {
     return new Promise((resolve, reject) => {
@@ -742,10 +872,7 @@ function uploadFileToDrive(file) {
     });
 }
 
-// بترفع كل الملفات المختارة (الملف الرئيسي + أي مرفقات زياده) في نفس الفولدر
-// بتاع نفس التاسك/الريفيجن. أول ملف بيتسجل كـ "الملف الرئيسي" (بيحدث عمود
-// الرابط في الشيت بعد الموافقة)، والملفات الزيادة بتتسجل كمرفقات إضافية
-// بنفس الفولدر لكن من غير ما تحاول تكتب فوق عمود الشيت.
+// بترفع ملف واحد بس لكل ريفيجن (الملف الرئيسي)، جوه الفولدر بتاع نفس التاسك/الريفيجن.
 // الامتدادات المسموح رفعها فقط: PDF - Excel - Word - CAD
 const ALLOWED_UPLOAD_EXTENSIONS = [
     "pdf",                          // PDF
@@ -765,24 +892,22 @@ function isAllowedFileType(file) {
 
 async function handleFileSelection(input) {
     if (input.files.length === 0) return;
-    let allSelectedFiles = Array.from(input.files);
+    if (isUploadInProgress) return; // منع أي رفع تاني وقت رفع شغال بالفعل
+
+    let file = input.files[0]; // ملف واحد بس - المرفقات الإضافية اتلغت
     input.value = "";
 
-    // فلترة الملفات: اسمح بس بـ PDF / Excel / Word / CAD وارفض الباقي
-    let files = allSelectedFiles.filter(isAllowedFileType);
-    let rejectedFiles = allSelectedFiles.filter(f => !isAllowedFileType(f));
-
-    if (rejectedFiles.length > 0) {
-        let rejectedNames = rejectedFiles.map(f => f.name).join("، ");
-        alert(`مسموح برفع ملفات PDF / Excel / Word / CAD بس.\nتم تجاهل الملفات دي لأن امتدادها مش مسموح:\n${rejectedNames}`);
+    // تحقق من امتداد الملف: مسموح بس PDF / Excel / Word / CAD
+    if (!isAllowedFileType(file)) {
+        alert(`مسموح برفع ملفات PDF / Excel / Word / CAD بس.\nالملف "${file.name}" امتداده مش مسموح.`);
+        return;
     }
 
-    if (files.length === 0) return;
-
-    let isMultiple = files.length > 1;
-    alert(isMultiple
-        ? `جاري رفع ${files.length} ملفات الآن (الملف الرئيسي + مرفقات)... الرجاء الانتظار، وهيتبعتوا للمراجعة قبل ما يظهروا.`
-        : "جاري رفع الملف الآن... الرجاء الانتظار ثواني، وهيتبعت للمراجعة قبل ما يظهر.");
+    // فتح مودال القفل في نص الشاشة + منع أي تفاعل تاني مع الصفحة لحد ما الرفع يخلص
+    openUploadModal(
+        "جاري رفع الملف...",
+        `الرجاء الانتظار وعدم إغلاق الصفحة: ${file.name}`
+    );
 
     let columnTarget = "link";
     let currentRevClean = currentUploadRevName.trim().toLowerCase();
@@ -790,77 +915,60 @@ async function handleFileSelection(input) {
     else if (currentRevClean === "revision 2") columnTarget = "link_2";
     else if (currentRevClean === "revision 3") columnTarget = "link_3";
 
-    let successCount = 0;
-    let failCount = 0;
+    try {
+        let uploadedUrl = await uploadFileToDrive(file);
 
-    for (let i = 0; i < files.length; i++) {
-        let file = files[i];
-        let isMainFile = (i === 0); // أول ملف يتم اختياره هو الملف الرئيسي بتاع الريفيجن
-
-        try {
-            let uploadedUrl = await uploadFileToDrive(file);
-
-            // بدل تحديث submittals مباشرة، بننشئ "طلب موافقة" معلّق
-            // مع تسجيل الـ discipline والـ activity عشان تظهر واضحة
-            // في صفحة الموافقات قبل ما الأدمن يوافق.
-            // الملف الرئيسي بس هو اللي بيحدث عمود الرابط في الشيت (column_target)،
-            // المرفقات الإضافية بتترفع في نفس الفولدر بس من غير ما تحدث أي عمود.
-            const { data: insertedRows, error: insertError } = await supabaseClient
-                .from('upload_requests')
-                .insert({
-                    task_key: currentUploadTaskKey,
-                    raw_no: currentUploadRawNo,
-                    task_title: currentUploadTaskTitle,
-                    employee: currentUploadEmployee,
-                    discipline: currentUploadDiscipline,
-                    activity: currentUploadActivity,
-                    revision_name: currentUploadRevName,
-                    column_target: isMainFile ? columnTarget : null,
-                    file_name: file.name,
-                    file_link: uploadedUrl,
-                    status: 'pending'
-                })
-                .select();
-
-            if (insertError) {
-                console.error("Failed to create approval request:", insertError);
-                failCount++;
-                continue;
-            }
-
-            let newReq = (insertedRows && insertedRows[0]) ? insertedRows[0] : {
+        // بدل تحديث submittals مباشرة، بننشئ "طلب موافقة" معلّق
+        // مع تسجيل الـ discipline والـ activity عشان تظهر واضحة
+        // في صفحة الموافقات قبل ما الأدمن يوافق.
+        const { data: insertedRows, error: insertError } = await supabaseClient
+            .from('upload_requests')
+            .insert({
                 task_key: currentUploadTaskKey,
-                revision_name: currentUploadRevName,
+                raw_no: currentUploadRawNo,
+                task_title: currentUploadTaskTitle,
+                employee: currentUploadEmployee,
                 discipline: currentUploadDiscipline,
                 activity: currentUploadActivity,
+                revision_name: currentUploadRevName,
+                column_target: columnTarget,
                 file_name: file.name,
                 file_link: uploadedUrl,
                 status: 'pending'
-            };
+            })
+            .select();
 
-            // بنحدث pendingMap بمفتاح الريفيجن الأساسي بالملف الرئيسي بس
-            // (عشان زرار الرفع في الكارت يتحول لـ "في انتظار الموافقة")
-            if (isMainFile) {
-                let key = `${newReq.task_key}||${newReq.revision_name.trim().toLowerCase()}`;
-                pendingMap[key] = newReq;
-            }
-
-            successCount++;
-        } catch (err) {
-            console.error("Upload failed for file:", file.name, err);
-            failCount++;
+        if (insertError) {
+            console.error("Failed to create approval request:", insertError);
+            finishUploadModal(false, "فشل الرفع", insertError.message || "فشل حفظ طلب الموافقة");
+            loadPendingRequests();
+            return;
         }
-    }
 
-    render();
-    updatePendingBadge(Object.keys(pendingMap).length);
+        let newReq = (insertedRows && insertedRows[0]) ? insertedRows[0] : {
+            task_key: currentUploadTaskKey,
+            revision_name: currentUploadRevName,
+            discipline: currentUploadDiscipline,
+            activity: currentUploadActivity,
+            file_name: file.name,
+            file_link: uploadedUrl,
+            status: 'pending'
+        };
 
-    if (failCount === 0) {
-        alert(isMultiple
-            ? `تم إرسال ${successCount} ملفات بنجاح لمراجعة المسؤول. هتظهر بعد الموافقة عليها.`
-            : "تم إرسال الملف بنجاح لمراجعة المسؤول. هيظهر الرابط بعد الموافقة عليه.");
-    } else {
-        alert(`تم رفع ${successCount} ملف بنجاح، وفشل رفع ${failCount} ملف. راجع الـ Console لمزيد من التفاصيل.`);
+        let key = `${newReq.task_key}||${newReq.revision_name.trim().toLowerCase()}`;
+        pendingMap[key] = newReq;
+
+        render();
+        updatePendingBadge(Object.keys(pendingMap).length);
+
+        finishUploadModal(
+            true,
+            "تم الإرسال بنجاح",
+            "تم إرسال الملف بنجاح لمراجعة المسؤول. هيظهر الرابط بعد الموافقة عليه."
+        );
+    } catch (err) {
+        console.error("Upload failed for file:", file.name, err);
+        finishUploadModal(false, "فشل الرفع", err && err.message ? err.message : "حصل خطأ غير متوقع أثناء الرفع.");
     }
 
     loadPendingRequests();
