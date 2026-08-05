@@ -18,17 +18,34 @@
       // ============================================================
       (function () {
         var VKEY = 'pageFingerprint::' + location.pathname;
-        fetch(location.pathname, { method: 'HEAD', cache: 'no-store' })
-          .then(function (res) {
-            var fp = res.headers.get('etag') || res.headers.get('last-modified');
-            if (!fp) return;
-            var prev = localStorage.getItem(VKEY);
-            localStorage.setItem(VKEY, fp);
-            if (prev && prev !== fp) {
-              location.replace(location.pathname + location.search + (location.search ? '&' : '?') + '_r=' + Date.now());
-            }
-          })
-          .catch(function () { /* تجاهل أي خطأ شبكة هنا، الصفحة تكمل تحميلها عادي */ });
+
+        function checkForUpdate() {
+          fetch(location.pathname, { method: 'HEAD', cache: 'no-store' })
+            .then(function (res) {
+              var fp = res.headers.get('etag') || res.headers.get('last-modified');
+              if (!fp) return;
+              var prev = localStorage.getItem(VKEY);
+              localStorage.setItem(VKEY, fp);
+              if (prev && prev !== fp) {
+                location.replace(location.pathname + location.search + (location.search ? '&' : '?') + '_r=' + Date.now());
+              }
+            })
+            .catch(function () { /* تجاهل أي خطأ شبكة هنا، الصفحة تكمل تحميلها عادي */ });
+        }
+
+        checkForUpdate();
+
+        // مهم جدًا: لو الموظف رجع للصفحة دي بزرار "رجوع" في المتصفح، المتصفح
+        // بيرجّع نسخة محفوظة من الذاكرة (bfcache) من غير ما ينفّذ أي سكريبت
+        // تاني، فالفحص فوق مش بيشتغل في الحالة دي. الكود ده بيجبر تحميل حقيقي
+        // للصفحة أول ما يحصل رجوع من bfcache، عشان يضمن إنه ياخد آخر نسخة.
+        window.addEventListener('pageshow', function (event) {
+          if (event.persisted) {
+            location.reload();
+          } else {
+            checkForUpdate();
+          }
+        });
       })();
     </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
