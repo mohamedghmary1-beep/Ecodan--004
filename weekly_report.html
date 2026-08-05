@@ -8,6 +8,24 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
+<script>
+  // فحص فوري: هل فيه نسخة أحدث من نفس الصفحة اتنشرت على GitHub؟
+  // لو اختلفت بصمة الملف عن آخر مرة، يعمل تحميل كامل تلقائي مرة واحدة.
+  (function () {
+    var VKEY = 'pageFingerprint::' + location.pathname;
+    fetch(location.pathname, { method: 'HEAD', cache: 'no-store' })
+      .then(function (res) {
+        var fp = res.headers.get('etag') || res.headers.get('last-modified');
+        if (!fp) return;
+        var prev = localStorage.getItem(VKEY);
+        localStorage.setItem(VKEY, fp);
+        if (prev && prev !== fp) {
+          location.replace(location.pathname + location.search + (location.search ? '&' : '?') + '_r=' + Date.now());
+        }
+      })
+      .catch(function () { /* تجاهل أي خطأ شبكة هنا */ });
+  })();
+</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
   // تحميل الملفات المهمة (auth-guard.js / lang.js) برقم إصدار مختلف

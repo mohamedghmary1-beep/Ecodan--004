@@ -4,9 +4,34 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MDECO Portal - Login</title>
+    <!-- منع أي كاش للصفحة نفسها (Browser cache) -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <script>
+      // فحص فوري: هل فيه نسخة أحدث من نفس الصفحة اتنشرت على GitHub؟
+      // لو اختلفت بصمة الملف عن آخر مرة، يعمل تحميل كامل تلقائي مرة واحدة.
+      (function () {
+        var VKEY = 'pageFingerprint::' + location.pathname;
+        fetch(location.pathname, { method: 'HEAD', cache: 'no-store' })
+          .then(function (res) {
+            var fp = res.headers.get('etag') || res.headers.get('last-modified');
+            if (!fp) return;
+            var prev = localStorage.getItem(VKEY);
+            localStorage.setItem(VKEY, fp);
+            if (prev && prev !== fp) {
+              location.replace(location.pathname + location.search + (location.search ? '&' : '?') + '_r=' + Date.now());
+            }
+          })
+          .catch(function () { /* تجاهل أي خطأ شبكة هنا */ });
+      })();
+    </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="./lang.js"></script>
+    <script>
+      // تحميل lang.js برقم إصدار مختلف في كل مرة عشان أي تحديث فيه يوصل فورًا
+      document.write('<script src="./lang.js?v=' + Date.now() + '"><' + '/script>');
+    </script>
     <style>
         :root {
             --primary: #2563eb;
