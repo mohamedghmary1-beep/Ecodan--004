@@ -4,9 +4,18 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>التقرير الأسبوعي - Weekly Report</title>
+<!-- منع أي كاش للصفحة نفسها (Browser cache) -->
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="./auth-guard.js"></script>
-<script src="./lang.js"></script>
+<script>
+  // تحميل الملفات المهمة (auth-guard.js / lang.js) برقم إصدار مختلف
+  // في كل مرة، عشان أي تحديث يترفع على GitHub يوصل فورًا للمستخدمين
+  // من غير ما يتحبس في كاش المتصفح أو كاش سيرفر GitHub Pages.
+  document.write('<script src="./auth-guard.js?v=' + Date.now() + '"><' + '/script>');
+  document.write('<script src="./lang.js?v=' + Date.now() + '"><' + '/script>');
+</script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <style>
@@ -303,6 +312,13 @@
 </style>
 </head>
 <body>
+
+<!-- شاشة منع الدخول: الصفحة دي مخصصة للسوبر أدمن والأدمن بس -->
+<div id="accessDeniedScreen" style="display:none;position:fixed;inset:0;background:#0f172a;color:#fff;z-index:99999;align-items:center;justify-content:center;text-align:center;padding:24px;flex-direction:column;gap:10px;">
+  <i class="fa-solid fa-lock" style="font-size:38px;color:#f87171;"></i>
+  <div style="font-size:17px;font-weight:800;" data-i18n="accessDeniedTitle">هذه الصفحة متاحة فقط للسوبر أدمن والأدمن</div>
+  <div style="font-size:13px;color:#94a3b8;" data-i18n="accessDeniedSub">جاري تحويلك للصفحة الرئيسية...</div>
+</div>
 
 <div class="topbar">
   <div class="topbar-main">
@@ -740,6 +756,8 @@ window.registerDictionary({
     navReportView: 'عرض التقرير',
     btnPrintTop: '🖨️ حفظ / طباعة التقرير الكامل',
     viewOnlyBanner: '👁️ أنت في وضع العرض فقط — التعديل والحفظ متاحين فقط لحساب السوبر أدمن',
+    accessDeniedTitle: 'هذه الصفحة متاحة فقط للسوبر أدمن والأدمن',
+    accessDeniedSub: 'جاري تحويلك للصفحة الرئيسية...',
     savedReportsTitle: 'التقارير المحفوظة',
     chooseReport: 'اختر تقرير محفوظ',
     newReportOption: '-- تقرير جديد --',
@@ -784,6 +802,8 @@ window.registerDictionary({
     navReportView: 'View Report',
     btnPrintTop: '🖨️ Save / Print Full Report',
     viewOnlyBanner: '👁️ You are in view-only mode — editing and saving are available to the super admin account only',
+    accessDeniedTitle: 'This page is available to the super admin and admin accounts only',
+    accessDeniedSub: 'Redirecting you to the home page...',
     savedReportsTitle: 'Saved Reports',
     chooseReport: 'Choose a saved report',
     newReportOption: '-- New report --',
@@ -835,6 +855,16 @@ window.isSuperAdmin = false;
 function applyPermissions() {
   const role = window.currentUserRole; // set by auth-guard.js
   window.isSuperAdmin = (role === 'super_admin');
+
+  // الصفحة كلها (مش بس زرار الحفظ/الحذف) متاحة بس للسوبر أدمن والأدمن.
+  // أي رول تاني (موظف عادي) يتمنع من فتح الصفحة خالص.
+  const isAllowedRole = (role === 'super_admin' || role === 'admin');
+  if (!isAllowedRole) {
+    document.getElementById('accessDeniedScreen').style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+    setTimeout(() => { window.location.href = 'task.html'; }, 1800);
+    return;
+  }
 
   if (!window.isSuperAdmin) {
     document.querySelectorAll('.superadmin-only').forEach(el => el.style.display = 'none');
@@ -1061,20 +1091,37 @@ async function deleteSelectedReport() {
   if (!confirm(T('confirmDeleteReport'))) return;
 
   const btn = document.getElementById('deleteReportBtn');
-  btn.disabled = true;
-  try {
-    const { error } = await client.from('weekly_reports').delete().eq('id', id);
-    if (error) throw error;
-    statusEl.style.color = '';
-    statusEl.textContent = T('deleteSuccess');
-    if (currentReportId === id) newReport();
-    await loadReportsList();
-  } catch (e) {
-    console.error(e);
+
+  async function doDelete() {
+    btn.disabled = true;
+    try {
+      const { error } = await client.from('weekly_reports').delete().eq('id', id);
+      if (error) throw error;
+      statusEl.style.color = '';
+      statusEl.textContent = T('deleteSuccess');
+      if (currentReportId === id) newReport();
+      await loadReportsList();
+    } catch (e) {
+      console.error(e);
+      statusEl.textContent = T('deleteErr');
+      statusEl.style.color = '#ef4444';
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  // نفس مودال تأكيد الباسورد/الـ PIN المستخدم في باقي الصفحة (مع الحفظ)
+  // وفي صفحة عرض التقرير — يتطلب باسورد السوبر أدمن قبل ما الحذف يتنفذ فعليًا.
+  if (typeof window.guardUpload === 'function') {
+    try {
+      window.guardUpload(doDelete);
+    } catch (e) {
+      console.error('guardUpload failed:', e);
+    }
+  } else {
+    console.error('PIN confirmation unavailable — delete aborted for safety.');
     statusEl.textContent = T('deleteErr');
     statusEl.style.color = '#ef4444';
-  } finally {
-    btn.disabled = false;
   }
 }
 
