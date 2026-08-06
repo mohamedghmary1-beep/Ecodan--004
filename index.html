@@ -9,39 +9,10 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <script>
-      // فحص فوري: هل فيه نسخة أحدث من نفس الصفحة اتنشرت على GitHub؟
-      // لو اختلفت بصمة الملف عن آخر مرة، يعمل تحميل كامل تلقائي مرة واحدة.
-      (function () {
-        var VKEY = 'pageFingerprint::' + location.pathname;
-
-        function checkForUpdate() {
-          fetch(location.pathname, { method: 'HEAD', cache: 'no-store' })
-            .then(function (res) {
-              var fp = res.headers.get('etag') || res.headers.get('last-modified');
-              if (!fp) return;
-              var prev = localStorage.getItem(VKEY);
-              localStorage.setItem(VKEY, fp);
-              if (prev && prev !== fp) {
-                location.replace(location.pathname + location.search + (location.search ? '&' : '?') + '_r=' + Date.now());
-              }
-            })
-            .catch(function () { /* تجاهل أي خطأ شبكة هنا */ });
-        }
-
-        checkForUpdate();
-
-        // مهم جدًا: لو الموظف رجع للصفحة دي بزرار "رجوع" في المتصفح، المتصفح
-        // بيرجّع نسخة محفوظة من الذاكرة (bfcache) من غير ما ينفّذ أي سكريبت
-        // تاني، فالفحص فوق مش بيشتغل في الحالة دي. الكود ده بيجبر تحميل حقيقي
-        // للصفحة أول ما يحصل رجوع من bfcache، عشان يضمن إنه ياخد آخر نسخة.
-        window.addEventListener('pageshow', function (event) {
-          if (event.persisted) {
-            location.reload();
-          } else {
-            checkForUpdate();
-          }
-        });
-      })();
+      // فحص فوري: هل فيه نسخة أحدث من نفس الصفحة اتنشرت على GitHub؟ لو آه،
+      // يعمل تحميل كامل تلقائي مرة واحدة — يتخطى كاش المتصفح وكاش GitHub Pages
+      // معاً (منطق الفحص كامل في cache-buster.js المشترك بين كل الصفحات).
+      document.write('<script src="./cache-buster.js?v=' + Date.now() + '"><' + '/script>');
     </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -415,7 +386,7 @@
         try {
             const { data: users, error } = await supabaseClient
                 .from('users')
-                .select('username, permissions, password')
+                .select('username, permissions, password, page_performance, page_summary, page_task, page_home, page_weekly_report, page_general_by_activity')
                 .eq('username', userInp)
                 .limit(1);
 
@@ -426,10 +397,16 @@
             if (matchedUser) {
                 msgBox.innerText = t.succOk;
                 msgBox.className = "message-box success";
-                // تخزين اسم المستخدم + الصلاحيات كاملة (مش بس فلاج "active")
+                // تخزين اسم المستخدم + الصلاحيات + أعمدة الصفحات (yes/no) كاملة
                 localStorage.setItem("userSession", JSON.stringify({
                     username: matchedUser.username,
-                    permissions: matchedUser.permissions
+                    permissions: matchedUser.permissions,
+                    page_performance: matchedUser.page_performance,
+                    page_summary: matchedUser.page_summary,
+                    page_task: matchedUser.page_task,
+                    page_home: matchedUser.page_home,
+                    page_weekly_report: matchedUser.page_weekly_report,
+                    page_general_by_activity: matchedUser.page_general_by_activity
                 }));
                 setTimeout(() => { window.location.href = "home.html"; }, 1500);
             } else {

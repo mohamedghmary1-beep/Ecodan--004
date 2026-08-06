@@ -9,22 +9,10 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>
-  // فحص فوري: هل فيه نسخة أحدث من نفس الصفحة اتنشرت على GitHub؟
-  // لو اختلفت بصمة الملف عن آخر مرة، يعمل تحميل كامل تلقائي مرة واحدة.
-  (function () {
-    var VKEY = 'pageFingerprint::' + location.pathname;
-    fetch(location.pathname, { method: 'HEAD', cache: 'no-store' })
-      .then(function (res) {
-        var fp = res.headers.get('etag') || res.headers.get('last-modified');
-        if (!fp) return;
-        var prev = localStorage.getItem(VKEY);
-        localStorage.setItem(VKEY, fp);
-        if (prev && prev !== fp) {
-          location.replace(location.pathname + location.search + (location.search ? '&' : '?') + '_r=' + Date.now());
-        }
-      })
-      .catch(function () { /* تجاهل أي خطأ شبكة هنا */ });
-  })();
+  // فحص فوري: هل فيه نسخة أحدث من نفس الصفحة اتنشرت على GitHub؟ لو آه،
+  // يعمل تحميل كامل تلقائي مرة واحدة — يتخطى كاش المتصفح وكاش GitHub Pages
+  // معاً (منطق الفحص كامل في cache-buster.js المشترك بين كل الصفحات).
+  document.write('<script src="./cache-buster.js?v=' + Date.now() + '"><' + '/script>');
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -390,8 +378,9 @@
 
 <div class="wrap">
 
-  <div id="viewOnlyBanner" style="display:none;background:#fffbeb;border:1px solid #fde68a;color:#92400e;padding:10px 16px;border-radius:8px;font-size:12.5px;font-weight:700;margin-bottom:16px;text-align:center;">
-    <span data-i18n="viewOnlyBanner">👁️ أنت في وضع العرض فقط — التعديل والحفظ متاحين فقط لحساب السوبر أدمن</span>
+  <div id="viewOnlyBanner" style="display:none;background:#fffbeb;border:1px solid #fde68a;color:#92400e;padding:10px 16px;border-radius:8px;font-size:12.5px;font-weight:700;margin-bottom:16px;text-align:center;display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;">
+    <span data-i18n="viewOnlyBanner">👁️ أنت في وضع العرض فقط — أدخل كلمة المرور للتعديل أو الحذف</span>
+    <button id="unlockEditBtn" class="btn-mini primary" onclick="unlockEditMode()" type="button">🔓 تعديل</button>
   </div>
 
   <div class="panel">
@@ -892,32 +881,99 @@ let currentReportId = null; // null = new report
 let photos = []; // {caption, dataUrl}
 let allReports = [];
 
-// ---------- Permissions: editing/saving restricted to super_admin only ----------
-window.isSuperAdmin = false;
+// ---------- Permissions: page is open to everyone (any logged-in role); ----------
+// ---------- editing/saving/deleting requires the shared edit password.  ----------
+const EDIT_UNLOCK_PASSWORD = '2662002';
+window.isSuperAdmin = false; // "isSuperAdmin" here now just means "edit mode unlocked"
+
 function applyPermissions() {
-  const role = window.currentUserRole; // set by auth-guard.js
-  window.isSuperAdmin = (role === 'super_admin');
+  // No role check / redirect anymore — every logged-in role can open and
+  // view this page. Editing is gated separately by the password prompt
+  // (see unlockEditMode / checkEditPassword below), not by role.
+  window.isSuperAdmin = false;
+  document.querySelectorAll('.superadmin-only').forEach(el => el.style.display = 'none');
+  document.getElementById('viewOnlyBanner').style.display = 'flex';
+  ['f_report_no', 'f_period_from', 'f_period_to'].forEach(id => {
+    const el = document.getElementById(id);
+    el.setAttribute('readonly', 'readonly');
+    el.style.background = '#f1f5f9';
+    el.style.pointerEvents = 'none';
+  });
+}
 
-  // الصفحة كلها (مش بس زرار الحفظ/الحذف) متاحة بس للسوبر أدمن والأدمن.
-  // أي رول تاني (موظف عادي) يتمنع من فتح الصفحة خالص.
-  const isAllowedRole = (role === 'super_admin' || role === 'admin');
-  if (!isAllowedRole) {
-    document.getElementById('accessDeniedScreen').style.display = 'flex';
-    document.body.style.overflow = 'hidden';
-    setTimeout(() => { window.location.href = 'task.html'; }, 1800);
-    return;
-  }
+// Simple shared-password modal (client-side check against EDIT_UNLOCK_PASSWORD).
+// Note: this is NOT a secure server-side check — it only hides/shows UI.
+function checkEditPassword(onConfirmed) {
+  let modal = document.createElement('div');
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.55);' +
+    'display:flex;align-items:center;justify-content:center;z-index:9999;';
+  modal.innerHTML = `
+    <div style="background:#fff;padding:28px;border-radius:14px;max-width:360px;width:90%;
+                box-shadow:0 20px 40px rgba(0,0,0,0.2);font-family:'Segoe UI',system-ui,sans-serif;">
+      <div style="font-weight:800;font-size:17px;margin-bottom:6px;color:#0f172a;">كلمة مرور التعديل</div>
+      <div style="color:#64748b;font-size:13px;margin-bottom:16px;">من فضلك أدخل كلمة المرور للتعديل أو الحذف</div>
+      <input type="password" id="edit-pass-input" style="width:100%;box-sizing:border-box;padding:10px 12px;
+             border:1px solid #e2e8f0;border-radius:8px;font-size:14px;margin-bottom:8px;" placeholder="كلمة المرور">
+      <div id="edit-pass-error" style="color:#ef4444;font-size:12px;min-height:16px;margin-bottom:10px;"></div>
+      <div style="display:flex;gap:8px;">
+        <button id="edit-pass-cancel" style="flex:1;padding:10px;border-radius:8px;border:1px solid #e2e8f0;
+                background:#f8fafc;cursor:pointer;font-weight:700;">إلغاء</button>
+        <button id="edit-pass-confirm" style="flex:1;padding:10px;border-radius:8px;border:none;
+                background:#2563eb;color:#fff;cursor:pointer;font-weight:700;">تأكيد</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
 
-  if (!window.isSuperAdmin) {
-    document.querySelectorAll('.superadmin-only').forEach(el => el.style.display = 'none');
-    document.getElementById('viewOnlyBanner').style.display = 'block';
+  const input = modal.querySelector('#edit-pass-input');
+  const errBox = modal.querySelector('#edit-pass-error');
+  input.focus();
+
+  modal.querySelector('#edit-pass-cancel').onclick = function () { modal.remove(); };
+  modal.querySelector('#edit-pass-confirm').onclick = function () {
+    const typed = input.value.trim();
+    if (!typed) { errBox.innerText = 'اكتب كلمة المرور'; return; }
+    if (typed === EDIT_UNLOCK_PASSWORD) {
+      modal.remove();
+      onConfirmed();
+    } else {
+      errBox.innerText = 'كلمة المرور غير صحيحة';
+    }
+  };
+  input.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') modal.querySelector('#edit-pass-confirm').click();
+  });
+}
+
+// Called by the "🔓 تعديل" button. Unlocks add/remove/save/delete controls
+// for the rest of this page session once the correct password is entered.
+function unlockEditMode() {
+  if (window.isSuperAdmin) return; // already unlocked
+  checkEditPassword(function () {
+    window.isSuperAdmin = true;
+    document.querySelectorAll('.superadmin-only').forEach(el => el.style.display = '');
+    document.getElementById('viewOnlyBanner').style.display = 'none';
+    const unlockBtn = document.getElementById('unlockEditBtn');
+    if (unlockBtn) unlockBtn.style.display = 'none';
+
     ['f_report_no', 'f_period_from', 'f_period_to'].forEach(id => {
       const el = document.getElementById(id);
-      el.setAttribute('readonly', 'readonly');
-      el.style.background = '#f1f5f9';
-      el.style.pointerEvents = 'none';
+      el.removeAttribute('readonly');
+      el.style.background = '';
+      el.style.pointerEvents = '';
     });
-  }
+
+    // Existing work rows were rendered readonly before unlock — re-enable them.
+    document.querySelectorAll('#workRowsContainer .work-row-line').forEach(row => {
+      row.querySelector('.w-category')?.removeAttribute('readonly');
+      row.querySelector('.w-activity')?.removeAttribute('readonly');
+      row.querySelector('.w-location')?.removeAttribute('readonly');
+      const rm = row.querySelector('.row-remove');
+      if (rm) rm.style.visibility = 'visible';
+    });
+
+    // Re-render photos so remove buttons / add-photo card appear.
+    renderPhotoGrid();
+  });
 }
 
 // ---------- Page order (for print) ----------
@@ -1152,19 +1208,8 @@ async function deleteSelectedReport() {
     }
   }
 
-  // نفس مودال تأكيد الباسورد/الـ PIN المستخدم في باقي الصفحة (مع الحفظ)
-  // وفي صفحة عرض التقرير — يتطلب باسورد السوبر أدمن قبل ما الحذف يتنفذ فعليًا.
-  if (typeof window.guardUpload === 'function') {
-    try {
-      window.guardUpload(doDelete);
-    } catch (e) {
-      console.error('guardUpload failed:', e);
-    }
-  } else {
-    console.error('PIN confirmation unavailable — delete aborted for safety.');
-    statusEl.textContent = T('deleteErr');
-    statusEl.style.color = '#ef4444';
-  }
+  // يتطلب كلمة مرور التعديل المشتركة قبل ما الحذف يتنفذ فعليًا.
+  checkEditPassword(doDelete);
 }
 
 // ---------- Save ----------
@@ -1214,18 +1259,8 @@ async function saveReport() {
     }
   }
 
-  // Same password re-confirmation modal used by the other dashboard pages,
-  // shown only for super_admin since guardUpload itself also checks canEditDashboard.
-  if (typeof window.guardUpload === 'function') {
-    try {
-      window.guardUpload(doSave);
-    } catch (e) {
-      console.error('guardUpload failed, saving directly:', e);
-      doSave();
-    }
-  } else {
-    doSave();
-  }
+  // يتطلب كلمة مرور التعديل المشتركة قبل ما الحفظ يتنفذ فعليًا.
+  checkEditPassword(doSave);
 }
 
 // ---------- Build print-ready view ----------

@@ -8,22 +8,34 @@
       <script src="auth-guard.js"></script>
 
   It reads the session saved by index.html (localStorage "userSession":
-  { username, permissions }) and enforces roles based on the value stored
-  in the "permissions" column of the users table:
+  { username, permissions, ...one 'yes'/'no' field per page, see PAGE_COLUMNS
+  below }) and enforces access in two layers:
 
-    - "administrator"           -> super-admin. Sees EVERY page, including
-                                    ADMIN_ONLY_PAGES (approvals.html) and
-                                    everything else. Use window.guardUpload()
+  1) Role (from the "permissions" column):
+    - "administrator"           -> super-admin. Sees EVERY page, no matter what,
+                                    including ADMIN_ONLY_PAGES (approvals.html,
+                                    team_overview.html) and ignores the per-page
+                                    yes/no columns entirely. Use window.guardUpload()
                                     to require a password re-check before any
                                     add/upload action.
-    - "admin"  (or empty/NULL)  -> sees every page EXCEPT the pages listed in
-                                    ADMIN_ONLY_PAGES, which are reserved for
-                                    "administrator" only.
-    - "no_files"                -> regular employee. Sees EVERY page EXCEPT
-                                    ADMIN_ONLY_PAGES (same restriction as "admin").
-    - "limited"                 -> regular employee. Same as "no_files": sees
-                                    every page except ADMIN_ONLY_PAGES.
+    - "admin" / "no_files" / "limited" (or empty/NULL -> "admin")
+                                 -> regular roles. ALWAYS blocked from
+                                    ADMIN_ONLY_PAGES. For every other page, access
+                                    now depends on layer 2 below.
     - anything else / logged out -> blocked / redirected to index.html.
+
+  2) Per-page yes/no columns on the users table (see PAGE_COLUMNS): one text
+     column per page, holding literally "yes" or "no" (or empty = same as "no").
+    - For any page that ISN'T in ADMIN_ONLY_PAGES, a non-administrator user can
+      only open it if that page's column says "yes" for their row. Otherwise
+      they're blocked AND the matching nav-btn link is hidden.
+    - Add a new page to the portal? Add its filename + a new column name to
+      PAGE_COLUMNS below, then add that column to the users table.
+    - index.html (the login page) is always reachable regardless of this.
+
+  index.html must be updated to copy every PAGE_COLUMNS column from the users
+  table into the saved session at login time, same as it already does for
+  "permissions" — see index.html for that part.
 */
 (function () {
     const SUPABASE_URL = "https://uhhtvpxtpayovbtmnstz.supabase.co";
@@ -33,11 +45,29 @@
     // Pages that ONLY the "administrator" (super-admin) role can open.
     // Every other role (admin, no_files, limited) gets the access-denied
     // screen automatically, and the matching nav-btn link is hidden for
-    // them too. Add more page filenames here any time you need to lock a
+    // them too — regardless of their PAGE_COLUMNS values below.
+    // Add more page filenames here any time you need to lock a
     // page to the administrator role.
     // NOTE: change 'team_overview.html' below if your "نظرة عامة على الموظفين"
     // page has a different filename.
     const ADMIN_ONLY_PAGES = ['approvals.html', 'team_overview.html'];
+
+    // Pages every logged-in user can always reach, no matter what — the
+    // login page itself.
+    const ALWAYS_ALLOWED_PAGES = ['index.html'];
+
+    // Maps each controllable page filename to its yes/no column in the
+    // users table. To add a new page: add a row here, then add that same
+    // column to the users table in Supabase (text, values "yes" or "no").
+    const PAGE_COLUMNS = {
+        'performance.html': 'page_performance',
+        'summary.html': 'page_summary',
+        'task.html': 'page_task',
+        'home.html': 'page_home',
+        'weekly_report.html': 'page_weekly_report',
+        'weekly_report_view.html': 'page_weekly_report',
+        'general_by_activity.html': 'page_general_by_activity'
+    };
 
     function currentPage() {
         let path = window.location.pathname.split('/').pop();
@@ -79,6 +109,19 @@
         role = 'blocked'; // unknown/unrecognized permission value -> safest default
     }
 
+    // Per-page yes/no columns: session[PAGE_COLUMNS[pageName]] must be the
+    // literal string "yes" (case-insensitive) for a non-administrator user
+    // to be allowed onto that page. Anything else ("no", empty, missing) blocks it.
+    function pageIsAllowed(pageName) {
+        if (role === 'super_admin') return true;
+        if (ALWAYS_ALLOWED_PAGES.includes(pageName)) return true;
+        if (ADMIN_ONLY_PAGES.includes(pageName)) return false; // handled below, never via PAGE_COLUMNS
+        const col = PAGE_COLUMNS[pageName];
+        if (!col) return false; // page has no yes/no column defined -> deny by default
+        const val = (session[col] || '').toString().trim().toLowerCase();
+        return val === 'yes';
+    }
+
     window.currentUserRole = role;
     window.currentUsername = session.username;
     // Who can see file/attachment links: admin/super_admin can, restricted roles cannot
@@ -113,6 +156,13 @@
         return;
     }
 
+    // Per-page yes/no columns: any page not in ADMIN_ONLY_PAGES/ALWAYS_ALLOWED_PAGES
+    // now requires this user's matching PAGE_COLUMNS column to say "yes".
+    if (!pageIsAllowed(page)) {
+        document.addEventListener('DOMContentLoaded', showAccessDenied);
+        return;
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
         // Hide file/attachment links for roles without file access
         if (!window.canAccessFiles) {
@@ -127,11 +177,12 @@
                 el.style.display = 'none';
             });
         }
-        // Hide nav links this role isn't allowed to open
+        // Hide nav links this user isn't allowed to open (ADMIN_ONLY_PAGES
+        // restriction, or simply "no"/missing in their PAGE_COLUMNS value).
         document.querySelectorAll('.nav-btn[href]').forEach(function (a) {
             let href = a.getAttribute('href');
             if (!href) return;
-            if (role !== 'super_admin' && ADMIN_ONLY_PAGES.includes(href)) {
+            if (!pageIsAllowed(href.trim().toLowerCase())) {
                 a.style.display = 'none';
             }
         });
