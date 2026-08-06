@@ -164,6 +164,12 @@
     border:3px solid #29a9e0;border-radius:30px;
     padding:22px 28px 46px;
     max-width:100%;width:100%;
+    /* Always fill one full A4 printable page, even when the actual content
+       (a short work table, a couple of photos, etc.) is much shorter than
+       that — otherwise the blue frame hugs the content tightly and leaves a
+       big dead-looking blank gap between the frame's bottom edge and the
+       physical page's bottom edge, making the page look "cut short"/unfinished. */
+    min-height:1030px;
   }
   .pf-body{overflow:visible;max-width:100%;}
   .pf-pagenum{
@@ -212,7 +218,7 @@
     border:1px solid var(--border);border-radius:10px;overflow:hidden;
   }
   .pv-work-table th{
-    background:var(--primary);color:#fff;padding:9px 8px;text-align:center;font-weight:700;
+    background:var(--primary);color:#fff;padding:9px 10px;text-align:center;font-weight:700;
     font-size:11.5px;text-transform:uppercase;letter-spacing:.4px;
   }
   .pv-work-table td{padding:9px 10px;border-bottom:1px solid var(--border);text-align:center;vertical-align:middle;color:var(--text-main);}
@@ -1248,7 +1254,7 @@ function renderPrintView() {
   let catsHtml = '';
   Object.keys(groups).forEach(cat => {
     catsHtml += `<div class="pv-cat-title">${escapeHtml(cat)}</div>`;
-    catsHtml += `<table class="pv-work-table"><thead><tr><th style="width:40px;">NO.</th><th>Activity</th><th style="width:180px;">Location</th></tr></thead><tbody>`;
+    catsHtml += `<table class="pv-work-table"><thead><tr><th style="width:40px;">NO.</th><th style="text-align:${document.dir === 'rtl' ? 'right' : 'left'};">Activity</th><th style="width:180px;">Location</th></tr></thead><tbody>`;
     groups[cat].forEach((w, i) => {
       catsHtml += `<tr><td>${i + 1}</td><td class="pv-activity-cell" style="text-align:${document.dir === 'rtl' ? 'right' : 'left'};">${escapeHtml(w.activity)}</td><td>${escapeHtml(w.location)}</td></tr>`;
     });
