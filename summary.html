@@ -1,0 +1,1179 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MDECO Submittals Advanced Search Dashboard</title>
+    <!-- منع أي كاش للصفحة نفسها (Browser cache) -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <script>
+      // فحص فوري: هل فيه نسخة أحدث من نفس الصفحة اتنشرت على GitHub؟ لو آه،
+      // يعمل تحميل كامل تلقائي مرة واحدة — يتخطى كاش المتصفح وكاش GitHub Pages
+      // معاً (منطق الفحص كامل في cache-buster.js المشترك بين كل الصفحات).
+      document.write('<script src="./cache-buster.js?v=' + Date.now() + '"><' + '/script>');
+    </script>
+    <script>
+    // ----- Print-embed mode -----
+    // When this page is loaded inside the weekly report's combined print
+    // (weekly_report.html adds ?print=1), hide our own header/nav/search UI and
+    // tell the parent window when our data has finished loading and rendering,
+    // via postMessage (works even if the parent can't reach into this document
+    // directly, e.g. when both pages are opened locally via file://).
+    (function () {
+      if (new URLSearchParams(location.search).get('print') !== '1') return;
+
+      var style = document.createElement('style');
+      style.textContent =
+        '.topbar,.header,.nav-container,.search-area-container,.translate-btn{display:none !important;}' +
+        'body{margin:0 !important;padding:0 !important;}' +
+        '.dashboard-container{padding:10px 20px 20px !important;max-width:100% !important;}' +
+        '.wrap{padding:10px 20px 20px !important;max-width:100% !important;}';
+      document.head.appendChild(style);
+
+      function reportReady() {
+        try {
+          var height = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight, 1);
+          window.parent.postMessage({ type: 'print-page-ready', height: height }, '*');
+        } catch (e) { /* ignore */ }
+      }
+
+      var debounceTimer;
+      function scheduleReport() {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(reportReady, 500);
+      }
+
+      document.addEventListener('DOMContentLoaded', function () {
+        // Watch for the app's own async data rendering and re-report once it settles.
+        var mo = new MutationObserver(scheduleReport);
+        mo.observe(document.body, { childList: true, subtree: true, attributes: true });
+        scheduleReport();
+      });
+
+      // Hard safety net in case content never stabilizes (e.g. a failed fetch).
+      setTimeout(reportReady, 7000);
+    })();
+    </script>
+    <!-- Chart.js for Analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+      // تحميل الملفات المهمة (auth-guard.js / lang.js) برقم إصدار مختلف
+      // في كل مرة، عشان أي تحديث يترفع على GitHub يوصل فورًا للمستخدمين
+      // من غير ما يتحبس في كاش المتصفح أو كاش سيرفر GitHub Pages.
+      document.write('<script src="./auth-guard.js?v=' + Date.now() + '"><' + '/script>');
+      document.write('<script src="./lang.js?v=' + Date.now() + '"><' + '/script>');
+    </script>
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --primary-light: #eff6ff;
+            --bg-main: #f8fafc;
+            --bg-card: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--bg-main);
+            color: var(--text-main);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1e3a8a, #2563eb);
+            color: #fff;
+            padding: 24px;
+            text-align: center;
+            font-size: 28px;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            box-shadow: var(--shadow-md);
+        }
+
+        .header p {
+            margin: 6px 0 0 0;
+            font-size: 14px;
+            font-weight: 400;
+            opacity: 0.85;
+        }
+
+        .nav-container {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            background: var(--bg-card);
+            padding: 14px;
+            box-shadow: var(--shadow-sm);
+            border-bottom: 1px solid var(--border);
+            flex-wrap: wrap;
+        }
+
+        .nav-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 15px;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+            background: none;
+            border: none;
+            cursor: pointer;
+        }
+
+        .nav-btn:hover {
+            background: var(--primary-light);
+            color: var(--primary);
+        }
+
+        .translate-btn {
+            background: var(--primary-light);
+            color: var(--primary);
+        }
+
+        .dashboard-container {
+            max-width: 1440px;
+            margin: 0 auto;
+            padding: 32px 24px;
+        }
+
+        .kpi-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 32px;
+        }
+
+        .kpi-card {
+            background: var(--bg-card);
+            padding: 24px 20px;
+            border-radius: 16px;
+            box-shadow: var(--shadow-md);
+            border-inline-start: 6px solid var(--primary);
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .kpi-card.code-total { border-inline-start-color: #334155; }
+        .kpi-card.code-A { border-inline-start-color: #10b981; }
+        .kpi-card.code-B { border-inline-start-color: #3b82f6; }
+        .kpi-card.code-C { border-inline-start-color: #f59e0b; }
+        .kpi-card.code-D { border-inline-start-color: #8b5cf6; }
+        .kpi-card.code-none { border-inline-start-color: #94a3b8; }
+
+        .kpi-value {
+            font-size: 36px;
+            font-weight: 800;
+            color: var(--text-main);
+            line-height: 1;
+        }
+
+        .kpi-title {
+            font-size: 13px;
+            color: var(--text-muted);
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-top: 8px;
+        }
+
+        .kpi-icon {
+            font-size: 32px;
+            opacity: 0.15;
+            position: absolute;
+            margin-inline-start: auto;
+            margin-inline-end: 20px;
+            left: 20px;
+            top: 24px;
+        }
+        html[dir="ltr"] .kpi-icon {
+            left: auto;
+            right: 20px;
+        }
+
+        .search-area-container {
+            position: relative;
+            margin-bottom: 24px;
+        }
+
+        .search-wrapper {
+            position: relative;
+        }
+
+        .search-icon {
+            position: absolute;
+            right: 18px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-size: 18px;
+        }
+        html[dir="ltr"] .search-icon {
+            right: auto;
+            left: 18px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 16px 50px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            box-sizing: border-box;
+            font-size: 15px;
+            font-weight: 500;
+            color: var(--text-main);
+            box-shadow: var(--shadow-sm);
+            outline: none;
+            transition: all 0.2s;
+        }
+        html[dir="rtl"] .search-input { padding-left: 16px; }
+        html[dir="ltr"] .search-input { padding-right: 16px; }
+
+        .search-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.15);
+        }
+
+        .search-suggestions-list {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            margin-top: 6px;
+            max-height: 320px;
+            overflow-y: auto;
+            box-shadow: var(--shadow-lg);
+            z-index: 999;
+            display: none;
+            padding: 6px 0;
+        }
+
+        .suggestion-item {
+            padding: 12px 18px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #f8fafc;
+            transition: background 0.15s;
+        }
+
+        .suggestion-item:last-child {
+            border-bottom: none;
+        }
+
+        .suggestion-item:hover {
+            background: #f1f5f9;
+        }
+
+        .suggestion-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            text-align: start;
+        }
+
+        .suggestion-ref {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .suggestion-title {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-main);
+        }
+
+        .suggestion-meta {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .section-card {
+            background: var(--bg-card);
+            padding: 24px;
+            border-radius: 16px;
+            margin-bottom: 24px;
+            box-shadow: var(--shadow-md);
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 700;
+            margin-top: 0;
+            margin-bottom: 16px;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section-title i { color: var(--primary); }
+
+        .grid-buttons {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            background: #f8fafc;
+            color: var(--text-main);
+            border: 1px solid var(--border);
+            padding: 12px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .filter-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .badge-count {
+            background: rgba(15, 23, 42, 0.06);
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .filter-btn.active .badge-count {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .accordion-group {
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            margin-bottom: 14px;
+            overflow: hidden;
+            background: var(--bg-card);
+        }
+
+        .accordion-header {
+            background: #f8fafc;
+            padding: 16px 20px;
+            font-weight: 700;
+            font-size: 15px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            user-select: none;
+        }
+
+        .accordion-group.active .accordion-header {
+            border-bottom: 1px solid var(--border);
+            background: #f1f5f9;
+        }
+
+        .accordion-icon-indicator {
+            transition: transform 0.2s ease;
+            color: var(--text-muted);
+        }
+
+        .accordion-group.active .accordion-icon-indicator {
+            transform: rotate(180deg);
+        }
+
+        .accordion-content {
+            display: none;
+            padding: 16px;
+            background: #fcfdfe;
+        }
+
+        .accordion-group.active .accordion-content {
+            display: block;
+        }
+
+        .tasks-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .task-card {
+            background: var(--bg-card);
+            padding: 12px 20px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+            text-align: start;
+            transition: background 0.15s;
+        }
+
+        .task-card:hover {
+            background: #f8fafc;
+        }
+
+        .task-row-main {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+            flex: 1;
+        }
+
+        .task-meta-col {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            min-width: 130px;
+        }
+
+        .task-activity-label {
+            font-size: 11px;
+            font-weight: 700;
+            background: var(--primary-light);
+            color: var(--primary);
+            padding: 4px 10px;
+            border-radius: 20px;
+            text-align: center;
+        }
+
+        .task-discipline-label {
+            font-size: 11px;
+            font-weight: 700;
+            background: #f1f5f9;
+            color: var(--text-muted);
+            padding: 4px 10px;
+            border-radius: 20px;
+            text-align: center;
+        }
+
+        .task-title-col {
+            flex: 2;
+            min-width: 240px;
+        }
+
+        .task-title {
+            font-size: 15px;
+            font-weight: 700;
+            margin: 0 0 4px 0;
+            line-height: 1.4;
+        }
+
+        .task-ref {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .task-revisions-col {
+            display: flex;
+            gap: 8px;
+            flex: 3;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .revision-box {
+            background: #f8fafc;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 6px 12px;
+            margin-top: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            min-width: 145px;
+        }
+
+        .revision-top {
+            display: flex;
+            justify-content: space-between;
+            font-weight: 700;
+            font-size: 13px;
+            gap: 8px;
+        }
+
+        .code-badge {
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 800;
+        }
+
+        .code-badge.filled-A { background: #d1fae5; color: #065f46; }
+        .code-badge.filled-B { background: #dbeafe; color: #1e40af; }
+        .code-badge.filled-C { background: #fef3c7; color: #92400e; }
+        .code-badge.filled-D { background: #f3e8ff; color: #6b21a8; }
+        .code-badge.filled-Pending { background: #f1f5f9; color: #475569; }
+
+        .task-row-footer {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            min-width: 180px;
+            justify-content: flex-end;
+        }
+
+        .status-tag {
+            font-size: 11px;
+            font-weight: 800;
+            padding: 4px 10px;
+            border-radius: 20px;
+        }
+
+        .status-tag.open { background: #fffbeb; color: #b45309; border: 1px solid #fde68a; }
+        .status-tag.closed { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+
+        .link-btn {
+            color: var(--primary);
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .accordion-header .group-badge {
+            font-size: 12px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-weight: 700;
+            color: #fff;
+        }
+        .bg-A { background-color: #10b981; }
+        .bg-B { background-color: #3b82f6; }
+        .bg-C { background-color: #f59e0b; }
+        .bg-D { background-color: #8b5cf6; }
+        .bg-none { background-color: #94a3b8; }
+
+        .chart-container-wrapper {
+            position: relative;
+            margin: auto;
+            height: 340px;
+            width: 100%;
+            max-width: 700px;
+        }
+
+        .footer-dot-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 24px 0;
+        }
+        .footer-dot {
+            width: 12px;
+            height: 12px;
+            background-color: var(--primary);
+            border-radius: 50%;
+            opacity: 0.6;
+        }
+
+        @media (max-width: 992px) {
+            .task-card {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 14px;
+            }
+            .task-row-main {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 14px;
+            }
+            .task-title-col, .task-meta-col, .task-revisions-col {
+                width: 100%;
+            }
+            .task-row-footer {
+                justify-content: space-between;
+                border-top: 1px solid var(--border);
+                padding-top: 10px;
+                min-width: unset;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <span id="ui-main-title">MDECO SUBMITTALS ECODAN DASHBOARD</span>
+    <p id="ui-sub-title">Advanced Live Search & Folder System</p>
+</div>
+
+<div class="nav-container">
+    <a href="home.html" class="nav-btn">
+        <i class="fa-solid fa-house"></i> <span data-i18n="navHome">الرئيسية</span>
+    </a>
+    <a href="summary.html" class="nav-btn">
+        <i class="fa-solid fa-chart-column"></i> <span data-i18n="navSummary">الملخص</span>
+    </a>
+    <a href="task.html" class="nav-btn">
+        <i class="fa-solid fa-list-check"></i> <span data-i18n="navTasks">المهام</span>
+    </a>
+    <a href="general_by_activity.html" class="nav-btn">
+        <i class="fa-solid fa-layer-group"></i> <span data-i18n="navGeneral">عام</span>
+    </a>
+    <a href="approvals.html" class="nav-btn">
+        <i class="fa-solid fa-clipboard-check"></i> <span data-i18n="navApprovals">طلبات الموافقة</span>
+    </a>
+    <a href="team_overview.html" class="nav-btn">
+        <i class="fa-solid fa-users"></i> <span data-i18n="navTeam">نظرة عامة على الموظفين</span>
+    </a>
+     <a href="performance.html" class="nav-btn">
+        <i class="fa-solid fa-chart-column"></i> <span data-i18n="navDashboard">لوحة التحكم</span>
+    </a>
+    <!-- Translation Button Icon -->
+    <a href="weekly_report.html" class="nav-btn"><i class="fa-solid fa-file-lines"></i> <span data-i18n="navReport">التقرير الأسبوعي</span></a>
+    <a href="weekly_report_view.html" class="nav-btn"><i class="fa-solid fa-eye"></i> <span data-i18n="navReportView">عرض التقرير</span></a>
+    <button onclick="toggleLanguage()" class="nav-btn translate-btn">
+        <i class="fa-solid fa-language"></i> <span id="lang-btn-text">English</span>
+    </button>
+</div>
+
+<div class="dashboard-container">
+
+    <!-- KPI Counters Section -->
+    <div class="kpi-container" id="kpi-counters">
+        <div class="kpi-card code-total">
+            <div class="kpi-content"><div class="kpi-value" id="count-total">0</div><div class="kpi-title" data-i18n="kpiTotal">Total Filtered</div></div>
+            <i class="fa-solid fa-layer-group kpi-icon"></i>
+        </div>
+        <div class="kpi-card code-A">
+            <div class="kpi-content"><div class="kpi-value" id="count-a">0</div><div class="kpi-title">Code A</div></div>
+            <i class="fa-solid fa-circle-check kpi-icon" style="color: #10b981;"></i>
+        </div>
+        <div class="kpi-card code-B">
+            <div class="kpi-content"><div class="kpi-value" id="count-b">0</div><div class="kpi-title">Code B</div></div>
+            <i class="fa-solid fa-pen-to-square kpi-icon" style="color: #3b82f6;"></i>
+        </div>
+        <div class="kpi-card code-C">
+            <div class="kpi-content"><div class="kpi-value" id="count-c">0</div><div class="kpi-title">Code C</div></div>
+            <i class="fa-solid fa-triangle-exclamation kpi-icon" style="color: #f59e0b;"></i>
+        </div>
+        <div class="kpi-card code-D">
+            <div class="kpi-content"><div class="kpi-value" id="count-d">0</div><div class="kpi-title">Code D</div></div>
+            <i class="fa-solid fa-circle-xmark kpi-icon" style="color: #8b5cf6;"></i>
+        </div>
+        <div class="kpi-card code-none">
+            <div class="kpi-content"><div class="kpi-value" id="count-none">0</div><div class="kpi-title" data-i18n="kpiPending">Pending</div></div>
+            <i class="fa-solid fa-clock kpi-icon" style="color: #94a3b8;"></i>
+        </div>
+    </div>
+
+    <!-- Search Section -->
+    <div class="search-area-container">
+        <div class="search-wrapper">
+            <i class="fa-solid fa-magnifying-glass search-icon"></i>
+            <input id="search-bar" class="search-input" data-i18n-placeholder="searchPlaceholder" placeholder="اكتب للبحث... (رقم المعاملة، العنوان، التخصص، أو المجموعة)" onkeyup="onSearchInputChange()" autocomplete="off">
+        </div>
+        <div id="suggestions-box" class="search-suggestions-list"></div>
+    </div>
+
+    <!-- Filters Section -->
+    <div class="section-card">
+        <div class="section-title"><i class="fa-solid fa-filter"></i> <span data-i18n="filterActivity">التصفية حسب مجموعة النشاط (Activity Group)</span></div>
+        <div class="grid-buttons" id="activity-buttons">جاري التحميل...</div>
+    </div>
+
+    <div class="section-card" id="discipline-section" style="display: none;">
+        <div class="section-title"><i class="fa-solid fa-sliders"></i> <span data-i18n="filterDiscipline">التصفية حسب التخصص الفرعي (Discipline)</span></div>
+        <div class="grid-buttons" id="discipline-buttons"></div>
+    </div>
+
+    <!-- Accordion Folders Section -->
+    <div class="section-card">
+        <div class="section-title" id="tasks-title"><i class="fa-solid fa-folder-open"></i> <span data-i18n="foldersTitle">مجلدات الاعتمادات (Submittals Folders)</span></div>
+        <div id="accordions-container"></div>
+    </div>
+
+    <!-- Analytics Chart Section -->
+    <div class="section-card">
+        <div class="section-title"><i class="fa-solid fa-chart-pie"></i> <span data-i18n="chartTitle">مخطط ملخص حالات الأكواد (Code Status Summary)</span></div>
+        <div class="chart-container-wrapper">
+            <canvas id="codesChart"></canvas>
+        </div>
+    </div>
+
+</div>
+
+<div class="footer-dot-container">
+    <div class="footer-dot"></div>
+</div>
+
+<script>
+if (typeof window.registerDictionary === 'function') {
+  window.registerDictionary({
+    ar: { navReportView: 'عرض التقرير' },
+    en: { navReportView: 'View Report' }
+  });
+}
+let allRows = [];
+let selectedActivity = null;
+let selectedDiscipline = null;
+let codesChartInstance = null;
+let currentLang = (typeof window.getCurrentLang === 'function') ? window.getCurrentLang() : 'ar';
+
+const SUPABASE_URL = "https://uhhtvpxtpayovbtmnstz.supabase.co";
+const SUPABASE_KEY = "sb_publishable_QsS0UhLBORy6mOaBDgW62g_9OacC3oO";
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const dictionary = {
+    ar: {
+        kpiTotal: "إجمالي التصفية",
+        kpiPending: "قيد الانتظار",
+        searchPlaceholder: "اكتب للبحث... (رقم المعاملة، العنوان، التخصص، أو المجموعة)",
+        filterActivity: "التصفية حسب مجموعة النشاط (Activity Group)",
+        filterDiscipline: "التصفية حسب التخصص الفرعي (Discipline)",
+        foldersTitle: "مجلدات الاعتمادات (Submittals Folders)",
+        chartTitle: "مخطط ملخص حالات الأكواد (Code Status Summary)",
+        viewAll: "عرض الكل",
+        all: "الكل",
+        noRecords: "لا توجد سجلات في هذا المجلد.",
+        refLabel: "المرجع",
+        techDoc: "المرفق الفني",
+        submittalsCount: "المعاملات",
+        noResults: "لا توجد نتائج مطابقة"
+    },
+    en: {
+        kpiTotal: "Total Filtered",
+        kpiPending: "Pending",
+        searchPlaceholder: "Type to search... (Ref No, Title, Discipline, or Group)",
+        filterActivity: "Filter by Activity Group",
+        filterDiscipline: "Filter by Sub-Discipline (Discipline)",
+        foldersTitle: "Submittals Folders",
+        chartTitle: "Code Status Summary Chart",
+        viewAll: "View All",
+        all: "All",
+        noRecords: "No records found in this folder.",
+        refLabel: "Ref",
+        techDoc: "Technical Doc",
+        submittalsCount: "Submittals",
+        noResults: "No matching results"
+    }
+};
+window.registerDictionary(dictionary);
+
+// Initial Data Fetch
+async function loadSummaryData() {
+    try {
+        const { data: rows, error } = await supabaseClient
+            .from('submittals')
+            .select('*');
+
+        if (error) throw error;
+        allRows = rows || [];
+        processData();
+    } catch (err) {
+        console.error("Error fetching data:", err);
+        document.getElementById('activity-buttons').innerText = "فشل في تحميل البيانات. يرجى التحقق من الاتصال.";
+    }
+}
+loadSummaryData();
+
+function processData() {
+    renderActivities();
+    refreshDashboard(); 
+}
+
+function refreshDashboard() {
+    let filtered = getFilteredRows();
+    calculateKPIs(filtered);
+    renderTasks(filtered);
+    updateChart(filtered);
+}
+
+// lang.js يستدعي الدالة دي تلقائيًا كل ما اللغة تتغيّر (وأول ما الصفحة تحمّل)
+window.onLanguageChanged = function (lang) {
+    currentLang = lang;
+    renderActivities();
+    if (selectedActivity) renderDisciplines(selectedActivity);
+    refreshDashboard();
+};
+
+function getFilteredRows() {
+    let filtered = allRows;
+    let searchKey = document.getElementById('search-bar').value.toLowerCase().trim();
+
+    if (selectedActivity) {
+        filtered = filtered.filter(row => (row.activity || "").trim() === selectedActivity);
+    }
+    if (selectedDiscipline) {
+        filtered = filtered.filter(row => (row.discipline || "").trim() === selectedDiscipline);
+    }
+    if (searchKey !== "") {
+        filtered = filtered.filter(row => {
+            return (row.no || "").toLowerCase().includes(searchKey) || 
+                   (row.title || "").toLowerCase().includes(searchKey) || 
+                   (row.discipline || "").toLowerCase().includes(searchKey) || 
+                   (row.action_by || "").toLowerCase().includes(searchKey) || 
+                   (row.activity || "").toLowerCase().includes(searchKey);
+        });
+    }
+    return filtered;
+}
+
+function calculateKPIs(currentRows) {
+    let stats = { total: currentRows.length, A: 0, B: 0, C: 0, D: 0, none: 0 };
+    currentRows.forEach(row => {
+        let lastCode = getLastActiveCode(row);
+        if (lastCode && ['A', 'B', 'C', 'D'].includes(lastCode)) {
+            stats[lastCode]++;
+        } else {
+            stats.none++;
+        }
+    });
+    document.getElementById('count-total').innerText = stats.total;
+    document.getElementById('count-a').innerText = stats.A;
+    document.getElementById('count-b').innerText = stats.B;
+    document.getElementById('count-c').innerText = stats.C;
+    document.getElementById('count-d').innerText = stats.D;
+    document.getElementById('count-none').innerText = stats.none;
+}
+
+function getLastActiveCode(row) {
+    let revisions = [
+        { submitted: row.submitted_on, code: row.code },
+        { submitted: row.submitted_on_1, code: row.code_1 },
+        { submitted: row.submitted_on_2, code: row.code_2 },
+        { submitted: row.submitted_on_3, code: row.code_3 }
+    ];
+    let lastActive = [...revisions].reverse().find(r => (r.submitted || "").trim() !== "");
+    return lastActive ? (lastActive.code || "").trim().toUpperCase() : null;
+}
+
+function renderActivities() {
+    let acts = {};
+    let searchKey = document.getElementById('search-bar').value.toLowerCase().trim();
+    let baseRows = allRows;
+
+    if (selectedDiscipline) {
+        baseRows = baseRows.filter(row => (row.discipline || "").trim() === selectedDiscipline);
+    }
+    if (searchKey !== "") {
+        baseRows = baseRows.filter(row => {
+            return (row.no || "").toLowerCase().includes(searchKey) || 
+                   (row.title || "").toLowerCase().includes(searchKey) || 
+                   (row.discipline || "").toLowerCase().includes(searchKey) || 
+                   (row.action_by || "").toLowerCase().includes(searchKey) || 
+                   (row.activity || "").toLowerCase().includes(searchKey);
+        });
+    }
+
+    let totalAvailable = baseRows.length;
+
+    allRows.forEach(row => {
+        let a = (row.activity || ((currentLang === 'ar') ? "غير محدد" : "Unspecified")).trim();
+        acts[a] = 0;
+    });
+
+    baseRows.forEach(row => {
+        let a = (row.activity || ((currentLang === 'ar') ? "غير محدد" : "Unspecified")).trim();
+        acts[a] = (acts[a] || 0) + 1;
+    });
+
+    let html = `<button class="filter-btn ${!selectedActivity ? 'active' : ''}" onclick="selectActivity(null)">${dictionary[currentLang].viewAll} <span class="badge-count">${totalAvailable}</span></button>`;
+    
+    Object.keys(acts).forEach(act => {
+        html += `<button class="filter-btn ${selectedActivity === act ? 'active' : ''}" onclick="selectActivity('${act}')">${act} <span class="badge-count">${acts[act]}</span></button>`;
+    });
+    document.getElementById('activity-buttons').innerHTML = html;
+}
+
+function selectActivity(act) {
+    selectedActivity = act;
+    let discSection = document.getElementById('discipline-section');
+    if (act) {
+        discSection.style.display = 'block';
+        renderDisciplines(act);
+    } else {
+        discSection.style.display = 'none';
+        selectedDiscipline = null; 
+    }
+    refreshDashboard();
+    renderActivities();
+}
+
+function renderDisciplines(act) {
+    let searchKey = document.getElementById('search-bar').value.toLowerCase().trim();
+    let filtered = allRows.filter(row => (row.activity || "").trim() === act);
+    
+    if (searchKey !== "") {
+        filtered = filtered.filter(row => {
+            return (row.no || "").toLowerCase().includes(searchKey) || 
+                   (row.title || "").toLowerCase().includes(searchKey) || 
+                   (row.discipline || "").toLowerCase().includes(searchKey) || 
+                   (row.action_by || "").toLowerCase().includes(searchKey) || 
+                   (row.activity || "").toLowerCase().includes(searchKey);
+        });
+    }
+
+    let discs = {};
+    filtered.forEach(row => {
+        let d = (row.discipline || ((currentLang === 'ar') ? "عام" : "General")).trim();
+        discs[d] = (discs[d] || 0) + 1;
+    });
+
+    let html = `<button class="filter-btn ${!selectedDiscipline ? 'active' : ''}" onclick="selectDiscipline(null)">${dictionary[currentLang].all} <span class="badge-count">${filtered.length}</span></button>`;
+    Object.keys(discs).forEach(disc => {
+        html += `<button class="filter-btn ${selectedDiscipline === disc ? 'active' : ''}" onclick="selectDiscipline('${disc}')">${disc} <span class="badge-count">${discs[disc]}</span></button>`;
+    });
+    document.getElementById('discipline-buttons').innerHTML = html;
+}
+
+function selectDiscipline(disc) {
+    selectedDiscipline = disc;
+    if (selectedActivity) renderDisciplines(selectedActivity);
+    refreshDashboard();
+    renderActivities();
+}
+
+function onSearchInputChange() {
+    let searchKey = document.getElementById('search-bar').value.toLowerCase().trim();
+    let suggestionsBox = document.getElementById('suggestions-box');
+    
+    refreshDashboard();
+    renderActivities();
+    if (selectedActivity) renderDisciplines(selectedActivity);
+
+    if (searchKey === "") {
+        suggestionsBox.style.display = "none";
+        return;
+    }
+
+    let matched = allRows.filter(row => {
+        return (row.no || "").toLowerCase().includes(searchKey) || 
+               (row.title || "").toLowerCase().includes(searchKey);
+    }).slice(0, 8);
+
+    if (matched.length === 0) {
+        suggestionsBox.innerHTML = `<div style="padding:12px; text-align:center; color:var(--text-muted); font-size:14px;">${dictionary[currentLang].noResults}</div>`;
+        suggestionsBox.style.display = "block";
+        return;
+    }
+
+    let sugHtml = "";
+    matched.forEach(row => {
+        let code = getLastActiveCode(row) || "Pending";
+        sugHtml += `
+            <div class="suggestion-item" onclick="selectSuggestion('${row.no}')">
+                <div class="suggestion-info">
+                    <span class="suggestion-ref">${row.no || 'N/A'}</span>
+                    <span class="suggestion-title">${row.title || 'Untitled'}</span>
+                    <span class="suggestion-meta">${row.activity || 'N/A'} | ${row.discipline || 'N/A'}</span>
+                </div>
+                <span class="code-badge filled-${code}">${code}</span>
+            </div>
+        `;
+    });
+
+    suggestionsBox.innerHTML = sugHtml;
+    suggestionsBox.style.display = "block";
+}
+
+function selectSuggestion(rfiNo) {
+    document.getElementById('search-bar').value = rfiNo;
+    document.getElementById('suggestions-box').style.display = "none";
+    refreshDashboard();
+    renderActivities();
+    
+    setTimeout(() => {
+        document.querySelectorAll('.accordion-group').forEach(acc => {
+            if (acc.querySelector('.task-card')) {
+                acc.classList.add('active');
+            }
+        });
+    }, 100);
+}
+
+document.addEventListener("click", function(e) {
+    if (e.target.id !== "search-bar" && e.target.id !== "suggestions-box") {
+        document.getElementById('suggestions-box').style.display = "none";
+    }
+});
+
+function toggleAccordion(elementId) {
+    document.getElementById(elementId).classList.toggle('active');
+}
+
+function renderTasks(filteredData) {
+    let groups = {
+        A: { name: "Approved (Code A)", class: "bg-A", items: [] },
+        B: { name: "Approved with Notes (Code B)", class: "bg-B", items: [] },
+        C: { name: "Revised & Resubmit (Code C)", class: "bg-C", items: [] },
+        D: { name: "Rejected (Code D)", class: "bg-D", items: [] },
+        none: { name: (currentLang === 'ar' ? "قيد المراجعة / بدون كود" : "Pending / No Code Group"), class: "bg-none", items: [] }
+    };
+
+    let borderColors = { A: '#10b981', B: '#3b82f6', C: '#f59e0b', D: '#8b5cf6', none: '#94a3b8' };
+
+    filteredData.forEach(row => {
+        let code = getLastActiveCode(row);
+        if (code && groups[code]) {
+            groups[code].items.push(row);
+        } else {
+            groups.none.items.push(row);
+        }
+    });
+
+    let isSearching = document.getElementById('search-bar').value.trim() !== "";
+    let containerHtml = "";
+
+    Object.keys(groups).forEach(key => {
+        let group = groups[key];
+        let cardsHtml = "";
+        let currentBorder = borderColors[key] || '#2563eb';
+
+        if (group.items.length === 0) {
+            cardsHtml = `<div style="text-align:center; color: var(--text-muted); padding: 15px;">${dictionary[currentLang].noRecords}</div>`;
+        } else {
+            cardsHtml = `<div class="tasks-grid">`;
+            group.items.forEach(row => {
+                let revsHTML = "";
+                let revList = [
+                    { name: "Original", submitted: row.submitted_on, received: row.received_on, code: row.code, link: row.link },
+                    { name: "Revision 1", submitted: row.submitted_on_1, received: row.received_on_1, code: row.code_1, link: row.link_1 },
+                    { name: "Revision 2", submitted: row.submitted_on_2, received: row.received_on_2, code: row.code_2, link: row.link_2 },
+                    { name: "Revision 3", submitted: row.submitted_on_3, received: row.received_on_3, code: row.code_3, link: row.link_3 }
+                ];
+
+                let lastActiveRev = null;
+                revList.forEach(r => {
+                    let sub = (r.submitted || "").trim();
+                    if (sub) {
+                        lastActiveRev = r; 
+                        let cd = (r.code || "").trim().toUpperCase();
+                        let filledClass = cd ? `filled-${cd}` : 'filled-Pending';
+                        revsHTML += `
+                            <div class="revision-box">
+                                <div class="revision-top">
+                                    <span>${r.name}</span>
+                                    <span class="code-badge ${filledClass}">${cd ? 'Code ' + cd : 'No Code'}</span>
+                                </div>
+                                <div style="color: var(--text-muted); font-size:11px; margin-top:4px;">
+                                    <b>Sub:</b> ${sub} ${r.received ? ' | <b>Rec:</b> ' + r.received : ''}
+                                </div>
+                                ${r.link && r.link.startsWith('http') ? `<div style="margin-top:6px;"><a href="${r.link}" target="_blank" class="link-btn"><i class="fa-solid fa-arrow-up-right-from-square"></i> ${dictionary[currentLang].techDoc}</a></div>` : ''}
+                            </div>
+                        `;
+                    }
+                });
+
+                let isClosed = lastActiveRev && (lastActiveRev.code || "").trim() !== "";
+                let statusText = isClosed ? "CLOSED" : "OPEN PENDING";
+                let statusClass = isClosed ? "closed" : "open";
+
+                cardsHtml += `
+                    <div class="task-card" style="border-inline-start: 4px solid ${currentBorder}; border-top: none; border-inline-end: none;">
+                        <div class="task-row-main">
+                            <div class="task-meta-col">
+                                <span class="task-activity-label">${row.activity || 'N/A'}</span>
+                                <span class="task-discipline-label">${row.discipline || 'N/A'}</span>
+                            </div>
+                            <div class="task-title-col">
+                                <div class="task-title">${row.title || 'Untitled Proposal Doc'}</div>
+                                <div class="task-ref">${dictionary[currentLang].refLabel}: <b>${row.no || 'N/A'}</b></div>
+                            </div>
+                            <div class="task-revisions-col">
+                                ${revsHTML}
+                            </div>
+                        </div>
+                        <div class="task-row-footer">
+                            <span class="status-tag ${statusClass}">${statusText}</span>
+                            <span style="font-size:12px; font-weight:600; color:var(--text-muted); white-space: nowrap;"><i class="fa-regular fa-user"></i> ${row.action_by || 'Staff'}</span>
+                        </div>
+                    </div>
+                `;
+            });
+            cardsHtml += `</div>`;
+        }
+
+        let activeClass = (isSearching || selectedActivity || selectedDiscipline) && group.items.length > 0 ? "active" : "";
+
+        containerHtml += `
+            <div class="accordion-group ${activeClass}" id="acc-${key}">
+                <div class="accordion-header" onclick="toggleAccordion('acc-${key}')">
+                    <div>
+                        <i class="fa-solid fa-chevron-down accordion-icon-indicator" style="margin-inline-end:8px;"></i>
+                        <span>${group.name}</span>
+                    </div>
+                    <span class="group-badge ${group.class}">${group.items.length} ${dictionary[currentLang].submittalsCount}</span>
+                </div>
+                <div class="accordion-content">
+                    ${cardsHtml}
+                </div>
+            </div>
+        `;
+    });
+
+    document.getElementById('accordions-container').innerHTML = containerHtml;
+}
+
+function updateChart(currentRows) {
+    let stats = { A: 0, B: 0, C: 0, D: 0, Open: 0 };
+    currentRows.forEach(row => {
+        let lastCode = getLastActiveCode(row);
+        if (lastCode && ['A', 'B', 'C', 'D'].includes(lastCode)) {
+            stats[lastCode]++;
+        } else {
+            stats.Open++;
+        }
+    });
+
+    const ctx = document.getElementById('codesChart').getContext('2d');
+    if (codesChartInstance) {
+        codesChartInstance.destroy();
+    }
+
+    codesChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['Code A', 'Code B', 'Code C', 'Code D', 'Pending'],
+            datasets: [{
+                data: [stats.A, stats.B, stats.C, stats.D, stats.Open],
+                backgroundColor: ['#10b981', '#3b82f6', '#f59e0b', '#8b5cf6', '#94a3b8'],
+                borderRadius: 8,
+                barThickness: 30
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { 
+                legend: { display: false } 
+            },
+            scales: { 
+                x: { grid: { display: false } }, 
+                y: { beginAtZero: true, ticks: { stepSize: 1 } } 
+            }
+        }
+    });
+}
+</script>
+
+</body>
+</html>
