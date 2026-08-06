@@ -83,10 +83,15 @@
   .meta-item .lbl{font-size:12px;color:var(--text-muted);font-weight:700;text-transform:uppercase;margin-bottom:4px;}
   .meta-item .val{font-size:16px;font-weight:700;color:var(--text-main);}
 
-  table.works-table{width:100%;border-collapse:collapse;margin-top:4px;}
-  table.works-table th{background:var(--primary);color:#fff;padding:10px;font-size:13px;text-align:right;}
-  table.works-table td{padding:10px;font-size:13.5px;border-bottom:1px solid var(--border);vertical-align:top;}
+  table.works-table{
+    width:100%;border-collapse:separate;border-spacing:0;margin-top:4px;
+    border:1px solid var(--border);border-radius:10px;overflow:hidden;
+  }
+  table.works-table th{background:var(--primary);color:#fff;padding:10px;font-size:12.5px;text-align:right;font-weight:700;text-transform:uppercase;letter-spacing:.3px;}
+  table.works-table td{padding:10px;font-size:13.5px;border-bottom:1px solid var(--border);vertical-align:top;color:var(--text-main);}
   table.works-table tr:last-child td{border-bottom:none;}
+  table.works-table tbody tr:nth-child(even){background:#f8fafc;}
+  table.works-table td.activity-cell{font-weight:400;color:#475569;line-height:1.55;}
   .empty-note{padding:20px;text-align:center;color:var(--text-muted);font-weight:600;}
 
   .photo-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:4px;}
@@ -94,6 +99,22 @@
   .photo-block{text-align:center;}
   .photo-block img{width:100%;height:260px;object-fit:contain;border:1px solid var(--border);border-radius:8px;background:#f1f5f9;}
   .photo-caption{display:inline-block;margin-top:8px;border:1px solid var(--primary);color:var(--primary);font-weight:700;font-size:12.5px;padding:6px 16px;border-radius:20px;}
+
+  /* ----- Print: photos laid out 4-per-page (2x2), sized for easy viewing.
+     Each .photo-print-page is its own sheet; leftover photos (1–3) on the
+     last page are centered and enlarged via the pv-count-N modifier. ----- */
+  .photo-print-page{display:none;}
+  .photo-print-page .photo-page-title{
+    background:#0ea5e9;color:#fff;text-align:center;font-weight:800;font-size:14px;
+    padding:10px;border-radius:8px;margin:0 0 18px;
+  }
+  .photo-print-page .photo-page-grid{display:flex;flex-wrap:wrap;justify-content:center;align-content:flex-start;gap:22px;}
+  .photo-print-page .photo-page-grid .photo-block{flex:0 0 calc(50% - 11px);page-break-inside:avoid;}
+  .photo-print-page .photo-page-grid .photo-block img{height:330px;}
+  .photo-print-page .photo-page-grid.pv-count-1 .photo-block{flex:0 0 68%;}
+  .photo-print-page .photo-page-grid.pv-count-1 .photo-block img{height:560px;}
+  .photo-print-page .photo-page-grid.pv-count-2 .photo-block{flex:0 0 46%;}
+  .photo-print-page .photo-page-grid.pv-count-2 .photo-block img{height:440px;}
 
   .loading-state{padding:60px 20px;text-align:center;color:var(--text-muted);font-weight:700;}
   .loading-state i{font-size:22px;margin-bottom:10px;display:block;}
@@ -162,6 +183,18 @@
     }
     .cover-inner{padding:34px 34px 24px;}
     .cover-titlebar{font-size:24px;padding:20px;}
+
+    /* ----- Photos: the on-screen card is hidden at print time; the
+       dedicated 4-per-page print pages (built in renderReport()) are
+       shown instead, each on its own sheet. ----- */
+    .photo-grid-card{display:none !important;}
+    .photo-print-page{
+      display:block !important;border:3px solid #29a9e0;border-radius:30px;
+      padding:24px 26px 30px;
+      page-break-before:always;break-before:page;
+      page-break-after:always;break-after:page;
+    }
+    .photo-print-page:last-child{page-break-after:auto;break-after:auto;}
   }
 </style>
 </head>
@@ -560,7 +593,7 @@ function renderReport(data) {
           ${works.map(w => `
             <tr>
               <td>${escapeHtml(w.category)}</td>
-              <td>${escapeHtml(w.activity)}</td>
+              <td class="activity-cell">${escapeHtml(w.activity)}</td>
               <td>${escapeHtml(w.location)}</td>
             </tr>`).join('')}
         </tbody>
@@ -583,6 +616,11 @@ function renderReport(data) {
     photosHtml = `<div class="empty-note">${T('noPhotos')}</div>`;
   }
 
+  // Print-only pages: same photos, chunked 4-per-page and sized for easy
+  // viewing (see buildPhotoPrintPagesHtml). Hidden on screen, shown instead
+  // of .photo-grid-card only when printing (see the @media print rules).
+  const photoPrintPagesHtml = buildPhotoPrintPagesHtml(photos);
+
   document.getElementById('reportContent').innerHTML = `
     ${coverHtml}
     <div class="card">
@@ -597,11 +635,40 @@ function renderReport(data) {
       <h2 class="section-title"><i class="fa-solid fa-list-check"></i> ${T('worksTitle')}</h2>
       ${worksHtml}
     </div>
-    <div class="card">
+    <div class="card photo-grid-card">
       <h2 class="section-title"><i class="fa-solid fa-camera"></i> ${T('photosTitle')}</h2>
       ${photosHtml}
     </div>
+    ${photoPrintPagesHtml}
   `;
+}
+
+// Build the print-only "4 photos per page" pages as an HTML string. Any
+// leftover photos (1–3) on the final page get a modifier class so CSS can
+// center and enlarge them instead of leaving a sparse-looking grid.
+function buildPhotoPrintPagesHtml(photos) {
+  if (!photos.length) return '';
+  const chunkSize = 4;
+  const totalPages = Math.ceil(photos.length / chunkSize);
+  let html = '';
+  for (let i = 0; i < totalPages; i++) {
+    const chunk = photos.slice(i * chunkSize, i * chunkSize + chunkSize);
+    const title = totalPages > 1
+      ? `Site Progress Photos for the Week (${i + 1}/${totalPages})`
+      : 'Site Progress Photos for the Week';
+    html += `
+      <div class="photo-print-page">
+        <div class="photo-page-title">${escapeHtml(title)}</div>
+        <div class="photo-page-grid pv-count-${chunk.length}">
+          ${chunk.map(p => `
+            <div class="photo-block">
+              <img src="${p.dataUrl}">
+              ${p.caption ? `<div class="photo-caption">${escapeHtml(p.caption)}</div>` : ''}
+            </div>`).join('')}
+        </div>
+      </div>`;
+  }
+  return html;
 }
 
 // ---------- Performance dashboard (live data, same as performance.html) ----------
