@@ -96,6 +96,16 @@
             color: var(--primary);
         }
 
+        .nav-btn.active {
+            background: var(--primary);
+            color: #fff;
+            box-shadow: 0 2px 8px -2px rgba(30, 64, 175, 0.45);
+        }
+
+        .nav-btn:active {
+            transform: scale(0.96);
+        }
+
         .translate-btn {
             background: var(--primary-light);
             color: var(--primary);
@@ -312,9 +322,9 @@
             justify-content: space-between;
             gap: 20px;
             text-align: start;
-            transition: background 0.15s;
+            transition: background 0.15s, transform 0.15s ease, box-shadow 0.15s ease;
         }
-        .task-card:hover { background: #f8fafc; }
+        .task-card:hover { background: #f8fafc; transform: translateY(-2px); box-shadow: 0 6px 16px -8px rgba(15, 23, 42, 0.18); }
 
         .task-row-main { display: flex; align-items: center; gap: 24px; flex: 1; }
 
@@ -364,6 +374,31 @@
             .task-row-main { flex-direction: column; align-items: flex-start; gap: 12px; }
             .task-row-footer { justify-content: space-between; border-top: 1px solid var(--border); padding-top: 10px; min-width: unset; }
         }
+
+        /* =========================================================
+           لمسات احترافية عامة — سكرول بار مخصص + دخول ناعم للهيدر
+           ========================================================= */
+        ::-webkit-scrollbar { width: 10px; height: 10px; }
+        ::-webkit-scrollbar-track { background: var(--bg-main); }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 999px;
+            border: 2px solid var(--bg-main);
+        }
+        ::-webkit-scrollbar-thumb:hover { background: var(--primary); }
+        * { scrollbar-width: thin; scrollbar-color: #cbd5e1 var(--bg-main); }
+
+        .header {
+            animation: header-fade-in 0.5s ease;
+        }
+        .nav-container {
+            animation: header-fade-in 0.6s ease;
+        }
+        @keyframes header-fade-in {
+            from { opacity: 0; transform: translateY(-8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
     </style>
 </head>
 <body>
@@ -376,12 +411,13 @@
 <div class="nav-container">
     <a href="home.html" class="nav-btn"><i class="fa-solid fa-house"></i> <span data-i18n="navHome">الرئيسية</span></a>
     <a href="summary.html" class="nav-btn"><i class="fa-solid fa-chart-column"></i> <span data-i18n="navSummary">الملخص</span></a>
-    <a href="task.html" class="nav-btn"><i class="fa-solid fa-list-check"></i> <span data-i18n="navTasks">المهام</span></a>
-    <a href="general_by_activity.html" class="nav-btn" style="background:var(--primary-light);color:var(--primary);"><i class="fa-solid fa-layer-group"></i> <span data-i18n="navGeneral">عام</span></a>
+    <a href="task-list.html" class="nav-btn"><i class="fa-solid fa-list-check"></i> <span data-i18n="navTasks">المهام</span></a>
+    <a href="general_by_activity.html" class="nav-btn active"><i class="fa-solid fa-layer-group"></i> <span data-i18n="navGeneral">عام</span></a>
     <a href="approvals.html" class="nav-btn"><i class="fa-solid fa-clipboard-check"></i> <span data-i18n="navApprovals">طلبات الموافقة</span></a>
     <a href="team_overview.html" class="nav-btn"><i class="fa-solid fa-users"></i> <span data-i18n="navTeam">نظرة عامة على الموظفين</span></a>
     <a href="performance.html" class="nav-btn"><i class="fa-solid fa-chart-column"></i> <span data-i18n="navDashboard">لوحة التحكم</span></a>
     <a href="weekly_report.html" class="nav-btn"><i class="fa-solid fa-file-lines"></i> <span data-i18n="navReport">التقرير الأسبوعي</span></a>
+    <a href="weekly_report_view.html" class="nav-btn"><i class="fa-solid fa-eye"></i> <span data-i18n="navReportView">عرض التقرير</span></a>
     <button onclick="toggleLanguage()" class="nav-btn translate-btn">
         <i class="fa-solid fa-language"></i> <span id="lang-btn-text">English</span>
     </button>
@@ -389,7 +425,7 @@
 
 <div class="dashboard-container">
 
-    <img src="./images/spark-building.jpeg" alt="ECODAN Offices - Spark Project"
+    <img src="./images/spark-building .jpeg" alt="ECODAN Offices - Spark Project"
          style="width:100%; border-radius:12px; box-shadow: var(--shadow-md); margin-bottom:24px; display:block;">
 
     <div class="kpi-container">
@@ -436,6 +472,7 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const dictionary = {
     ar: {
+        navReportView: "عرض التقرير",
         kpiTotal: "إجمالي النتائج",
         kpiDisciplines: "عدد التخصصات",
         kpiActivities: "عدد الأنشطة",
@@ -449,6 +486,7 @@ const dictionary = {
         received: "تاريخ الاستلام"
     },
     en: {
+        navReportView: "View Report",
         kpiTotal: "Total Results",
         kpiDisciplines: "Disciplines",
         kpiActivities: "Activities",

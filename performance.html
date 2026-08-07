@@ -114,6 +114,7 @@
     color:#fff;
     padding:14px 24px;
     box-shadow:0 2px 4px rgba(0,0,0,0.1);
+    animation: header-fade-in 0.5s ease;
   }
   .topbar-main{
     display:flex;align-items:center;justify-content:space-between;gap:14px;
@@ -161,6 +162,7 @@
     font-family:inherit;
   }
   .nav-btn:hover{background:rgba(255,255,255,0.22);}
+  .nav-btn.active{background:rgba(255,255,255,0.32);box-shadow:inset 0 -2px 0 #fff;}
   .nav-btn:active{transform:scale(0.97);}
   .nav-btn i{font-size:12px;}
   .translate-btn{background:rgba(255,255,255,0.16);}
@@ -185,6 +187,10 @@
     border-radius:12px;
     box-shadow:var(--shadow-sm);
     padding:16px 18px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .panel:hover{
+    box-shadow: 0 10px 22px -10px rgba(15, 23, 42, 0.18);
   }
   h2.section-title{
     font-size:14px;font-weight:700;text-decoration:none;
@@ -298,6 +304,23 @@
     #editPanel{display:none !important;}
     * {-webkit-print-color-adjust:exact;print-color-adjust:exact;}
   }
+
+  /* لمسات احترافية عامة — سكرول بار مخصص + دخول ناعم للتوب بار */
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: var(--bg-main); }
+  ::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 999px;
+    border: 2px solid var(--bg-main);
+  }
+  ::-webkit-scrollbar-thumb:hover { background: var(--primary); }
+  * { scrollbar-width: thin; scrollbar-color: #cbd5e1 var(--bg-main); }
+
+  @keyframes header-fade-in {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
 </style>
 </head>
 <body>
@@ -336,7 +359,7 @@
     <a href="summary.html" class="nav-btn">
         <i class="fa-solid fa-chart-column"></i> <span data-i18n="navSummary">الملخص</span>
     </a>
-    <a href="task.html" class="nav-btn">
+    <a href="task-list.html" class="nav-btn">
         <i class="fa-solid fa-list-check"></i> <span data-i18n="navTasks">المهام</span>
     </a>
     <a href="general_by_activity.html" class="nav-btn">
@@ -348,7 +371,7 @@
     <a href="team_overview.html" class="nav-btn">
         <i class="fa-solid fa-users"></i> <span data-i18n="navTeam">نظرة عامة على الموظفين</span>
     </a>
-    <a href="./performance.html" class="nav-btn">
+    <a href="./performance.html" class="nav-btn active">
         <i class="fa-solid fa-chart-column"></i> <span data-i18n="navDashboard">لوحة التحكم</span>
     </a>
     <a href="weekly_report.html" class="nav-btn"><i class="fa-solid fa-file-lines"></i> <span data-i18n="navReport">التقرير الأسبوعي</span></a>
