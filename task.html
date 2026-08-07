@@ -9,44 +9,10 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <script>
-      // ============================================================
-      // فحص فوري: هل فيه نسخة أحدث من نفس الصفحة اتنشرت على GitHub؟
-      // بيقارن "بصمة" الملف الحالية على السيرفر (ETag/Last-Modified) مع
-      // آخر بصمة شافها المتصفح، ولو اختلفت (يعني حصل تحديث جديد) بيعمل
-      // تحميل كامل للصفحة تلقائيًا مرة واحدة عشان يجيب آخر نسخة فورًا،
-      // بدل ما يفضل عالق على نسخة قديمة متخزنة في كاش المتصفح.
-      // ============================================================
-      (function () {
-        var VKEY = 'pageFingerprint::' + location.pathname;
-
-        function checkForUpdate() {
-          fetch(location.pathname, { method: 'HEAD', cache: 'no-store' })
-            .then(function (res) {
-              var fp = res.headers.get('etag') || res.headers.get('last-modified');
-              if (!fp) return;
-              var prev = localStorage.getItem(VKEY);
-              localStorage.setItem(VKEY, fp);
-              if (prev && prev !== fp) {
-                location.replace(location.pathname + location.search + (location.search ? '&' : '?') + '_r=' + Date.now());
-              }
-            })
-            .catch(function () { /* تجاهل أي خطأ شبكة هنا، الصفحة تكمل تحميلها عادي */ });
-        }
-
-        checkForUpdate();
-
-        // مهم جدًا: لو الموظف رجع للصفحة دي بزرار "رجوع" في المتصفح، المتصفح
-        // بيرجّع نسخة محفوظة من الذاكرة (bfcache) من غير ما ينفّذ أي سكريبت
-        // تاني، فالفحص فوق مش بيشتغل في الحالة دي. الكود ده بيجبر تحميل حقيقي
-        // للصفحة أول ما يحصل رجوع من bfcache، عشان يضمن إنه ياخد آخر نسخة.
-        window.addEventListener('pageshow', function (event) {
-          if (event.persisted) {
-            location.reload();
-          } else {
-            checkForUpdate();
-          }
-        });
-      })();
+      // فحص فوري: هل فيه نسخة أحدث من نفس الصفحة اتنشرت على GitHub؟ لو آه،
+      // يعمل تحميل كامل تلقائي مرة واحدة — يتخطى كاش المتصفح وكاش GitHub Pages
+      // معاً (منطق الفحص كامل في cache-buster.js المشترك بين كل الصفحات).
+      document.write('<script src="./cache-buster.js?v=' + Date.now() + '"><' + '/script>');
     </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
