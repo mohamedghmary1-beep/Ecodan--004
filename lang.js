@@ -1,0 +1,165 @@
+/*
+  MDECO Portal - Shared Language Persistence & Translation Script
+  ------------------------------------------------------------------
+  Include this on EVERY page, right after the Supabase script tag:
+
+      <script src="./lang.js"></script>
+
+  WHAT IT DOES
+  1. Keeps the chosen language ("ar" or "en") in localStorage under the key
+     "portalLang", so switching language on one page keeps it applied when
+     navigating to any other page that includes this script.
+  2. Ships a COMMON_DICTIONARY with the shared nav-bar labels (Home, Summary,
+     Tasks, General, Approvals, Team Overview, Dashboard) so every page's nav
+     translates consistently without repeating the same 7 strings everywhere.
+  3. Provides a generic translation engine that works with plain
+     `data-i18n="key"` attributes (for text) and `data-i18n-placeholder="key"`
+     (for input placeholders) - no page-specific code required for simple
+     pages.
+
+  HOW TO USE ON A NEW/SIMPLE PAGE
+  ---------------------------------
+  1. Add `<span data-i18n="navHome">الرئيسية</span>` style attributes to any
+     translatable element (the text shown is just the initial/default value).
+  2. If the page has its own extra strings beyond the common nav labels,
+     call once near the top of your page's <script>:
+         window.registerDictionary({
+             ar: { myKey: "..." },
+             en: { myKey: "..." }
+         });
+     Page keys always win over common ones if there's a name clash.
+  3. Add a toggle button anywhere:
+         <button onclick="toggleLanguage()" class="nav-btn translate-btn">
+             <i class="fa-solid fa-language"></i> <span id="lang-btn-text">English</span>
+         </button>
+  4. If the page renders dynamic content (tables/cards built in JS) that also
+     needs to re-translate when the language flips, define:
+         window.onLanguageChanged = function (lang) {
+             // e.g. re-run your render()/build() function here
+         };
+     This script calls it automatically after applying the static
+     translations, both on page load and every time the language is toggled.
+  5. Use `T('someKey')` anywhere in your JS (including inside render functions)
+     to look up the current-language text for any dictionary key.
+
+  BACKWARD COMPATIBILITY (used by index.html)
+  ---------------------------------------------
+  If a page defines its OWN full `window.applyLanguage(lang)` function (the
+  older, fully custom approach), this script calls that instead of the
+  generic engine above - so existing pages built that way keep working
+  unchanged.
+*/
+(function () {
+    const LANG_KEY = 'portalLang';
+    const DEFAULT_LANG = 'ar';
+
+    // Shared nav-bar dictionary used by every page's navigation menu.
+    // Individual pages can override/extend this via window.registerDictionary().
+    const COMMON_DICTIONARY = {
+        ar: {
+            navHome: "الرئيسية",
+            navSummary: "الملخص",
+            navTasks: "المهام",
+            navGeneral: "عام",
+            navApprovals: "طلبات الموافقة",
+            navTeam: "نظرة عامة على الموظفين",
+            navDashboard: "لوحة التحكم",
+            navReport: "التقرير الأسبوعي",
+            langBtnText: "English"
+        },
+        en: {
+            navHome: "Home",
+            navSummary: "Summary",
+            navTasks: "Tasks",
+            navGeneral: "General",
+            navApprovals: "Approvals",
+            navTeam: "Team Overview",
+            navDashboard: "Dashboard",
+            navReport: "Weekly Report",
+            langBtnText: "العربية"
+        }
+    };
+
+    let pageDictionary = null;
+
+    function getStoredLang() {
+        return localStorage.getItem(LANG_KEY) || DEFAULT_LANG;
+    }
+    window.getCurrentLang = getStoredLang;
+
+    function getMergedDictionary() {
+        if (!pageDictionary) return COMMON_DICTIONARY;
+        return {
+            ar: Object.assign({}, COMMON_DICTIONARY.ar, pageDictionary.ar || {}),
+            en: Object.assign({}, COMMON_DICTIONARY.en, pageDictionary.en || {})
+        };
+    }
+    window.getDictionary = getMergedDictionary;
+
+    // Page-specific extra dictionary entries (merged on top of COMMON_DICTIONARY)
+    window.registerDictionary = function (dict) {
+        pageDictionary = dict;
+    };
+
+    // Quick lookup helper for use inside render()/build() functions
+    window.T = function (key) {
+        const dict = getMergedDictionary();
+        const lang = getStoredLang();
+        return (dict[lang] && dict[lang][key] !== undefined) ? dict[lang][key] : key;
+    };
+
+    function applyLanguageGeneric(lang) {
+        const dict = getMergedDictionary();
+        const t = dict[lang] || dict[DEFAULT_LANG];
+
+        document.documentElement.setAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr');
+        document.documentElement.setAttribute('lang', lang);
+
+        document.querySelectorAll('[data-i18n]').forEach(function (el) {
+            const key = el.getAttribute('data-i18n');
+            if (t[key] !== undefined) el.textContent = t[key];
+        });
+
+        document.querySelectorAll('[data-i18n-placeholder]').forEach(function (el) {
+            const key = el.getAttribute('data-i18n-placeholder');
+            if (t[key] !== undefined) el.placeholder = t[key];
+        });
+
+        const langBtnText = document.getElementById('lang-btn-text');
+        if (langBtnText) langBtnText.textContent = t.langBtnText || (lang === 'ar' ? 'English' : 'العربية');
+
+        if (typeof window.onLanguageChanged === 'function') {
+            window.onLanguageChanged(lang);
+        }
+    }
+
+    function applyLanguage(lang) {
+        // Backward compatibility: pages with their own full custom applyLanguage()
+        // (e.g. index.html) keep using it untouched.
+        if (typeof window.applyLanguage === 'function') {
+            window.applyLanguage(lang);
+        } else {
+            applyLanguageGeneric(lang);
+        }
+    }
+
+    window.setLanguage = function (lang) {
+        localStorage.setItem(LANG_KEY, lang);
+        applyLanguage(lang);
+    };
+
+    window.toggleLanguage = function () {
+        const next = (getStoredLang() === 'en') ? 'ar' : 'en';
+        window.setLanguage(next);
+    };
+
+    function applyOnLoad() {
+        applyLanguage(getStoredLang());
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', applyOnLoad);
+    } else {
+        applyOnLoad();
+    }
+})();
