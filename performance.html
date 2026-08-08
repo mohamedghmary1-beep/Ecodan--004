@@ -321,6 +321,9 @@
     to { opacity: 1; transform: translateY(0); }
   }
 
+
+  .nav-btn.logout-btn{margin-inline-start:auto;background:rgba(239,68,68,0.28);}
+  .nav-btn.logout-btn:hover{background:rgba(239,68,68,0.45);}
 </style>
 </head>
 <body>
@@ -330,11 +333,11 @@
     <!-- LEFT LOGO + COMPANY NAME: set the img src and the name text below -->
     <div class="topbar-logo-block">
       <div class="topbar-logo-slot" id="logoLeftSlot" title="Logo placeholder">
-        <img id="logoLeftImg" src="./images/company-logo.jpeg" alt="Company Logo"
+        <img id="logoLeftImg" src="./images/WhatsApp Image 2025-11-24 at 10.33.58 AM.jpeg" alt="Company Logo"
              onload="this.classList.add('has-src'); this.parentElement.classList.add('filled');"
              onerror="this.classList.remove('has-src'); this.parentElement.classList.remove('filled');">
       </div>
-      <div class="topbar-logo-name" id="logoLeftName">MDCEO</div>
+      <div class="topbar-logo-name" id="logoLeftName">MDECO</div>
     </div>
 
     <div class="topbar-title-wrap">
@@ -378,6 +381,9 @@
     <a href="weekly_report_view.html" class="nav-btn"><i class="fa-solid fa-eye"></i> <span data-i18n="navReportView">عرض التقرير</span></a>
     <button onclick="toggleLanguage()" class="nav-btn translate-btn">
         <i class="fa-solid fa-language"></i> <span id="lang-btn-text">English</span>
+    </button>
+    <button onclick="logout()" class="nav-btn logout-btn" title="Logout">
+        <i class="fa-solid fa-right-from-bracket"></i> <span data-i18n="navLogout">تسجيل الخروج</span>
     </button>
   </nav>
 
@@ -754,6 +760,7 @@ const navTranslations = {
   navDashboard:  { ar: 'لوحة التحكم',                en: 'Dashboard' },
   navReport:     { ar: 'التقرير الأسبوعي',           en: 'Weekly Report' },
   navReportView: { ar: 'عرض التقرير',                en: 'View Report' },
+  navLogout:     { ar: 'تسجيل الخروج',               en: 'Logout' },
 };
 let currentNavLang = 'ar';
 
@@ -767,6 +774,14 @@ function toggleLanguage() {
   });
   const btn = document.getElementById('lang-btn-text');
   if (btn) btn.textContent = currentNavLang === 'ar' ? 'English' : 'العربية';
+}
+
+// تسجيل الخروج: مسح الجلسة المحفوظة والرجوع لصفحة الدخول
+function logout() {
+  const msg = currentNavLang === 'en' ? 'Are you sure you want to log out?' : 'هل أنت متأكد من تسجيل الخروج؟';
+  if (!confirm(msg)) return;
+  localStorage.removeItem('userSession');
+  window.location.href = 'index.html';
 }
 
 let currentData = null;

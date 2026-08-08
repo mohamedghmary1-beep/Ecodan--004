@@ -207,6 +207,9 @@
     to { opacity: 1; transform: translateY(0); }
   }
 
+
+  .nav-btn.logout-btn{margin-inline-start:auto;background:rgba(239,68,68,0.28);}
+  .nav-btn.logout-btn:hover{background:rgba(239,68,68,0.45);}
 </style>
 </head>
 <body>
@@ -215,11 +218,11 @@
   <div class="topbar-main">
     <div class="topbar-logo-block">
       <div class="topbar-logo-slot" id="logoLeftSlot">
-        <img id="logoLeftImg" src="./images/company-logo.jpeg" alt="Company Logo"
+        <img id="logoLeftImg" src="./images/WhatsApp Image 2025-11-24 at 10.33.58 AM.jpeg" alt="Company Logo"
              onload="this.classList.add('has-src'); this.parentElement.classList.add('filled');"
              onerror="this.classList.remove('has-src'); this.parentElement.classList.remove('filled');">
       </div>
-      <div class="topbar-logo-name">MDCEO</div>
+      <div class="topbar-logo-name">MDECO</div>
     </div>
     <div class="topbar-title-wrap">
       <h1><span data-i18n="pageTitle">التقرير الأسبوعي — عرض</span></h1>
@@ -247,6 +250,9 @@
     <a href="weekly_report_view.html" class="nav-btn active"><i class="fa-solid fa-eye"></i> <span data-i18n="navReportView">عرض التقرير</span></a>
     <button onclick="toggleLanguage()" class="nav-btn translate-btn">
       <i class="fa-solid fa-language"></i> <span id="lang-btn-text">English</span>
+    </button>
+    <button onclick="logout()" class="nav-btn logout-btn" title="Logout">
+      <i class="fa-solid fa-right-from-bracket"></i> <span data-i18n="navLogout">تسجيل الخروج</span>
     </button>
   </nav>
 </div>
@@ -411,7 +417,7 @@ window.registerDictionary({
     pageSubtitle: '👁️ صفحة عرض فقط — متاحة لأي زائر',
     navHome: 'الرئيسية', navSummary: 'الملخص', navTasks: 'المهام', navGeneral: 'عام',
     navApprovals: 'طلبات الموافقة', navTeam: 'نظرة عامة على الموظفين', navDashboard: 'لوحة التحكم',
-    navReport: 'التقرير الأسبوعي', navReportView: 'عرض التقرير',
+    navReport: 'التقرير الأسبوعي', navReportView: 'عرض التقرير', navLogout: 'تسجيل الخروج',
     chooseReport: 'اختاري تقرير', loadingReport: 'جاري التحميل...', loadingReportFull: 'جاري تحميل التقرير...',
     noReports: 'لا يوجد تقارير محفوظة', noReportsYet: 'لا يوجد تقارير محفوظة بعد.',
     loadListErr: 'تعذر تحميل التقارير. حاولي تحديث الصفحة.', loadErr: 'تعذر تحميل هذا التقرير.',
@@ -421,7 +427,8 @@ window.registerDictionary({
     noWorks: 'لا توجد أعمال مسجلة لهذا التقرير.',
     photosTitle: 'صور الموقع', noPhotos: 'لا توجد صور مرفقة لهذا التقرير.',
     perfTitle: 'لوحة الأداء (Performance Dashboard)',
-    perfLiveNote: '* هذا القسم يعرض أحدث بيانات الأداء المتاحة دايمًا، بغض النظر عن التقرير المختار فوق.',
+    perfLiveNote: '* هذا القسم يعرض أحدث بيانات الأداء المتاحة دايمًا، بغض النظر عن التقرير المختار فوق. (هذا تقرير قديم اتحفظ قبل تفعيل حفظ لقطة الأداء لكل تقرير)',
+    perfSnapshotNote: '* بيانات الأداء دي محفوظة زي ما كانت بالظبط وقت حفظ هذا التقرير.',
     btnPrint: 'طباعة',
     deleteReportViewBtn: 'حذف التقرير',
     confirmDeleteReportView: 'هل أنتِ متأكدة إنك عايزة تحذفي التقرير رقم {no} نهائيًا؟ لا يمكن التراجع عن هذا الإجراء.',
@@ -434,7 +441,7 @@ window.registerDictionary({
     pageSubtitle: '👁️ View-only page — open to any visitor',
     navHome: 'Home', navSummary: 'Summary', navTasks: 'Tasks', navGeneral: 'General',
     navApprovals: 'Approvals', navTeam: 'Team Overview', navDashboard: 'Dashboard',
-    navReport: 'Weekly Report', navReportView: 'View Report',
+    navReport: 'Weekly Report', navReportView: 'View Report', navLogout: 'Logout',
     chooseReport: 'Choose a report', loadingReport: 'Loading...', loadingReportFull: 'Loading report...',
     noReports: 'No saved reports', noReportsYet: 'No saved reports yet.',
     loadListErr: 'Could not load reports. Try refreshing the page.', loadErr: 'Could not load this report.',
@@ -444,7 +451,8 @@ window.registerDictionary({
     noWorks: 'No works recorded for this report.',
     photosTitle: 'Site Photos', noPhotos: 'No photos attached to this report.',
     perfTitle: 'Performance Dashboard',
-    perfLiveNote: '* This section always shows the latest available performance data, regardless of the report selected above.',
+    perfLiveNote: '* This section always shows the latest available performance data, regardless of the report selected above. (This is an older report saved before per-report performance snapshots were enabled)',
+    perfSnapshotNote: '* This performance data is saved exactly as it was at the time this report was created.',
     btnPrint: 'Print',
     deleteReportViewBtn: 'Delete Report',
     confirmDeleteReportView: 'Are you sure you want to permanently delete report No. {no}? This action cannot be undone.',
@@ -453,6 +461,16 @@ window.registerDictionary({
     deleteViewErr: 'Could not delete the report. Please try again.',
   }
 });
+
+// تسجيل الخروج: مسح الجلسة المحفوظة والرجوع لصفحة الدخول
+function logout() {
+  const msg = (typeof window.getCurrentLang === "function" && window.getCurrentLang() === "en")
+    ? "Are you sure you want to log out?"
+    : "هل أنت متأكد من تسجيل الخروج؟";
+  if (!confirm(msg)) return;
+  localStorage.removeItem("userSession");
+  window.location.href = "index.html";
+}
 
 // ---------- Saved reports list (read-only) ----------
 async function loadReportsList() {
@@ -467,6 +485,7 @@ async function loadReportsList() {
     if (!reports.length) {
       sel.innerHTML = `<option value="">${T('noReports')}</option>`;
       document.getElementById('reportContent').innerHTML = `<div class="loading-state">${T('noReportsYet')}</div>`;
+      loadPerformanceDashboard();
       return;
     }
     sel.innerHTML = reports.map(r =>
@@ -495,6 +514,14 @@ async function onSelectReport() {
     currentViewedReportId = data.id;
     currentViewedReportNo = data.report_no || '';
     renderReport(data);
+
+    // بيانات الأداء: لو التقرير ده فيه لقطة محفوظة وقت حفظه بنعرضها، ولو
+    // تقرير قديم اتحفظ قبل تفعيل الميزة دي بنرجع لأحدث بيانات حية كحل بديل
+    if (data.performance_snapshot) {
+      renderPerformanceSnapshot(data.performance_snapshot);
+    } else {
+      loadPerformanceDashboard();
+    }
   } catch (e) {
     console.error(e);
     currentViewedReportId = null;
@@ -585,7 +612,7 @@ function renderReport(data) {
     <div class="card cover-card">
       <div class="cover-inner">
         <div class="cover-logos">
-          <img src="./images/company-logo.jpeg" alt="MDCEO" onerror="this.style.display='none'">
+          <img src="./images/WhatsApp Image 2025-11-24 at 10.33.58 AM.jpeg" alt="MDECO" onerror="this.style.display='none'">
           <img src="./images/afford.jpg" alt="Affordable House" onerror="this.style.display='none'">
         </div>
         <img class="cover-photo" src="./images/spark-building.jpeg" alt="ECODAN Offices' Complex Project" onerror="this.style.display='none'">
@@ -802,57 +829,82 @@ function perfRenderManpower(rows) {
   });
 }
 
+function perfApplyData(data) {
+  document.getElementById('perfLoadingMsg').style.display = 'none';
+  document.getElementById('perfDashboard').style.display = 'block';
+
+  document.getElementById('perfValNoVat').textContent = perfFmtNum(data.contract_value_no_vat, 2);
+  document.getElementById('perfValVat').textContent = perfFmtNum(data.contract_value_vat, 2);
+  document.getElementById('perfValChangeOrder').textContent = data.approved_change_order || '-';
+  document.getElementById('perfValPhase1').textContent = perfFmtDate(data.contract_finish_phase1);
+  document.getElementById('perfValEot').textContent = perfFmtDate(data.finish_date_after_eot);
+  document.getElementById('perfValExpected').textContent = perfFmtDate(data.expected_finish_date);
+
+  const weekly = data.weekly_table || [];
+  perfRenderWeeklyTable(weekly);
+  perfRenderPlannedActualChart(weekly);
+
+  const latest = weekly[weekly.length - 1] || { actual: 0, plan: 0 };
+  perfDrawDonutGauge('perfActualGauge', latest.actual, '#1e40af');
+  perfDrawDonutGauge('perfPlannedGauge', latest.plan, '#10b981');
+
+  document.getElementById('perfManpowerPlanned').textContent = data.manpower_planned ?? '-';
+  document.getElementById('perfManpowerPlannedTag').textContent = (data.manpower_planned ?? '-') + ' Person';
+  document.getElementById('perfManpowerActual').textContent = data.manpower_actual ?? '-';
+  document.getElementById('perfManpowerActualTag').textContent = (data.manpower_actual ?? '-') + ' Person';
+
+  perfDrawSpiGauge(data.spi ?? 0);
+
+  perfRenderScurve(data.scurve_data || []);
+  perfRenderManpower(data.manpower_data || []);
+
+  const ev = data.cash_flow_ev ?? 0, ai = data.cash_flow_ai ?? 0, pv = data.cash_flow_pv ?? 0;
+  document.getElementById('perfCfEv1').textContent = 'SAR ' + perfFmtNum(ev);
+  document.getElementById('perfCfEv2').textContent = 'SAR ' + perfFmtNum(ev);
+  document.getElementById('perfCfAi').textContent = 'SAR ' + perfFmtNum(ai);
+  document.getElementById('perfCfPv').textContent = 'SAR ' + perfFmtNum(pv);
+  const varAiEv = ai - ev, varEvPv = ev - pv;
+  document.getElementById('perfCfVarAiEv').textContent = (varAiEv < 0 ? '-' : '') + 'SAR ' + perfFmtNum(Math.abs(varAiEv));
+  document.getElementById('perfCfVarEvPv').textContent = (varEvPv < 0 ? '-' : '') + 'SAR ' + perfFmtNum(Math.abs(varEvPv));
+}
+
+// بيغيّر نص الملاحظة تحت لوحة الأداء حسب المصدر: لقطة محفوظة مع التقرير،
+// أو أحدث بيانات حية (للتقارير القديمة اللي اتحفظت قبل تفعيل هذه الميزة)
+function perfSetNoteMode(mode) {
+  const el = document.querySelector('[data-i18n="perfLiveNote"], [data-i18n="perfSnapshotNote"]');
+  if (!el) return;
+  const key = mode === 'snapshot' ? 'perfSnapshotNote' : 'perfLiveNote';
+  el.setAttribute('data-i18n', key);
+  el.textContent = T(key);
+}
+
 async function loadPerformanceDashboard() {
   try {
     const { data, error } = await client.from('project_performance').select('*').eq('id', 1).single();
     if (error) throw error;
     if (!data) throw new Error('no data');
-
-    document.getElementById('perfLoadingMsg').style.display = 'none';
-    document.getElementById('perfDashboard').style.display = 'block';
-
-    document.getElementById('perfValNoVat').textContent = perfFmtNum(data.contract_value_no_vat, 2);
-    document.getElementById('perfValVat').textContent = perfFmtNum(data.contract_value_vat, 2);
-    document.getElementById('perfValChangeOrder').textContent = data.approved_change_order || '-';
-    document.getElementById('perfValPhase1').textContent = perfFmtDate(data.contract_finish_phase1);
-    document.getElementById('perfValEot').textContent = perfFmtDate(data.finish_date_after_eot);
-    document.getElementById('perfValExpected').textContent = perfFmtDate(data.expected_finish_date);
-
-    const weekly = data.weekly_table || [];
-    perfRenderWeeklyTable(weekly);
-    perfRenderPlannedActualChart(weekly);
-
-    const latest = weekly[weekly.length - 1] || { actual: 0, plan: 0 };
-    perfDrawDonutGauge('perfActualGauge', latest.actual, '#1e40af');
-    perfDrawDonutGauge('perfPlannedGauge', latest.plan, '#10b981');
-
-    document.getElementById('perfManpowerPlanned').textContent = data.manpower_planned ?? '-';
-    document.getElementById('perfManpowerPlannedTag').textContent = (data.manpower_planned ?? '-') + ' Person';
-    document.getElementById('perfManpowerActual').textContent = data.manpower_actual ?? '-';
-    document.getElementById('perfManpowerActualTag').textContent = (data.manpower_actual ?? '-') + ' Person';
-
-    perfDrawSpiGauge(data.spi ?? 0);
-
-    perfRenderScurve(data.scurve_data || []);
-    perfRenderManpower(data.manpower_data || []);
-
-    const ev = data.cash_flow_ev ?? 0, ai = data.cash_flow_ai ?? 0, pv = data.cash_flow_pv ?? 0;
-    document.getElementById('perfCfEv1').textContent = 'SAR ' + perfFmtNum(ev);
-    document.getElementById('perfCfEv2').textContent = 'SAR ' + perfFmtNum(ev);
-    document.getElementById('perfCfAi').textContent = 'SAR ' + perfFmtNum(ai);
-    document.getElementById('perfCfPv').textContent = 'SAR ' + perfFmtNum(pv);
-    const varAiEv = ai - ev, varEvPv = ev - pv;
-    document.getElementById('perfCfVarAiEv').textContent = (varAiEv < 0 ? '-' : '') + 'SAR ' + perfFmtNum(Math.abs(varAiEv));
-    document.getElementById('perfCfVarEvPv').textContent = (varEvPv < 0 ? '-' : '') + 'SAR ' + perfFmtNum(Math.abs(varEvPv));
+    perfApplyData(data);
+    perfSetNoteMode('live');
   } catch (e) {
     document.getElementById('perfLoadingMsg').textContent = 'Could not load performance data.';
     console.error('[perf-view] load failed', e);
   }
 }
 
+// بيعرض بيانات الأداء المحفوظة مع التقرير نفسه (وقت حفظه) بدل أحدث بيانات حية
+function renderPerformanceSnapshot(snapshot) {
+  try {
+    document.getElementById('perfLoadingMsg').style.display = 'none';
+    perfApplyData(snapshot);
+    perfSetNoteMode('snapshot');
+  } catch (e) {
+    console.error('[perf-view] snapshot render failed — falling back to live data', e);
+    loadPerformanceDashboard();
+  }
+}
+
 applyViewPermissions();
 loadReportsList();
-loadPerformanceDashboard();
 </script>
 </body>
 </html>

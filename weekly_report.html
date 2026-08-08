@@ -360,6 +360,9 @@
     to { opacity: 1; transform: translateY(0); }
   }
 
+
+  .nav-btn.logout-btn{margin-inline-start:auto;background:rgba(239,68,68,0.28);}
+  .nav-btn.logout-btn:hover{background:rgba(239,68,68,0.45);}
 </style>
 </head>
 <body>
@@ -389,6 +392,9 @@
     <a href="weekly_report_view.html" class="nav-btn"><i class="fa-solid fa-eye"></i> <span data-i18n="navReportView">عرض التقرير</span></a>
     <button onclick="toggleLanguage()" class="nav-btn translate-btn">
         <i class="fa-solid fa-language"></i> <span id="lang-btn-text">English</span>
+    </button>
+    <button onclick="logout()" class="nav-btn logout-btn" title="Logout">
+        <i class="fa-solid fa-right-from-bracket"></i> <span data-i18n="navLogout">تسجيل الخروج</span>
     </button>
   </nav>
   <div class="topbar-sub">
@@ -458,7 +464,7 @@
 <div id="printCover">
   <div class="pf-page pf-cover">
     <div class="pf-cover-logos">
-      <img id="pf-logo-left" src="./images/company-logo.jpeg" alt="MDCEO" onerror="this.style.display='none'">
+      <img id="pf-logo-left" src="./images/WhatsApp Image 2025-11-24 at 10.33.58 AM.jpeg" alt="MDECO" onerror="this.style.display='none'">
       <img id="pf-logo-right" src="./images/afford.jpg" alt="Affordable House" onerror="this.style.display='none'">
     </div>
     <img class="pf-cover-photo" src="./images/spark-building.jpeg" alt="ECODAN Offices' Complex Project" onerror="this.style.display='none'">
@@ -806,6 +812,7 @@ let perfDashboardReadyPromise = loadPerformanceDashboard();
 window.registerDictionary({
   ar: {
     navReportView: 'عرض التقرير',
+    navLogout: 'تسجيل الخروج',
     btnPrintTop: '🖨️ حفظ / طباعة التقرير الكامل',
     viewOnlyBanner: '👁️ أنت في وضع العرض فقط — التعديل والحفظ متاحين فقط لحساب السوبر أدمن',
     accessDeniedTitle: 'هذه الصفحة متاحة فقط للسوبر أدمن والأدمن',
@@ -852,6 +859,7 @@ window.registerDictionary({
   },
   en: {
     navReportView: 'View Report',
+    navLogout: 'Logout',
     btnPrintTop: '🖨️ Save / Print Full Report',
     viewOnlyBanner: '👁️ You are in view-only mode — editing and saving are available to the super admin account only',
     accessDeniedTitle: 'This page is available to the super admin and admin accounts only',
@@ -897,6 +905,16 @@ window.registerDictionary({
     noWorksAdded: 'No works added yet.'
   }
 });
+
+// تسجيل الخروج: مسح الجلسة المحفوظة والرجوع لصفحة الدخول
+function logout() {
+  const msg = (typeof window.getCurrentLang === "function" && window.getCurrentLang() === "en")
+    ? "Are you sure you want to log out?"
+    : "هل أنت متأكد من تسجيل الخروج؟";
+  if (!confirm(msg)) return;
+  localStorage.removeItem("userSession");
+  window.location.href = "index.html";
+}
 
 let currentReportId = null; // null = new report
 let photos = []; // {caption, dataUrl}
@@ -1262,6 +1280,17 @@ async function saveReport() {
     statusEl.textContent = T('saving');
     statusEl.style.color = '#334155';
     try {
+      // نلتقط "لقطة" من بيانات الأداء الحالية ونحفظها مع التقرير، بحيث كل
+      // تقرير أسبوعي يعرض بيانات الأداء زي ما كانت بالظبط وقت حفظه، مش
+      // أحدث بيانات متاحة دايمًا زي ما كان بيحصل قبل كده.
+      try {
+        const { data: perfData, error: perfErr } = await client
+          .from('project_performance').select('*').eq('id', 1).single();
+        if (!perfErr && perfData) payload.performance_snapshot = perfData;
+      } catch (snapErr) {
+        console.warn('Could not capture performance snapshot for this report:', snapErr);
+      }
+
       const { data, error } = await client
         .from('weekly_reports')
         .upsert(payload, { onConflict: currentReportId ? 'id' : 'report_no' })
