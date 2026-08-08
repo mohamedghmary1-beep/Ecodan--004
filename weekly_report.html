@@ -152,12 +152,15 @@
     border:3px solid #29a9e0;border-radius:30px;
     padding:22px 28px 46px;
     max-width:100%;width:100%;
-    /* Always fill one full A4 printable page, even when the actual content
-       (a short work table, a couple of photos, etc.) is much shorter than
-       that — otherwise the blue frame hugs the content tightly and leaves a
-       big dead-looking blank gap between the frame's bottom edge and the
-       physical page's bottom edge, making the page look "cut short"/unfinished. */
-    min-height:1030px;
+    /* Fill almost the entire A4 printable page even when the actual
+       content (a short work table, a couple of photos, etc.) is much
+       shorter than a full page, so the frame's bottom edge sits close to
+       the physical page's bottom edge — with only a small, intentional
+       margin left below it (not a big dead-looking blank gap, and not
+       zero either). A4_CONTENT_BUDGET below (~1000px) is the usable
+       print-area height this page is measured against, so this value is
+       kept just under that. Tune up/down for more/less breathing room. */
+    min-height:950px;
   }
   .pf-body{overflow:visible;max-width:100%;}
   .pf-pagenum{
@@ -372,7 +375,7 @@
   </nav>
   <div class="topbar-sub">
     <span class="meta" id="updatedMeta">...</span>
-    <button class="btn-print" onclick="printFullReport()" data-i18n="btnPrintTop">🖨️ حفظ / طباعة التقرير الكامل</button>
+    <button class="btn-print" onclick="printFullReport()" data-i18n="btnPrintTop">🖨️ طباعة التقرير الكامل</button>
   </div>
 </div>
 
@@ -426,8 +429,8 @@
   <div class="panel">
     <div class="save-bar">
       <span class="save-status" id="saveStatus"></span>
-      <button class="btn-print-full" onclick="printFullReport()" data-i18n="btnPrintFull">🖨️ حفظ وطباعة التقرير الكامل</button>
-      <button class="btn-save superadmin-only" onclick="saveReport()" data-i18n="btnSaveReport">💾 حفظ التقرير</button>
+      <button class="btn-print-full" onclick="printFullReport()" data-i18n="btnPrintFull">🖨️ طباعة التقرير الكامل</button>
+      <button class="btn-save superadmin-only" onclick="saveReport()" data-i18n="btnSaveReport">💾 حفظ التقرير (بكلمة المرور)</button>
     </div>
   </div>
 
@@ -615,14 +618,22 @@ function perfFmtDate(d) {
   return `${dd}-${months[dt.getMonth()]}-${String(dt.getFullYear()).slice(2)}`;
 }
 
+function destroyPerfChart(canvasId) {
+  if (perfChartInstances[canvasId]) {
+    perfChartInstances[canvasId].destroy();
+    delete perfChartInstances[canvasId];
+  }
+}
+
 function perfDrawDonutGauge(canvasId, percentValue, color) {
+  destroyPerfChart(canvasId);
   const ctx = document.getElementById(canvasId).getContext('2d');
   const pct = Math.max(0, Math.min(100, percentValue));
   const numSegments = 20;
   const filledCount = pct > 0 ? Math.max(1, Math.round((pct / 100) * numSegments)) : 0;
   const segmentData = new Array(numSegments).fill(1);
   const segmentColors = new Array(numSegments).fill(0).map((_, i) => i < filledCount ? color : '#e2e8f0');
-  new Chart(ctx, {
+  perfChartInstances[canvasId] = new Chart(ctx, {
     type: 'doughnut',
     data: { datasets: [{ data: segmentData, backgroundColor: segmentColors, borderWidth: 3, borderColor: '#ffffff' }] },
     options: {
@@ -649,8 +660,9 @@ function perfDrawDonutGauge(canvasId, percentValue, color) {
 }
 
 function perfDrawSpiGauge(spi) {
+  destroyPerfChart('perfSpiGauge');
   const ctx = document.getElementById('perfSpiGauge').getContext('2d');
-  new Chart(ctx, {
+  perfChartInstances['perfSpiGauge'] = new Chart(ctx, {
     type: 'doughnut',
     data: { datasets: [{ data: [40, 20, 40], backgroundColor: ['#ef4444', '#f59e0b', '#10b981'], borderWidth: 0, circumference: 180, rotation: 270 }] },
     options: { responsive: true, maintainAspectRatio: false, cutout: '65%', plugins: { legend: { display: false }, tooltip: { enabled: false } }, animation: false }
@@ -676,8 +688,9 @@ function perfRenderWeeklyTable(rows) {
 }
 
 function perfRenderPlannedActualChart(rows) {
+  destroyPerfChart('perfPlannedActualChart');
   const ctx = document.getElementById('perfPlannedActualChart').getContext('2d');
-  new Chart(ctx, {
+  perfChartInstances['perfPlannedActualChart'] = new Chart(ctx, {
     type: 'bar',
     data: {
       labels: rows.map(r => r.week),
@@ -691,8 +704,9 @@ function perfRenderPlannedActualChart(rows) {
 }
 
 function perfRenderScurve(rows) {
+  destroyPerfChart('perfScurveChart');
   const ctx = document.getElementById('perfScurveChart').getContext('2d');
-  new Chart(ctx, {
+  perfChartInstances['perfScurveChart'] = new Chart(ctx, {
     type: 'bar',
     data: {
       labels: rows.map(r => r.week),
@@ -710,8 +724,9 @@ function perfRenderScurve(rows) {
 }
 
 function perfRenderManpower(rows) {
+  destroyPerfChart('perfManpowerChart');
   const ctx = document.getElementById('perfManpowerChart').getContext('2d');
-  new Chart(ctx, {
+  perfChartInstances['perfManpowerChart'] = new Chart(ctx, {
     type: 'bar',
     data: {
       labels: rows.map(r => r.week),
@@ -728,48 +743,71 @@ function perfRenderManpower(rows) {
   });
 }
 
+// Pure fetch — talks to Supabase only, no DOM/chart work. Used both for the
+// initial live load and to grab a fresh snapshot right before Save.
+async function fetchPerfData() {
+  const { data, error } = await client.from('project_performance').select('*').eq('id', 1).single();
+  if (error) throw error;
+  if (!data) throw new Error('no data');
+  return data;
+}
+
+// Pure render — takes a plain data object (either freshly fetched from
+// Supabase, or a frozen performance_snapshot pulled back out of a saved
+// weekly_reports row) and paints the whole embedded dashboard + its charts.
+// Never touches the network itself, so it can be called as many times as
+// needed (report switch, save, print) without re-querying Supabase.
+function applyPerfData(data) {
+  if (!data) return;
+
+  document.getElementById('perfLoadingMsg').style.display = 'none';
+  document.getElementById('perfDashboard').style.display = 'block';
+
+  document.getElementById('perfValNoVat').textContent = perfFmtNum(data.contract_value_no_vat, 2);
+  document.getElementById('perfValVat').textContent = perfFmtNum(data.contract_value_vat, 2);
+  document.getElementById('perfValChangeOrder').textContent = data.approved_change_order || '-';
+  document.getElementById('perfValPhase1').textContent = perfFmtDate(data.contract_finish_phase1);
+  document.getElementById('perfValEot').textContent = perfFmtDate(data.finish_date_after_eot);
+  document.getElementById('perfValExpected').textContent = perfFmtDate(data.expected_finish_date);
+
+  const weekly = data.weekly_table || [];
+  perfRenderWeeklyTable(weekly);
+  perfRenderPlannedActualChart(weekly);
+
+  const latest = weekly[weekly.length - 1] || { actual: 0, plan: 0 };
+  perfDrawDonutGauge('perfActualGauge', latest.actual, '#1e40af');
+  perfDrawDonutGauge('perfPlannedGauge', latest.plan, '#10b981');
+
+  document.getElementById('perfManpowerPlanned').textContent = data.manpower_planned ?? '-';
+  document.getElementById('perfManpowerPlannedTag').textContent = (data.manpower_planned ?? '-') + ' Person';
+  document.getElementById('perfManpowerActual').textContent = data.manpower_actual ?? '-';
+  document.getElementById('perfManpowerActualTag').textContent = (data.manpower_actual ?? '-') + ' Person';
+
+  perfDrawSpiGauge(data.spi ?? 0);
+
+  perfRenderScurve(data.scurve_data || []);
+  perfRenderManpower(data.manpower_data || []);
+
+  const ev = data.cash_flow_ev ?? 0, ai = data.cash_flow_ai ?? 0, pv = data.cash_flow_pv ?? 0;
+  document.getElementById('perfCfEv1').textContent = 'SAR ' + perfFmtNum(ev);
+  document.getElementById('perfCfEv2').textContent = 'SAR ' + perfFmtNum(ev);
+  document.getElementById('perfCfAi').textContent = 'SAR ' + perfFmtNum(ai);
+  document.getElementById('perfCfPv').textContent = 'SAR ' + perfFmtNum(pv);
+  const varAiEv = ai - ev, varEvPv = ev - pv;
+  document.getElementById('perfCfVarAiEv').textContent = (varAiEv < 0 ? '-' : '') + 'SAR ' + perfFmtNum(Math.abs(varAiEv));
+  document.getElementById('perfCfVarEvPv').textContent = (varEvPv < 0 ? '-' : '') + 'SAR ' + perfFmtNum(Math.abs(varEvPv));
+}
+
+// Initial page load: fetch live data once, remember it in perfLiveData, and
+// show it (nothing has been selected/frozen yet, so live is the right
+// default for a brand-new report). Any report the user then opens that has
+// its own performance_snapshot will override this via applyPerfData() —
+// see onSelectReport() below.
 async function loadPerformanceDashboard() {
   try {
-    const { data, error } = await client.from('project_performance').select('*').eq('id', 1).single();
-    if (error) throw error;
-    if (!data) throw new Error('no data');
-
-    document.getElementById('perfLoadingMsg').style.display = 'none';
-    document.getElementById('perfDashboard').style.display = 'block';
-
-    document.getElementById('perfValNoVat').textContent = perfFmtNum(data.contract_value_no_vat, 2);
-    document.getElementById('perfValVat').textContent = perfFmtNum(data.contract_value_vat, 2);
-    document.getElementById('perfValChangeOrder').textContent = data.approved_change_order || '-';
-    document.getElementById('perfValPhase1').textContent = perfFmtDate(data.contract_finish_phase1);
-    document.getElementById('perfValEot').textContent = perfFmtDate(data.finish_date_after_eot);
-    document.getElementById('perfValExpected').textContent = perfFmtDate(data.expected_finish_date);
-
-    const weekly = data.weekly_table || [];
-    perfRenderWeeklyTable(weekly);
-    perfRenderPlannedActualChart(weekly);
-
-    const latest = weekly[weekly.length - 1] || { actual: 0, plan: 0 };
-    perfDrawDonutGauge('perfActualGauge', latest.actual, '#1e40af');
-    perfDrawDonutGauge('perfPlannedGauge', latest.plan, '#10b981');
-
-    document.getElementById('perfManpowerPlanned').textContent = data.manpower_planned ?? '-';
-    document.getElementById('perfManpowerPlannedTag').textContent = (data.manpower_planned ?? '-') + ' Person';
-    document.getElementById('perfManpowerActual').textContent = data.manpower_actual ?? '-';
-    document.getElementById('perfManpowerActualTag').textContent = (data.manpower_actual ?? '-') + ' Person';
-
-    perfDrawSpiGauge(data.spi ?? 0);
-
-    perfRenderScurve(data.scurve_data || []);
-    perfRenderManpower(data.manpower_data || []);
-
-    const ev = data.cash_flow_ev ?? 0, ai = data.cash_flow_ai ?? 0, pv = data.cash_flow_pv ?? 0;
-    document.getElementById('perfCfEv1').textContent = 'SAR ' + perfFmtNum(ev);
-    document.getElementById('perfCfEv2').textContent = 'SAR ' + perfFmtNum(ev);
-    document.getElementById('perfCfAi').textContent = 'SAR ' + perfFmtNum(ai);
-    document.getElementById('perfCfPv').textContent = 'SAR ' + perfFmtNum(pv);
-    const varAiEv = ai - ev, varEvPv = ev - pv;
-    document.getElementById('perfCfVarAiEv').textContent = (varAiEv < 0 ? '-' : '') + 'SAR ' + perfFmtNum(Math.abs(varAiEv));
-    document.getElementById('perfCfVarEvPv').textContent = (varEvPv < 0 ? '-' : '') + 'SAR ' + perfFmtNum(Math.abs(varEvPv));
+    const data = await fetchPerfData();
+    perfLiveData = data;
+    if (!perfSnapshotData) applyPerfData(data);
   } catch (e) {
     document.getElementById('perfLoadingMsg').textContent = 'Could not load performance data.';
     console.error('[perf-embed] load failed', e);
@@ -785,7 +823,7 @@ let perfDashboardReadyPromise = loadPerformanceDashboard();
 window.registerDictionary({
   ar: {
     navReportView: 'عرض التقرير',
-    btnPrintTop: '🖨️ حفظ / طباعة التقرير الكامل',
+    btnPrintTop: '🖨️ طباعة التقرير الكامل',
     viewOnlyBanner: '👁️ أنت في وضع العرض فقط — التعديل والحفظ متاحين فقط لحساب السوبر أدمن',
     accessDeniedTitle: 'هذه الصفحة متاحة فقط للسوبر أدمن والأدمن',
     accessDeniedSub: 'جاري تحويلك للصفحة الرئيسية...',
@@ -804,8 +842,8 @@ window.registerDictionary({
     worksDoneTitle: 'الأعمال المنفذة بالموقع خلال الأسبوع',
     addWorkBtn: '+ إضافة عمل',
     photosTitle: 'صور تقدم الأعمال بالموقع',
-    btnPrintFull: '🖨️ حفظ وطباعة التقرير الكامل',
-    btnSaveReport: '💾 حفظ التقرير',
+    btnPrintFull: '🖨️ طباعة التقرير الكامل',
+    btnSaveReport: '💾 حفظ التقرير (بكلمة المرور)',
     printPreparing: 'جاري تجهيز التقرير الكامل للطباعة...',
     catPlaceholder: 'القسم (مثال: Civil Works)',
     activityPlaceholder: 'الفعالية / العمل المنفذ',
@@ -831,7 +869,7 @@ window.registerDictionary({
   },
   en: {
     navReportView: 'View Report',
-    btnPrintTop: '🖨️ Save / Print Full Report',
+    btnPrintTop: '🖨️ Print Full Report',
     viewOnlyBanner: '👁️ You are in view-only mode — editing and saving are available to the super admin account only',
     accessDeniedTitle: 'This page is available to the super admin and admin accounts only',
     accessDeniedSub: 'Redirecting you to the home page...',
@@ -850,8 +888,8 @@ window.registerDictionary({
     worksDoneTitle: 'Site Works Completed This Week',
     addWorkBtn: '+ Add Work',
     photosTitle: 'Site Progress Photos',
-    btnPrintFull: '🖨️ Save & Print Full Report',
-    btnSaveReport: '💾 Save Report',
+    btnPrintFull: '🖨️ Print Full Report',
+    btnSaveReport: '💾 Save Report (password required)',
     printPreparing: 'Preparing the full report for print...',
     catPlaceholder: 'Category (e.g. Civil Works)',
     activityPlaceholder: 'Activity / Work Performed',
@@ -880,6 +918,17 @@ window.registerDictionary({
 let currentReportId = null; // null = new report
 let photos = []; // {caption, dataUrl}
 let allReports = [];
+
+// ---------- Performance dashboard: live vs frozen (saved-in-report) data ----------
+// perfLiveData   = latest data actually fetched from project_performance (Supabase).
+// perfSnapshotData = the frozen snapshot stored inside the currently loaded report's
+//                     own row (weekly_reports.performance_snapshot), if any.
+// Whenever a report is loaded, printed, or saved we prefer perfSnapshotData over
+// perfLiveData so old reports always show the numbers as they were *at save time*,
+// not whatever the live dashboard shows today.
+let perfLiveData = null;
+let perfSnapshotData = null;
+let perfChartInstances = {}; // canvasId -> Chart.js instance, so re-rendering can destroy+recreate safely
 
 // ---------- Permissions: page is open to everyone (any logged-in role); ----------
 // ---------- editing/saving/deleting requires the shared edit password.  ----------
@@ -1150,6 +1199,12 @@ function newReport() {
   renderPhotoGrid();
   loadWorksIntoForm([]);
   document.getElementById('saveStatus').textContent = '';
+
+  // A brand-new report has no frozen performance data of its own yet — show
+  // whatever is currently live; it'll get frozen into this report the
+  // moment it's actually saved (see saveReport()).
+  perfSnapshotData = null;
+  if (perfLiveData) applyPerfData(perfLiveData);
 }
 
 async function onSelectReport() {
@@ -1166,6 +1221,15 @@ async function onSelectReport() {
     loadWorksIntoForm(data.works || []);
     photos = data.photos || [];
     renderPhotoGrid();
+
+    // Show THIS report's own frozen performance numbers (captured at the
+    // moment it was saved) instead of whatever the live dashboard says
+    // today. Older reports saved before this feature existed simply won't
+    // have a performance_snapshot yet, so they fall back to live data.
+    perfSnapshotData = data.performance_snapshot || null;
+    await perfDashboardReadyPromise; // make sure the embed's DOM/canvases exist first
+    applyPerfData(perfSnapshotData || perfLiveData);
+
     document.getElementById('saveStatus').textContent = '';
   } catch (e) {
     console.error(e);
@@ -1227,20 +1291,36 @@ async function saveReport() {
   const report_no = document.getElementById('f_report_no').value.trim();
   if (!report_no) { statusEl.textContent = T('needReportNo'); statusEl.style.color = '#ef4444'; return; }
 
-  const payload = {
-    report_no,
-    period_from: document.getElementById('f_period_from').value || null,
-    period_to: document.getElementById('f_period_to').value || null,
-    works: collectWorks(),
-    photos: photos,
-    updated_at: new Date().toISOString()
-  };
-  if (currentReportId) payload.id = currentReportId;
-
   async function doSave() {
     statusEl.textContent = T('saving');
     statusEl.style.color = '#334155';
     try {
+      // Freeze the performance dashboard into THIS report at the exact
+      // moment of saving: pull a fresh copy straight from project_performance
+      // (not whatever was last rendered on screen, which could be a bit
+      // stale) and store it inside the report row itself. From now on,
+      // opening/printing this report shows these exact frozen numbers,
+      // even if the live project_performance data changes later.
+      let perfToSave = perfSnapshotData || perfLiveData || null;
+      try {
+        const fresh = await fetchPerfData();
+        perfLiveData = fresh;
+        perfToSave = fresh;
+      } catch (perfErr) {
+        console.error('[perf] could not refresh performance data before save, freezing last known values instead', perfErr);
+      }
+
+      const payload = {
+        report_no,
+        period_from: document.getElementById('f_period_from').value || null,
+        period_to: document.getElementById('f_period_to').value || null,
+        works: collectWorks(),
+        photos: photos,
+        performance_snapshot: perfToSave,
+        updated_at: new Date().toISOString()
+      };
+      if (currentReportId) payload.id = currentReportId;
+
       const { data, error } = await client
         .from('weekly_reports')
         .upsert(payload, { onConflict: currentReportId ? 'id' : 'report_no' })
@@ -1248,6 +1328,8 @@ async function saveReport() {
         .single();
       if (error) throw error;
       currentReportId = data.id;
+      perfSnapshotData = perfToSave;
+      applyPerfData(perfSnapshotData);
       statusEl.textContent = T('savedOk');
       statusEl.style.color = '#10b981';
       await loadReportsList();
@@ -1622,6 +1704,12 @@ async function printFullReport() {
   // Make sure the natively-embedded performance dashboard (and its charts)
   // has finished loading real data before we try to snapshot it for print.
   await perfDashboardReadyPromise;
+
+  // Re-assert which data source the embed should show right before we
+  // snapshot it: the frozen performance_snapshot belonging to this report
+  // if it has one (so printing an old report never pulls in today's live
+  // numbers), otherwise whatever is live.
+  applyPerfData(perfSnapshotData || perfLiveData);
 
   const container = document.getElementById('externalPagesContainer');
   container.innerHTML = '';
