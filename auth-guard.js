@@ -62,7 +62,7 @@
     const PAGE_COLUMNS = {
         'performance.html': 'page_performance',
         'summary.html': 'page_summary',
-        'task.html': 'page_task',
+        'task-list.html': 'page_task',
         'home.html': 'page_home',
         'weekly_report.html': 'page_weekly_report',
         'weekly_report_view.html': 'page_weekly_report',
