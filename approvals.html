@@ -555,7 +555,7 @@ function render() {
         let classificationHtml = missing
             ? `<span class="classification-line missing">${t.missingClassification}</span>`
             : `<span class="classification-line">${t.discipline}: ${r.discipline} &nbsp;›&nbsp; ${t.activity}: ${r.activity}</span>`;
-        let isAttachment = !r.column_target;
+        let isAttachment = !!r.is_attachment;
         let attachmentHtml = isAttachment
             ? `<span class="classification-line" style="background:#f1f5f9; color:var(--text-muted); margin-inline-start:6px;">${t.attachmentTag}</span>`
             : '';
@@ -727,10 +727,10 @@ async function approveRequest(id) {
     let originalStorageUrl = req.file_link;
     let listEl = document.getElementById('list');
 
-    // 0) لو الطلب ده "مرفق إضافي" (column_target فاضي)، الملف لسه في Supabase Storage —
+    // 0) لو الطلب ده "مرفق إضافي" (is_attachment = true)، الملف لسه في Supabase Storage —
     // لازم يترفع لجوجل درايف أول ما الأدمن يوافق، وبعدين نعتمد الرابط النهائي بتاعه.
     let finalFileLink = req.file_link;
-    if (!req.column_target) {
+    if (req.is_attachment) {
         closeReviewModal();
         listEl.style.opacity = '0.6';
         try {
@@ -744,9 +744,9 @@ async function approveRequest(id) {
     }
 
     // 1) تحديث العمود الأصلي في جدول submittals
-    // لو الطلب ده "مرفق إضافي" (column_target فاضي)، متحاولش تحدث أي عمود -
+    // لو الطلب ده "مرفق إضافي" (is_attachment = true)، متحاولش تحدث أي عمود -
     // الملف اترفع في نفس الفولدر بس مش هو الرابط الرسمي للريفيجن.
-    if (req.column_target) {
+    if (!req.is_attachment && req.column_target) {
         let updateQuery = supabaseClient
             .from('submittals')
             .update({ [req.column_target]: finalFileLink });
@@ -784,7 +784,7 @@ async function approveRequest(id) {
     }
 
     // 3) شيل نسخة Supabase Storage المؤقتة (Best-effort) بعد ما اترفع لجوجل درايف
-    if (!req.column_target) {
+    if (req.is_attachment) {
         deleteFromAttachmentsStorage(originalStorageUrl);
     }
 
@@ -809,7 +809,7 @@ async function rejectRequest(id) {
     }
 
     // لو كان مرفق إضافي (لسه في Supabase Storage)، نشيل نسخة الملف المؤقتة بعد الرفض
-    if (req && !req.column_target) {
+    if (req && req.is_attachment) {
         deleteFromAttachmentsStorage(req.file_link);
     }
 
