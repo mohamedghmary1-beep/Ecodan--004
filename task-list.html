@@ -746,6 +746,41 @@
             display: inline-block;
         }
 
+        /* مودال التأكيد (بديل الـ confirm() الافتراضي بتاع المتصفح) */
+        .confirm-modal-icon {
+            font-size: 38px;
+            margin-bottom: 12px;
+            color: var(--primary);
+        }
+
+        .confirm-modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .confirm-modal-actions button {
+            padding: 10px 22px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .confirm-modal-ok {
+            background: var(--primary);
+            color: #fff;
+        }
+        .confirm-modal-ok:hover { background: var(--primary-hover); }
+
+        .confirm-modal-cancel {
+            background: #e2e8f0;
+            color: var(--text-main);
+        }
+        .confirm-modal-cancel:hover { background: #cbd5e1; }
+
         @keyframes upload-spin {
             to { transform: rotate(360deg); }
         }
@@ -796,6 +831,19 @@
         <h3 id="uploadModalTitle">جاري الرفع...</h3>
         <p id="uploadModalMessage"></p>
         <button class="upload-modal-close" id="uploadModalClose" onclick="closeUploadModal()">تمام</button>
+    </div>
+</div>
+
+<!-- مودال تأكيد عام (بديل الـ confirm() الافتراضي بتاع المتصفح) -->
+<div class="upload-lock-overlay" id="confirmModalOverlay">
+    <div class="upload-modal">
+        <div class="confirm-modal-icon" id="confirmModalIcon">❓</div>
+        <h3 id="confirmModalTitle"></h3>
+        <p id="confirmModalMessage"></p>
+        <div class="confirm-modal-actions">
+            <button class="confirm-modal-cancel" id="confirmModalCancelBtn"></button>
+            <button class="confirm-modal-ok" id="confirmModalOkBtn"></button>
+        </div>
     </div>
 </div>
 
@@ -896,15 +944,17 @@ let currentUploadEmployee = "";
 let currentUploadDiscipline = "";
 let currentUploadActivity = "";
 
-// بيانات مرفق التاسك اللي بيترفع دلوقتي (مش مرتبط بريفيجن معينة)
+// بيانات مرفق الريفيجن اللي بيترفع دلوقتي (كل ريفيجن ليه مرفقاته الخاصة)
 let currentAttachTaskKey = "";
+let currentAttachRevName = "";
 let currentAttachRawNo = "";
 let currentAttachTaskTitle = "";
 let currentAttachEmployee = "";
 let currentAttachDiscipline = "";
 let currentAttachActivity = "";
 
-// خريطة مرفقات التاسكات: المفتاح = taskKey، القيمة = مصفوفة طلبات (pending/approved)
+// خريطة مرفقات الريفيجنز: المفتاح = `${taskKey}||${revisionName}` (نفس أسلوب pendingMap)،
+// القيمة = مصفوفة طلبات (pending/approved) خاصة بالريفيجن ده تحديدًا
 let attachmentsMap = {};
 
 // بيتسجل فيها آخر حالة معروفة لكل طلب مرفق (id -> status)، عشان نقدر نكتشف
@@ -912,8 +962,8 @@ let attachmentsMap = {};
 let previousAttachmentStatus = {};
 let attachmentsLoadedOnce = false;
 
-// أقصى عدد مرفقات مسموح بيه لكل تاسك
-const MAX_ATTACHMENTS_PER_TASK = 2;
+// أقصى عدد مرفقات مسموح بيه لكل ريفيجن
+const MAX_ATTACHMENTS_PER_REVISION = 2;
 
 // اسم الـ Bucket بتاع Supabase Storage اللي بتتخزن فيه المرفقات مؤقتًا
 // (لازم يتعمل مسبقًا من لوحة تحكم Supabase قبل ما الميزة دي تشتغل)
@@ -974,18 +1024,20 @@ const dictionary = {
         deleteTaskErr: "تعذر حذف التاسك. حاول مرة أخرى.",
         deleteRevisionSuccess: "تم حذف بيانات الريفيجن.",
         deleteRevisionErr: "تعذر حذف الريفيجن. حاول مرة أخرى.",
-        attachmentsLabel: "📎 مرفقات التاسك",
+        attachmentsLabel: "📎 مرفقات الريفيجن",
         addAttachment: "إضافة مرفق",
         noAttachments: "لا يوجد مرفقات",
-        maxAttachmentsReached: "وصلت للحد الأقصى من المرفقات لهذا التاسك.",
+        maxAttachmentsReached: "وصلت للحد الأقصى من المرفقات لهذا الريفيجن.",
         reviewModalTitle: "معاينة الملف",
         reviewNoPreview: "معاينة مباشرة غير متاحة لنوع الملف ده. تقدر تفتحه في تاب جديد.",
         reviewOpenInNewTab: "فتح الملف",
         reviewClose: "إغلاق",
         attachmentApprovedToast: "تمت الموافقة على مرفقك",
         attachmentRejectedToast: "تم رفض مرفقك",
-        attachmentUploadedCount: "معاك دلوقتي {count} من {max} مرفقات على التاسك ده.",
-        confirmAttachmentUpload: "متأكد إن ده المرفق اللي عايز ترفعه؟\n\nاسم الملف: {file}\nالتاسك: {task}"
+        attachmentUploadedCount: "معاك دلوقتي {count} من {max} مرفقات على الريفيجن ده.",
+        confirmAttachmentUpload: "متأكد إن ده المرفق اللي عايز ترفعه؟\n\nاسم الملف: {file}\nالتاسك: {task}\nالريفيجن: {rev}",
+        confirmModalOk: "تأكيد",
+        confirmModalCancel: "إلغاء"
     },
     en: {
         navReportView: "View Report",
@@ -1033,18 +1085,20 @@ const dictionary = {
         deleteTaskErr: "Could not delete the task. Please try again.",
         deleteRevisionSuccess: "Revision data deleted.",
         deleteRevisionErr: "Could not delete the revision. Please try again.",
-        attachmentsLabel: "📎 Task Attachments",
+        attachmentsLabel: "📎 Revision Attachments",
         addAttachment: "Add Attachment",
         noAttachments: "No attachments",
-        maxAttachmentsReached: "You've reached the maximum attachments for this task.",
+        maxAttachmentsReached: "You've reached the maximum attachments for this revision.",
         reviewModalTitle: "File Preview",
         reviewNoPreview: "Live preview isn't available for this file type. You can open it in a new tab instead.",
         reviewOpenInNewTab: "Open File",
         reviewClose: "Close",
         attachmentApprovedToast: "Your attachment was approved",
         attachmentRejectedToast: "Your attachment was rejected",
-        attachmentUploadedCount: "You now have {count} of {max} attachments on this task.",
-        confirmAttachmentUpload: "Are you sure this is the attachment you want to upload?\n\nFile name: {file}\nTask: {task}"
+        attachmentUploadedCount: "You now have {count} of {max} attachments on this revision.",
+        confirmAttachmentUpload: "Are you sure this is the attachment you want to upload?\n\nFile name: {file}\nTask: {task}\nRevision: {rev}",
+        confirmModalOk: "Confirm",
+        confirmModalCancel: "Cancel"
     }
 };
 window.registerDictionary(dictionary);
@@ -1122,6 +1176,7 @@ async function loadPendingRequests() {
 
         pendingMap = {};
         (rows || []).forEach(r => {
+            if (r.is_attachment) return; // طلبات المرفقات مش هي اللي بتحكم حالة زرار رفع الريفيجن
             let key = `${r.task_key}||${r.revision_name.trim().toLowerCase()}`;
             pendingMap[key] = r;
         });
@@ -1144,14 +1199,14 @@ function updatePendingBadge(count) {
     }
 }
 
-// جلب مرفقات التاسكات وتجميعها حسب التاسك + اكتشاف أي تغيير في حالة
-// أي مرفق (approved/rejected) عشان نطلع إشعار فوري للموظف اللي رفعه
+// جلب مرفقات الريفيجنز وتجميعها حسب التاسك+الريفيجن + اكتشاف أي تغيير
+// في حالة أي مرفق (approved/rejected) عشان نطلع إشعار فوري للموظف اللي رفعه
 async function loadTaskAttachments() {
     try {
         const { data: rows, error } = await supabaseClient
             .from('upload_requests')
             .select('*')
-            .is('column_target', null)
+            .eq('is_attachment', true)
             .order('requested_at', { ascending: true });
 
         if (error) throw error;
@@ -1175,14 +1230,48 @@ async function loadTaskAttachments() {
         attachmentsMap = {};
         allRows.forEach(r => {
             if (r.status === 'rejected') return;
-            if (!attachmentsMap[r.task_key]) attachmentsMap[r.task_key] = [];
-            attachmentsMap[r.task_key].push(r);
+            let key = `${r.task_key}||${(r.revision_name || '').trim().toLowerCase()}`;
+            if (!attachmentsMap[key]) attachmentsMap[key] = [];
+            attachmentsMap[key].push(r);
         });
 
         render();
     } catch (err) {
         console.error("Error loading task attachments:", err);
     }
+}
+
+// ============================================
+// مودال تأكيد عام (بديل الـ confirm() الافتراضي بتاع المتصفح، اللي
+// بيطلع كـ popup بايظ الشكل فوق الصفحة). بترجع Promise<boolean> —
+// true لو ضغط "تأكيد"، false لو ضغط "إلغاء" أو قفل المودال.
+// الاستخدام: if (!(await showConfirmModal(title, message))) return;
+// ============================================
+function showConfirmModal(title, message, okLabel, cancelLabel) {
+    return new Promise(resolve => {
+        let overlay = document.getElementById('confirmModalOverlay');
+        let okBtn = document.getElementById('confirmModalOkBtn');
+        let cancelBtn = document.getElementById('confirmModalCancelBtn');
+
+        document.getElementById('confirmModalTitle').textContent = title || '';
+        document.getElementById('confirmModalMessage').textContent = message || '';
+        okBtn.textContent = okLabel || T('confirmModalOk') || 'OK';
+        cancelBtn.textContent = cancelLabel || T('confirmModalCancel') || 'Cancel';
+
+        overlay.classList.add('active');
+
+        function cleanup(result) {
+            overlay.classList.remove('active');
+            okBtn.removeEventListener('click', onOk);
+            cancelBtn.removeEventListener('click', onCancel);
+            resolve(result);
+        }
+        function onOk() { cleanup(true); }
+        function onCancel() { cleanup(false); }
+
+        okBtn.addEventListener('click', onOk);
+        cancelBtn.addEventListener('click', onCancel);
+    });
 }
 
 // إشعار صوتي بسيط (Web Audio API — من غير ملف صوت خارجي)
@@ -1475,6 +1564,7 @@ async function handleFileSelection(input) {
                 activity: currentUploadActivity,
                 revision_name: currentUploadRevName,
                 column_target: columnTarget,
+                is_attachment: false,
                 file_name: file.name,
                 file_link: uploadedUrl,
                 status: 'pending'
@@ -1524,16 +1614,18 @@ async function handleFileSelection(input) {
 // وقتها بس بتتنقل لجوجل درايف كرابط رسمي نهائي.
 // ============================================
 
-function triggerAttachmentUpload(taskKey, rawNo, taskTitle, employee, discipline, activity) {
+function triggerAttachmentUpload(taskKey, revName, rawNo, taskTitle, employee, discipline, activity) {
     if (isUploadInProgress) return;
 
-    let existingCount = (attachmentsMap[taskKey] || []).length;
-    if (existingCount >= MAX_ATTACHMENTS_PER_TASK) {
+    let key = `${taskKey}||${revName.trim().toLowerCase()}`;
+    let existingCount = (attachmentsMap[key] || []).length;
+    if (existingCount >= MAX_ATTACHMENTS_PER_REVISION) {
         alert(T('maxAttachmentsReached'));
         return;
     }
 
     currentAttachTaskKey = taskKey;
+    currentAttachRevName = revName;
     currentAttachRawNo = rawNo;
     currentAttachTaskTitle = taskTitle;
     currentAttachEmployee = employee;
@@ -1556,18 +1648,21 @@ async function handleAttachmentFileSelection(input) {
         return;
     }
 
-    let existingCount = (attachmentsMap[currentAttachTaskKey] || []).length;
-    if (existingCount >= MAX_ATTACHMENTS_PER_TASK) {
+    let attachKey = `${currentAttachTaskKey}||${currentAttachRevName.trim().toLowerCase()}`;
+    let existingCount = (attachmentsMap[attachKey] || []).length;
+    if (existingCount >= MAX_ATTACHMENTS_PER_REVISION) {
         alert(T('maxAttachmentsReached'));
         return;
     }
 
-    // تأكيد من الموظف قبل ما نبدأ الرفع فعليًا — بيوريله اسم الملف واسم التاسك
-    // عشان يتأكد إنه مش غلط الملف أو التاسك
+    // تأكيد من الموظف قبل ما نبدأ الرفع فعليًا — بيوريله اسم الملف واسم التاسك والريفيجن
+    // عشان يتأكد إنه مش غلط الملف أو التاسك أو الريفيجن
     let confirmMsg = T('confirmAttachmentUpload')
         .replace('{file}', file.name)
-        .replace('{task}', currentAttachTaskTitle || currentAttachTaskKey || '-');
-    if (!confirm(confirmMsg)) return;
+        .replace('{task}', currentAttachTaskTitle || currentAttachTaskKey || '-')
+        .replace('{rev}', currentAttachRevName || '-');
+    let confirmed = await showConfirmModal(T('addAttachment'), confirmMsg);
+    if (!confirmed) return;
 
     openUploadModal(
         "جاري رفع المرفق...",
@@ -1577,7 +1672,8 @@ async function handleAttachmentFileSelection(input) {
     try {
         // تنضيف اسم الملف من مسافات ورموز ممكن تكسر الـ path في الـ Storage
         let safeName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_');
-        let storagePath = `${currentAttachTaskKey}/${Date.now()}_${safeName}`;
+        let safeRevFolder = currentAttachRevName.replace(/[^a-zA-Z0-9.\-_]/g, '_');
+        let storagePath = `${currentAttachTaskKey}/${safeRevFolder}/${Date.now()}_${safeName}`;
 
         const { error: uploadErr } = await supabaseClient
             .storage
@@ -1594,8 +1690,12 @@ async function handleAttachmentFileSelection(input) {
         let publicUrl = urlData && urlData.publicUrl;
         if (!publicUrl) throw new Error("تعذر توليد رابط الملف بعد الرفع.");
 
-        // بننشئ "طلب موافقة" بمرفق إضافي (column_target فاضي = مش مرتبط بريفيجن معينة).
-        // revision_name هنا اسم فريد بس عشان مايتعارضش مع أي مفتاح تاني، مش ريفيجن حقيقية.
+        // بننشئ "طلب موافقة" لمرفق مرتبط بريفيجن معينة (revision_name هو
+        // اسم الريفيجن الحقيقي، زي أي طلب رفع ريفيجن عادي). is_attachment
+        // = true بيميّزه عن طلبات ملف الريفيجن الرئيسي، فمينفعش يتلخبط
+        // مع حالة "pending" بتاعة زرار رفع الريفيجن نفسه. column_target
+        // لازم قيمة (العمود NOT NULL في القاعدة)، فبنحط قيمة ثابتة
+        // "attachment" مالهاش استخدام فعلي غير إرضاء القيد ده.
         const { data: insertedRows, error: insertError } = await supabaseClient
             .from('upload_requests')
             .insert({
@@ -1605,8 +1705,9 @@ async function handleAttachmentFileSelection(input) {
                 employee: currentAttachEmployee,
                 discipline: currentAttachDiscipline,
                 activity: currentAttachActivity,
-                revision_name: `Attachment ${Date.now()}`,
-                column_target: null,
+                revision_name: currentAttachRevName,
+                column_target: 'attachment',
+                is_attachment: true,
                 file_name: file.name,
                 file_link: publicUrl,
                 status: 'pending'
@@ -1621,17 +1722,18 @@ async function handleAttachmentFileSelection(input) {
         }
 
         let newReq = (insertedRows && insertedRows[0]) ? insertedRows[0] : null;
+        let attachKeyAfterUpload = `${currentAttachTaskKey}||${currentAttachRevName.trim().toLowerCase()}`;
         if (newReq) {
-            if (!attachmentsMap[currentAttachTaskKey]) attachmentsMap[currentAttachTaskKey] = [];
-            attachmentsMap[currentAttachTaskKey].push(newReq);
+            if (!attachmentsMap[attachKeyAfterUpload]) attachmentsMap[attachKeyAfterUpload] = [];
+            attachmentsMap[attachKeyAfterUpload].push(newReq);
         }
 
         render();
 
-        let countNow = (attachmentsMap[currentAttachTaskKey] || []).length;
+        let countNow = (attachmentsMap[attachKeyAfterUpload] || []).length;
         let countMsg = T('attachmentUploadedCount')
             .replace('{count}', countNow)
-            .replace('{max}', MAX_ATTACHMENTS_PER_TASK);
+            .replace('{max}', MAX_ATTACHMENTS_PER_REVISION);
 
         finishUploadModal(
             true,
@@ -1647,9 +1749,11 @@ async function handleAttachmentFileSelection(input) {
     loadPendingRequests();
 }
 
-// بيبني الـ HTML الخاص بقسم مرفقات التاسك (الملفات المعتمدة + المعلّقة + زرار الإضافة)
-function buildAttachmentsSection(t) {
-    let list = attachmentsMap[t.taskKey] || [];
+// بيبني الـ HTML الخاص بقسم مرفقات الريفيجن (الملفات المعتمدة + المعلّقة + زرار الإضافة)
+// taskKey/rawNo/taskTitle/employee/discipline/activity بتاعة التاسك، وrevName اسم الريفيجن المرتبط بيه المرفقات دي
+function buildAttachmentsSection(taskKey, rawNo, taskTitle, employee, discipline, activity, revName) {
+    let key = `${taskKey}||${revName.trim().toLowerCase()}`;
+    let list = attachmentsMap[key] || [];
 
     let itemsHtml = list.map(r => {
         if (r.status === 'approved') {
@@ -1660,21 +1764,22 @@ function buildAttachmentsSection(t) {
         return `<span class="attachment-chip pending">📎 ${escapeHtml(r.file_name)} — ${T('pendingApproval')}</span>`;
     }).join('');
 
-    let canAddMore = list.length < MAX_ATTACHMENTS_PER_TASK;
-    let taskKeyLit = escapeForJsAttr(t.taskKey || '');
-    let rawNoLit = escapeForJsAttr((t.no || '-').toString());
-    let taskTitleLit = escapeForJsAttr(t.title || '');
-    let employeeLit = escapeForJsAttr(t.employee || '');
-    let disciplineLit = escapeForJsAttr(t.discipline || '');
-    let activityLit = escapeForJsAttr(t.activity || '');
+    let canAddMore = list.length < MAX_ATTACHMENTS_PER_REVISION;
+    let taskKeyLit = escapeForJsAttr(taskKey || '');
+    let revNameLit = escapeForJsAttr(revName || '');
+    let rawNoLit = escapeForJsAttr((rawNo || '-').toString());
+    let taskTitleLit = escapeForJsAttr(taskTitle || '');
+    let employeeLit = escapeForJsAttr(employee || '');
+    let disciplineLit = escapeForJsAttr(discipline || '');
+    let activityLit = escapeForJsAttr(activity || '');
 
     let addBtnHtml = canAddMore
-        ? `<button class="link-btn attach-btn" onclick="triggerAttachmentUpload('${taskKeyLit}', '${rawNoLit}', '${taskTitleLit}', '${employeeLit}', '${disciplineLit}', '${activityLit}')">📎 ${T('addAttachment')}</button>`
+        ? `<button class="link-btn attach-btn" onclick="triggerAttachmentUpload('${taskKeyLit}', '${revNameLit}', '${rawNoLit}', '${taskTitleLit}', '${employeeLit}', '${disciplineLit}', '${activityLit}')">📎 ${T('addAttachment')}</button>`
         : `<span class="small">${T('maxAttachmentsReached')}</span>`;
 
     return `
     <div class="attachments-box">
-        <div class="attachments-header">${T('attachmentsLabel')} (${list.length}/${MAX_ATTACHMENTS_PER_TASK})</div>
+        <div class="attachments-header">${T('attachmentsLabel')} (${list.length}/${MAX_ATTACHMENTS_PER_REVISION})</div>
         <div class="attachments-list">${itemsHtml || `<span class="small">${T('noAttachments')}</span>`}</div>
         <div style="margin-top:8px;">${addBtnHtml}</div>
     </div>
@@ -1916,6 +2021,7 @@ function buildRevision(rev, taskKey, rawNo, taskTitle, employee, discipline, act
             ${viewButtonHtml}
             ${deleteRevBtnHtml}
         </div>
+        ${buildAttachmentsSection(taskKey, rawNo, taskTitle, employee, discipline, activity, rev.name)}
     </div>
     `;
 
@@ -2137,7 +2243,6 @@ function render() {
                 <span class="tag">${T('rev')}: ${escapeHtml(t.rev || "-")}</span>
             </div>
             ${revHTML}
-            ${buildAttachmentsSection(t)}
             <div class="status-container">
                 <b>${T('status')}:</b>
                 <span class="status-badge ${status.toLowerCase()}">${statusLabel}</span>
