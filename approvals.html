@@ -229,6 +229,89 @@
         .btn-approve { background: var(--success); color: #fff; }
         .btn-reject { background: var(--danger); color: #fff; }
 
+        .btn-review { background: #8b5cf6; color: #fff; }
+
+        .review-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.55);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .review-overlay.active { display: flex; }
+
+        .review-modal {
+            background: #fff;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 820px;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.25);
+        }
+
+        .review-modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 18px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .review-modal-title {
+            font-weight: 700;
+            font-size: 15px;
+        }
+
+        .review-modal-close {
+            background: #f1f5f9;
+            border: none;
+            border-radius: 6px;
+            width: 30px;
+            height: 30px;
+            cursor: pointer;
+            font-size: 15px;
+            color: var(--text-muted);
+        }
+        .review-modal-close:hover { background: #e2e8f0; }
+
+        .review-modal-body {
+            flex: 1;
+            overflow: auto;
+            padding: 0;
+            background: #f1f5f9;
+            min-height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .review-modal-body iframe {
+            width: 100%;
+            height: 70vh;
+            border: none;
+            background: #fff;
+        }
+
+        .review-fallback {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-muted);
+        }
+
+        .review-modal-footer {
+            padding: 12px 18px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+        }
+
         .empty-state {
             text-align: center;
             color: var(--text-muted);
@@ -296,6 +379,18 @@
     </button>
 </div>
 
+<!-- مودال معاينة المرفق قبل الموافقة عليه -->
+<div class="review-overlay" id="reviewOverlay">
+    <div class="review-modal">
+        <div class="review-modal-header">
+            <span class="review-modal-title" id="reviewModalTitle">Review</span>
+            <button class="review-modal-close" onclick="closeReviewModal()">✕</button>
+        </div>
+        <div class="review-modal-body" id="reviewModalBody"></div>
+        <div class="review-modal-footer" id="reviewModalFooter"></div>
+    </div>
+</div>
+
 <div class="container">
     <div class="tabs">
         <button class="tab-btn active" id="tab-pending" onclick="setTab('pending')" data-i18n="tabPending">قيد المراجعة</button>
@@ -310,6 +405,10 @@
 const SUPABASE_URL = "https://uhhtvpxtpayovbtmnstz.supabase.co";
 const SUPABASE_KEY = "sb_publishable_QsS0UhLBORy6mOaBDgW62g_9OacC3oO";
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const GOOGLE_SCRIPT_UPLOAD_URL = "https://script.google.com/macros/s/AKfycbxP9S7qbgK888SHhCejIGZUx-wXN7pFtJ0OHbFvAUV9ARbtfxtI1_KwUNaU3c-LTubKnw/exec";
+
+// نفس اسم الـ Bucket المستخدم في task-list.html لرفع المرفقات المؤقتة
+const ATTACHMENTS_BUCKET = "task-attachments";
 
 let currentLang = (typeof window.getCurrentLang === 'function') ? window.getCurrentLang() : 'ar';
 
@@ -348,7 +447,14 @@ const dictionary = {
         errUpdateRow: "تعذر تحديد الصف المطلوب تحديثه في جدول submittals.",
         errUpdateLink: "فشل تحديث الرابط الرسمي.",
         errUpdateStatusAfterLink: "تم تحديث الرابط الرسمي، لكن فشل تحديث حالة الطلب.",
-        errReject: "فشل رفض الطلب."
+        errReject: "فشل رفض الطلب.",
+        review: "مراجعة",
+        reviewModalTitle: "معاينة الملف",
+        reviewNoPreview: "معاينة مباشرة غير متاحة لنوع الملف ده. تقدر تفتحه في تاب جديد.",
+        reviewOpenInNewTab: "فتح الملف",
+        reviewClose: "إغلاق",
+        approvingInProgress: "جاري رفع الملف لجوجل درايف واعتماده...",
+        errDriveUpload: "فشل رفع الملف على جوجل درايف. حاول مرة أخرى."
     },
     en: {
         navReportView: "View Report",
@@ -384,7 +490,14 @@ const dictionary = {
         errUpdateRow: "Could not determine which row to update in the submittals table.",
         errUpdateLink: "Failed to update the official link.",
         errUpdateStatusAfterLink: "The official link was updated, but updating the request status failed.",
-        errReject: "Failed to reject the request."
+        errReject: "Failed to reject the request.",
+        review: "Review",
+        reviewModalTitle: "File Preview",
+        reviewNoPreview: "Live preview isn't available for this file type. You can open it in a new tab instead.",
+        reviewOpenInNewTab: "Open File",
+        reviewClose: "Close",
+        approvingInProgress: "Uploading the file to Google Drive and approving...",
+        errDriveUpload: "Failed to upload the file to Google Drive. Please try again."
     }
 };
 window.registerDictionary(dictionary);
@@ -442,9 +555,14 @@ function render() {
         let classificationHtml = missing
             ? `<span class="classification-line missing">${t.missingClassification}</span>`
             : `<span class="classification-line">${t.discipline}: ${r.discipline} &nbsp;›&nbsp; ${t.activity}: ${r.activity}</span>`;
-        let attachmentHtml = !r.column_target
+        let isAttachment = !r.column_target;
+        let attachmentHtml = isAttachment
             ? `<span class="classification-line" style="background:#f1f5f9; color:var(--text-muted); margin-inline-start:6px;">${t.attachmentTag}</span>`
             : '';
+
+        // كل الطلبات (سواء ريفيجن أو مرفق) بقى ليها نفس زرار "مراجعة" اللي
+        // بيفتح مودال معاينة جوه نفس الصفحة، بدل ما يودّي على تاب جديد.
+        let viewActionHtml = `<button class="btn btn-review" onclick="reviewRequest(${r.id})"><i class="fa-solid fa-eye"></i> ${t.review}</button>`;
 
         return `
         <div class="request-card ${r.status}">
@@ -464,7 +582,7 @@ function render() {
                 <span class="status-pill ${r.status}">${r.status === 'pending' ? t.statusPending : r.status === 'approved' ? t.statusApproved : t.statusRejected}</span>
             </div>
             <div class="actions">
-                <a class="btn btn-view" href="${r.file_link}" target="_blank"><i class="fa-solid fa-eye"></i> ${t.viewFile}</a>
+                ${viewActionHtml}
                 ${r.status === 'pending' ? `
                     <button class="btn btn-approve" onclick="approveRequest(${r.id})"><i class="fa-solid fa-check"></i> ${t.approve}</button>
                     <button class="btn btn-reject" onclick="rejectRequest(${r.id})"><i class="fa-solid fa-xmark"></i> ${t.reject}</button>
@@ -473,6 +591,126 @@ function render() {
         </div>
     `;
     }).join('');
+}
+
+// ============================================
+// معاينة الملف (Review) — بيفتح مودال جوه نفس الصفحة بدل ما
+// يفتح تاب جديد. بتدعم روابط جوجل درايف (بتتحول لصيغة /preview
+// وتتعرض جوه iframe) وكمان ملفات PDF المرفوعة على Supabase Storage.
+// ============================================
+function getFileExtensionApv(filename) {
+    let parts = (filename || "").toString().trim().split(".");
+    return parts.length > 1 ? parts.pop().toLowerCase() : "";
+}
+
+function getReviewEmbedSrc(fileName, fileLink) {
+    let driveMatch = (fileLink || "").match(/drive\.google\.com\/file\/d\/([^/]+)/);
+    if (driveMatch) {
+        return `https://drive.google.com/file/d/${driveMatch[1]}/preview`;
+    }
+    let ext = getFileExtensionApv(fileName);
+    if (ext === 'pdf') {
+        return fileLink;
+    }
+    return null;
+}
+
+function reviewRequest(id) {
+    let req = requests.find(r => r.id === id);
+    if (!req) return;
+    let t = dictionary[currentLang];
+
+    document.getElementById('reviewModalTitle').textContent = `${t.reviewModalTitle}: ${req.file_name || ''}`;
+
+    let embedSrc = getReviewEmbedSrc(req.file_name, req.file_link);
+    let bodyEl = document.getElementById('reviewModalBody');
+
+    if (embedSrc) {
+        bodyEl.innerHTML = `<iframe src="${embedSrc}"></iframe>`;
+    } else {
+        bodyEl.innerHTML = `
+            <div class="review-fallback">
+                <div style="font-size:40px; margin-bottom:10px;">📄</div>
+                <div>${t.reviewNoPreview}</div>
+            </div>
+        `;
+    }
+
+    document.getElementById('reviewModalFooter').innerHTML = `
+        <a class="btn btn-view" href="${req.file_link}" target="_blank"><i class="fa-solid fa-up-right-from-square"></i> ${t.reviewOpenInNewTab}</a>
+        <button class="btn" style="background:#e2e8f0; color:var(--text-main);" onclick="closeReviewModal()">${t.reviewClose}</button>
+    `;
+
+    document.getElementById('reviewOverlay').classList.add('active');
+}
+
+// اسم قديم متسيب لتوافق أي كود تاني ممكن يستخدمه
+function reviewAttachment(id) { reviewRequest(id); }
+
+function closeReviewModal() {
+    document.getElementById('reviewOverlay').classList.remove('active');
+    document.getElementById('reviewModalBody').innerHTML = '';
+}
+
+// ============================================
+// نقل ملف المرفق من Supabase Storage لجوجل درايف — بيتنفذ بس لحظة
+// موافقة الأدمن على المرفق (قبل كده الملف بيفضل في Supabase بس).
+// ============================================
+function extractStoragePath(publicUrl) {
+    // شكل الرابط العام: {SUPABASE_URL}/storage/v1/object/public/{bucket}/{path}
+    let marker = `/storage/v1/object/public/${ATTACHMENTS_BUCKET}/`;
+    let idx = (publicUrl || "").indexOf(marker);
+    if (idx === -1) return null;
+    return decodeURIComponent(publicUrl.substring(idx + marker.length));
+}
+
+function blobToBase64(blob) {
+    return new Promise((resolve, reject) => {
+        let reader = new FileReader();
+        reader.onload = () => resolve(reader.result.split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+    });
+}
+
+async function uploadAttachmentToDrive(req) {
+    let response = await fetch(req.file_link);
+    if (!response.ok) throw new Error("تعذر تحميل الملف من التخزين المؤقت.");
+    let blob = await response.blob();
+    let base64 = await blobToBase64(blob);
+
+    let uploadResponse = await fetch(GOOGLE_SCRIPT_UPLOAD_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain" },
+        body: JSON.stringify({
+            filename: req.file_name,
+            mimeType: blob.type || "application/octet-stream",
+            data: base64,
+            taskNo: req.task_key,
+            revName: req.revision_name,
+            notify: false,
+            taskTitle: req.task_title,
+            employee: req.employee,
+            discipline: req.discipline,
+            activity: req.activity
+        })
+    });
+
+    let result = await uploadResponse.json();
+    if (!result.url) throw new Error(result.error || "فشل رفع الملف على جوجل درايف.");
+    return result.url;
+}
+
+// شيل الملف المؤقت من Supabase Storage بعد ما يترفع بنجاح لجوجل درايف
+// (Best-effort — أي فشل هنا متسجلش في الـ console بس، مايوقفش الموافقة).
+async function deleteFromAttachmentsStorage(publicUrl) {
+    let path = extractStoragePath(publicUrl);
+    if (!path) return;
+    try {
+        await supabaseClient.storage.from(ATTACHMENTS_BUCKET).remove([path]);
+    } catch (e) {
+        console.warn('Could not clean up storage file:', e);
+    }
 }
 
 async function approveRequest(id) {
@@ -486,13 +724,32 @@ async function approveRequest(id) {
         if (!confirm(`${t.confirmApprove} "${req.file_name}" ${t.confirmApproveEnd}`)) return;
     }
 
+    let originalStorageUrl = req.file_link;
+    let listEl = document.getElementById('list');
+
+    // 0) لو الطلب ده "مرفق إضافي" (column_target فاضي)، الملف لسه في Supabase Storage —
+    // لازم يترفع لجوجل درايف أول ما الأدمن يوافق، وبعدين نعتمد الرابط النهائي بتاعه.
+    let finalFileLink = req.file_link;
+    if (!req.column_target) {
+        closeReviewModal();
+        listEl.style.opacity = '0.6';
+        try {
+            finalFileLink = await uploadAttachmentToDrive(req);
+        } catch (e) {
+            console.error(e);
+            alert(t.errDriveUpload);
+            listEl.style.opacity = '1';
+            return;
+        }
+    }
+
     // 1) تحديث العمود الأصلي في جدول submittals
     // لو الطلب ده "مرفق إضافي" (column_target فاضي)، متحاولش تحدث أي عمود -
     // الملف اترفع في نفس الفولدر بس مش هو الرابط الرسمي للريفيجن.
     if (req.column_target) {
         let updateQuery = supabaseClient
             .from('submittals')
-            .update({ [req.column_target]: req.file_link });
+            .update({ [req.column_target]: finalFileLink });
 
         if (req.raw_no && req.raw_no !== '-') {
             updateQuery = updateQuery.eq('no', req.raw_no);
@@ -500,6 +757,7 @@ async function approveRequest(id) {
             updateQuery = updateQuery.eq('title', req.task_title);
         } else {
             alert(t.errUpdateRow);
+            listEl.style.opacity = '1';
             return;
         }
 
@@ -507,25 +765,35 @@ async function approveRequest(id) {
         if (updateError) {
             console.error(updateError);
             alert(t.errUpdateLink);
+            listEl.style.opacity = '1';
             return;
         }
     }
 
-    // 2) تحديث حالة الطلب نفسه
+    // 2) تحديث حالة الطلب نفسه (وتحديث الرابط لرابط جوجل درايف النهائي لو كان مرفق)
     const { error: statusError } = await supabaseClient
         .from('upload_requests')
-        .update({ status: 'approved', reviewed_at: new Date().toISOString() })
+        .update({ status: 'approved', reviewed_at: new Date().toISOString(), file_link: finalFileLink })
         .eq('id', id);
 
     if (statusError) {
         console.error(statusError);
         alert(t.errUpdateStatusAfterLink);
+        listEl.style.opacity = '1';
+        return;
     }
 
+    // 3) شيل نسخة Supabase Storage المؤقتة (Best-effort) بعد ما اترفع لجوجل درايف
+    if (!req.column_target) {
+        deleteFromAttachmentsStorage(originalStorageUrl);
+    }
+
+    listEl.style.opacity = '1';
     loadRequests();
 }
 
 async function rejectRequest(id) {
+    let req = requests.find(r => r.id === id);
     let t = dictionary[currentLang];
     if (!confirm(t.confirmReject)) return;
 
@@ -539,6 +807,13 @@ async function rejectRequest(id) {
         alert(t.errReject);
         return;
     }
+
+    // لو كان مرفق إضافي (لسه في Supabase Storage)، نشيل نسخة الملف المؤقتة بعد الرفض
+    if (req && !req.column_target) {
+        deleteFromAttachmentsStorage(req.file_link);
+    }
+
+    closeReviewModal();
     loadRequests();
 }
 
