@@ -91,6 +91,25 @@
             font-size: 15px;
             border-radius: 8px;
             transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .nav-badge {
+            position: absolute;
+            top: -6px;
+            right: -6px;
+            background: #ef4444;
+            color: #fff;
+            font-size: 11px;
+            font-weight: 700;
+            min-width: 18px;
+            height: 18px;
+            border-radius: 999px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 0 4px;
+            line-height: 1;
         }
 
         .nav-btn:hover {
@@ -114,6 +133,15 @@
             border: none;
             cursor: pointer;
             font-family: inherit;
+        }
+
+        .nav-btn.logout-btn {
+            margin-inline-start: auto;
+            background: rgba(239, 68, 68, 0.12);
+            color: #ef4444;
+        }
+        .nav-btn.logout-btn:hover {
+            background: rgba(239, 68, 68, 0.22);
         }
 
         .container {
@@ -365,6 +393,7 @@
     </a>
     <a href="approvals.html" class="nav-btn active">
         <i class="fa-solid fa-clipboard-check"></i> <span data-i18n="navApprovals">طلبات الموافقة</span>
+        <span id="pendingNavBadge" class="nav-badge">0</span>
     </a>
     <a href="team_overview.html" class="nav-btn">
         <i class="fa-solid fa-users"></i> <span data-i18n="navTeam">نظرة عامة على الموظفين</span>
@@ -376,6 +405,9 @@
     <a href="weekly_report_view.html" class="nav-btn"><i class="fa-solid fa-eye"></i> <span data-i18n="navReportView">عرض التقرير</span></a>
     <button onclick="toggleLanguage()" class="nav-btn translate-btn">
         <i class="fa-solid fa-language"></i> <span id="lang-btn-text">English</span>
+    </button>
+    <button onclick="logout()" class="nav-btn logout-btn" title="Logout">
+        <i class="fa-solid fa-right-from-bracket"></i> <span data-i18n="navLogout">تسجيل الخروج</span>
     </button>
 </div>
 
@@ -555,7 +587,7 @@ function render() {
         let classificationHtml = missing
             ? `<span class="classification-line missing">${t.missingClassification}</span>`
             : `<span class="classification-line">${t.discipline}: ${r.discipline} &nbsp;›&nbsp; ${t.activity}: ${r.activity}</span>`;
-        let isAttachment = !!r.is_attachment;
+        let isAttachment = !r.column_target;
         let attachmentHtml = isAttachment
             ? `<span class="classification-line" style="background:#f1f5f9; color:var(--text-muted); margin-inline-start:6px;">${t.attachmentTag}</span>`
             : '';
@@ -727,10 +759,10 @@ async function approveRequest(id) {
     let originalStorageUrl = req.file_link;
     let listEl = document.getElementById('list');
 
-    // 0) لو الطلب ده "مرفق إضافي" (is_attachment = true)، الملف لسه في Supabase Storage —
+    // 0) لو الطلب ده "مرفق إضافي" (column_target فاضي)، الملف لسه في Supabase Storage —
     // لازم يترفع لجوجل درايف أول ما الأدمن يوافق، وبعدين نعتمد الرابط النهائي بتاعه.
     let finalFileLink = req.file_link;
-    if (req.is_attachment) {
+    if (!req.column_target) {
         closeReviewModal();
         listEl.style.opacity = '0.6';
         try {
@@ -744,9 +776,9 @@ async function approveRequest(id) {
     }
 
     // 1) تحديث العمود الأصلي في جدول submittals
-    // لو الطلب ده "مرفق إضافي" (is_attachment = true)، متحاولش تحدث أي عمود -
+    // لو الطلب ده "مرفق إضافي" (column_target فاضي)، متحاولش تحدث أي عمود -
     // الملف اترفع في نفس الفولدر بس مش هو الرابط الرسمي للريفيجن.
-    if (!req.is_attachment && req.column_target) {
+    if (req.column_target) {
         let updateQuery = supabaseClient
             .from('submittals')
             .update({ [req.column_target]: finalFileLink });
@@ -784,7 +816,7 @@ async function approveRequest(id) {
     }
 
     // 3) شيل نسخة Supabase Storage المؤقتة (Best-effort) بعد ما اترفع لجوجل درايف
-    if (req.is_attachment) {
+    if (!req.column_target) {
         deleteFromAttachmentsStorage(originalStorageUrl);
     }
 
@@ -809,7 +841,7 @@ async function rejectRequest(id) {
     }
 
     // لو كان مرفق إضافي (لسه في Supabase Storage)، نشيل نسخة الملف المؤقتة بعد الرفض
-    if (req && req.is_attachment) {
+    if (req && !req.column_target) {
         deleteFromAttachmentsStorage(req.file_link);
     }
 

@@ -68,11 +68,14 @@
     color:#fff;text-decoration:none;background:rgba(255,255,255,0.08);
     border:1px solid rgba(255,255,255,0.3);padding:7px 14px;border-radius:8px;
     font-size:12px;font-weight:700;cursor:pointer;transition:background .15s ease;
-    font-family:inherit;
+    font-family:inherit;position:relative;
   }
+  .nav-badge{position:absolute;top:-6px;right:-6px;background:#ef4444;color:#fff;font-size:11px;font-weight:700;min-width:18px;height:18px;border-radius:999px;display:none;align-items:center;justify-content:center;padding:0 4px;line-height:1;}
   .nav-btn:hover{background:rgba(255,255,255,0.22);}
   .nav-btn.active{background:rgba(255,255,255,0.3);}
   .translate-btn{background:rgba(255,255,255,0.16);}
+  .nav-btn.logout-btn{margin-inline-start:auto;background:rgba(239,68,68,0.28);}
+  .nav-btn.logout-btn:hover{background:rgba(239,68,68,0.45);}
   .topbar-sub{
     display:flex;align-items:center;justify-content:flex-end;gap:12px;
     padding-top:6px;border-top:1px solid rgba(255,255,255,0.15);flex-wrap:wrap;
@@ -364,13 +367,16 @@
     <a href="summary.html" class="nav-btn"><i class="fa-solid fa-chart-column"></i> <span data-i18n="navSummary">الملخص</span></a>
     <a href="task-list.html" class="nav-btn"><i class="fa-solid fa-list-check"></i> <span data-i18n="navTasks">المهام</span></a>
     <a href="general_by_activity.html" class="nav-btn"><i class="fa-solid fa-layer-group"></i> <span data-i18n="navGeneral">عام</span></a>
-    <a href="approvals.html" class="nav-btn"><i class="fa-solid fa-clipboard-check"></i> <span data-i18n="navApprovals">طلبات الموافقة</span></a>
+    <a href="approvals.html" class="nav-btn"><i class="fa-solid fa-clipboard-check"></i> <span data-i18n="navApprovals">طلبات الموافقة</span> <span id="pendingNavBadge" class="nav-badge">0</span></a>
     <a href="team_overview.html" class="nav-btn"><i class="fa-solid fa-users"></i> <span data-i18n="navTeam">نظرة عامة على الموظفين</span></a>
     <a href="performance.html" class="nav-btn"><i class="fa-solid fa-chart-column"></i> <span data-i18n="navDashboard">لوحة التحكم</span></a>
     <a href="weekly_report.html" class="nav-btn active"><i class="fa-solid fa-file-lines"></i> <span data-i18n="navReport">التقرير الأسبوعي</span></a>
     <a href="weekly_report_view.html" class="nav-btn"><i class="fa-solid fa-eye"></i> <span data-i18n="navReportView">عرض التقرير</span></a>
     <button onclick="toggleLanguage()" class="nav-btn translate-btn">
         <i class="fa-solid fa-language"></i> <span id="lang-btn-text">English</span>
+    </button>
+    <button onclick="logout()" class="nav-btn logout-btn" title="Logout">
+        <i class="fa-solid fa-right-from-bracket"></i> <span data-i18n="navLogout">تسجيل الخروج</span>
     </button>
   </nav>
   <div class="topbar-sub">

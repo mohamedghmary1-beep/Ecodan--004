@@ -55,7 +55,8 @@
   .topbar h1{font-size:20px;margin:0;color:#fff;font-weight:800;letter-spacing:0.3px;}
   .topbar .meta{font-size:11px;color:#dbeafe;margin-top:4px;}
   .nav-container{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.15);}
-  .nav-btn{display:inline-flex;align-items:center;gap:6px;color:#fff;text-decoration:none;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.3);padding:7px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;transition:background .15s ease;font-family:inherit;}
+  .nav-btn{display:inline-flex;align-items:center;gap:6px;color:#fff;text-decoration:none;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.3);padding:7px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;transition:background .15s ease;font-family:inherit;position:relative;}
+  .nav-badge{position:absolute;top:-6px;right:-6px;background:#ef4444;color:#fff;font-size:11px;font-weight:700;min-width:18px;height:18px;border-radius:999px;display:none;align-items:center;justify-content:center;padding:0 4px;line-height:1;}
   .nav-btn:hover{background:rgba(255,255,255,0.22);}
   .nav-btn.active{background:rgba(255,255,255,0.3);box-shadow:inset 0 -2px 0 #fff;}
   .nav-btn:active{transform:scale(0.96);}
@@ -243,7 +244,7 @@
     <a href="summary.html" class="nav-btn"><i class="fa-solid fa-chart-column"></i> <span data-i18n="navSummary">الملخص</span></a>
     <a href="task-list.html" class="nav-btn"><i class="fa-solid fa-list-check"></i> <span data-i18n="navTasks">المهام</span></a>
     <a href="general_by_activity.html" class="nav-btn"><i class="fa-solid fa-layer-group"></i> <span data-i18n="navGeneral">عام</span></a>
-    <a href="approvals.html" class="nav-btn"><i class="fa-solid fa-clipboard-check"></i> <span data-i18n="navApprovals">طلبات الموافقة</span></a>
+    <a href="approvals.html" class="nav-btn"><i class="fa-solid fa-clipboard-check"></i> <span data-i18n="navApprovals">طلبات الموافقة</span> <span id="pendingNavBadge" class="nav-badge">0</span></a>
     <a href="team_overview.html" class="nav-btn"><i class="fa-solid fa-users"></i> <span data-i18n="navTeam">نظرة عامة على الموظفين</span></a>
     <a href="performance.html" class="nav-btn"><i class="fa-solid fa-chart-column"></i> <span data-i18n="navDashboard">لوحة التحكم</span></a>
     <a href="weekly_report.html" class="nav-btn"><i class="fa-solid fa-file-lines"></i> <span data-i18n="navReport">التقرير الأسبوعي</span></a>
@@ -275,6 +276,9 @@
     <p style="font-size:12px;color:var(--text-muted);margin:-6px 0 14px;" data-i18n="perfLiveNote">
       * هذا القسم يعرض أحدث بيانات الأداء المتاحة دايمًا، بغض النظر عن التقرير المختار فوق.
     </p>
+    <button id="freezePerfBtn" class="btn-print privileged-only" style="display:none;margin:-4px 0 14px;" onclick="freezePerformanceSnapshot()">
+      <i class="fa-solid fa-lock"></i> <span data-i18n="freezePerfBtn">تجميد بيانات الأداء لهذا التقرير</span>
+    </button>
     <div id="perfLoadingMsg" style="padding:40px;text-align:center;font-weight:700;color:var(--text-main);">Loading performance data...</div>
     <div id="perfDashboard" style="display:none;">
       <div class="grid">
@@ -429,6 +433,11 @@ window.registerDictionary({
     perfTitle: 'لوحة الأداء (Performance Dashboard)',
     perfLiveNote: '* هذا القسم يعرض أحدث بيانات الأداء المتاحة دايمًا، بغض النظر عن التقرير المختار فوق. (هذا تقرير قديم اتحفظ قبل تفعيل حفظ لقطة الأداء لكل تقرير)',
     perfSnapshotNote: '* بيانات الأداء دي محفوظة زي ما كانت بالظبط وقت حفظ هذا التقرير.',
+    freezePerfBtn: 'تجميد بيانات الأداء لهذا التقرير',
+    confirmFreezePerf: 'هل تريد حفظ بيانات الأداء الحالية بشكل دائم مع التقرير رقم {no}؟ بعد كده هذا التقرير هيعرض دايمًا نفس البيانات دي، ومش هيتحدث تاني حتى لو الأداء الحي اتغيّر.',
+    freezePerfSuccess: 'تم تجميد بيانات الأداء لهذا التقرير بنجاح.',
+    freezePerfErr: 'تعذر حفظ لقطة الأداء. حاولي مرة أخرى.',
+    freezePerfNoData: 'لسه البيانات الحية بتتحمل، حاولي تاني بعد شوية.',
     btnPrint: 'طباعة',
     deleteReportViewBtn: 'حذف التقرير',
     confirmDeleteReportView: 'هل أنتِ متأكدة إنك عايزة تحذفي التقرير رقم {no} نهائيًا؟ لا يمكن التراجع عن هذا الإجراء.',
@@ -453,6 +462,11 @@ window.registerDictionary({
     perfTitle: 'Performance Dashboard',
     perfLiveNote: '* This section always shows the latest available performance data, regardless of the report selected above. (This is an older report saved before per-report performance snapshots were enabled)',
     perfSnapshotNote: '* This performance data is saved exactly as it was at the time this report was created.',
+    freezePerfBtn: 'Freeze performance data for this report',
+    confirmFreezePerf: 'Save the current performance data permanently with report No. {no}? After this, the report will always show this same data, even if the live performance data changes later.',
+    freezePerfSuccess: 'Performance data has been frozen for this report.',
+    freezePerfErr: 'Could not save the performance snapshot. Please try again.',
+    freezePerfNoData: 'Live data is still loading, please try again in a moment.',
     btnPrint: 'Print',
     deleteReportViewBtn: 'Delete Report',
     confirmDeleteReportView: 'Are you sure you want to permanently delete report No. {no}? This action cannot be undone.',
@@ -538,6 +552,80 @@ function applyViewPermissions() {
   document.querySelectorAll('.privileged-only').forEach(el => {
     el.style.display = window.isPrivilegedViewer ? '' : 'none';
   });
+  // The freeze button has extra conditions (must be an old report currently
+  // showing *live* data) on top of the privileged-only check above, so
+  // re-apply that logic every time permissions are (re)computed.
+  updateFreezeBtnVisibility();
+}
+
+// ---------- Freeze (permanently snapshot) old reports that fall back to live data ----------
+// Holds whatever live performance row was last fetched from `project_performance`,
+// so freezePerformanceSnapshot() can save that exact payload without re-fetching
+// (avoids a race where live data changes between render and save).
+let lastLoadedLivePerfData = null;
+let currentPerfNoteMode = 'live';
+
+function updateFreezeBtnVisibility() {
+  const btn = document.getElementById('freezePerfBtn');
+  if (!btn) return;
+  const shouldShow = window.isPrivilegedViewer
+    && currentPerfNoteMode === 'live'
+    && !!currentViewedReportId;
+  btn.style.display = shouldShow ? '' : 'none';
+}
+
+async function freezePerformanceSnapshot() {
+  if (!window.isPrivilegedViewer) return;
+  if (!currentViewedReportId) {
+    alert(T('noReportSelectedToDeleteView'));
+    return;
+  }
+  if (!lastLoadedLivePerfData) {
+    alert(T('freezePerfNoData'));
+    return;
+  }
+
+  const idToFreeze = currentViewedReportId;
+  const noToFreeze = currentViewedReportNo;
+  const snapshotToSave = lastLoadedLivePerfData;
+  const confirmMsg = T('confirmFreezePerf').replace('{no}', noToFreeze || '-');
+  if (!confirm(confirmMsg)) return;
+
+  const btn = document.getElementById('freezePerfBtn');
+
+  async function doFreeze() {
+    btn.disabled = true;
+    try {
+      const { error } = await client
+        .from('weekly_reports')
+        .update({ performance_snapshot: snapshotToSave })
+        .eq('id', idToFreeze);
+      if (error) throw error;
+      alert(T('freezePerfSuccess'));
+      // Re-render this same report so it now reads its freshly-saved
+      // snapshot instead of falling back to live data.
+      renderPerformanceSnapshot(snapshotToSave);
+      updateFreezeBtnVisibility();
+    } catch (e) {
+      console.error(e);
+      alert(T('freezePerfErr'));
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  // Same PIN / password re-confirmation modal used for delete, since this
+  // permanently changes what a saved report displays.
+  if (typeof window.guardUpload === 'function') {
+    try {
+      window.guardUpload(doFreeze);
+    } catch (e) {
+      console.error('guardUpload failed:', e);
+    }
+  } else {
+    console.error('PIN confirmation unavailable — freeze aborted for safety.');
+    alert(T('freezePerfErr'));
+  }
 }
 
 // ---------- Delete (permanent, admin / super_admin only, PIN re-confirmation) ----------
@@ -871,11 +959,14 @@ function perfApplyData(data) {
 // بيغيّر نص الملاحظة تحت لوحة الأداء حسب المصدر: لقطة محفوظة مع التقرير،
 // أو أحدث بيانات حية (للتقارير القديمة اللي اتحفظت قبل تفعيل هذه الميزة)
 function perfSetNoteMode(mode) {
+  currentPerfNoteMode = mode;
   const el = document.querySelector('[data-i18n="perfLiveNote"], [data-i18n="perfSnapshotNote"]');
-  if (!el) return;
-  const key = mode === 'snapshot' ? 'perfSnapshotNote' : 'perfLiveNote';
-  el.setAttribute('data-i18n', key);
-  el.textContent = T(key);
+  if (el) {
+    const key = mode === 'snapshot' ? 'perfSnapshotNote' : 'perfLiveNote';
+    el.setAttribute('data-i18n', key);
+    el.textContent = T(key);
+  }
+  updateFreezeBtnVisibility();
 }
 
 async function loadPerformanceDashboard() {
@@ -883,6 +974,7 @@ async function loadPerformanceDashboard() {
     const { data, error } = await client.from('project_performance').select('*').eq('id', 1).single();
     if (error) throw error;
     if (!data) throw new Error('no data');
+    lastLoadedLivePerfData = data;
     perfApplyData(data);
     perfSetNoteMode('live');
   } catch (e) {

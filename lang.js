@@ -65,6 +65,7 @@
             navTeam: "نظرة عامة على الموظفين",
             navDashboard: "لوحة التحكم",
             navReport: "التقرير الأسبوعي",
+            navLogout: "تسجيل الخروج",
             langBtnText: "English"
         },
         en: {
@@ -76,6 +77,7 @@
             navTeam: "Team Overview",
             navDashboard: "Dashboard",
             navReport: "Weekly Report",
+            navLogout: "Logout",
             langBtnText: "العربية"
         }
     };
@@ -161,5 +163,89 @@
         document.addEventListener('DOMContentLoaded', applyOnLoad);
     } else {
         applyOnLoad();
+    }
+
+    // Shared logout button handler, available to every page that includes
+    // this script. Clears the saved session and returns to the login page.
+    // Pages that need custom logout behavior (e.g. their own confirmation
+    // wording tied to a page-specific dictionary) can still define their
+    // own window.logout BEFORE this script runs and it will be left alone.
+    if (typeof window.logout !== 'function') {
+        window.logout = function () {
+            const lang = getStoredLang();
+            const msg = (lang === 'en')
+                ? 'Are you sure you want to log out?'
+                : 'هل أنت متأكد من تسجيل الخروج؟';
+            if (!confirm(msg)) return;
+            localStorage.removeItem('userSession');
+            window.location.href = 'index.html';
+        };
+    }
+})();
+
+/*
+  Shared "pending approvals" nav badge
+  ------------------------------------------------------------------
+  Every page's nav bar shows the same Approvals badge
+  (<span id="pendingNavBadge" class="nav-badge">) so the pending
+  count is visible everywhere, not just on pages that happen to
+  query it themselves.
+
+  Pages that already manage the badge with their own richer logic
+  (task-list.html, team_overview.html - which also build local
+  pending-request maps) define a global loadPendingRequests() or
+  loadPendingBadge() function; this script detects that and steps
+  aside so the badge isn't fetched twice. Every other page gets the
+  count for free with zero page-specific code.
+*/
+(function () {
+    const SUPABASE_URL = "https://uhhtvpxtpayovbtmnstz.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_QsS0UhLBORy6mOaBDgW62g_9OacC3oO";
+    let sharedClient = null;
+
+    function setBadge(count) {
+        const badge = document.getElementById('pendingNavBadge');
+        if (!badge) return;
+        if (count > 0) {
+            badge.textContent = count > 99 ? "99+" : String(count);
+            badge.style.display = "flex";
+        } else {
+            badge.style.display = "none";
+        }
+    }
+    // Let pages reuse this if they want, without overriding a page-level version.
+    if (typeof window.updatePendingBadge !== 'function') {
+        window.updatePendingBadge = setBadge;
+    }
+
+    async function refreshPendingApprovalsBadge() {
+        const badge = document.getElementById('pendingNavBadge');
+        if (!badge) return; // this page's nav has no badge slot
+
+        // Don't double-fetch on pages that already own this logic.
+        if (typeof window.loadPendingRequests === 'function' ||
+            typeof window.loadPendingBadge === 'function') return;
+
+        try {
+            if (!sharedClient) {
+                if (typeof window.supabase === 'undefined') return;
+                sharedClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+            }
+            const { data, error } = await sharedClient
+                .from('upload_requests')
+                .select('id')
+                .eq('status', 'pending');
+            if (error) throw error;
+            setBadge((data || []).length);
+        } catch (err) {
+            console.error('Error refreshing pending approvals badge:', err);
+        }
+    }
+    window.refreshPendingApprovalsBadge = refreshPendingApprovalsBadge;
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', refreshPendingApprovalsBadge);
+    } else {
+        refreshPendingApprovalsBadge();
     }
 })();

@@ -107,6 +107,18 @@
             font-family: inherit;
         }
 
+        .nav-btn.logout-btn {
+            margin-inline-start: auto;
+            background: rgba(239, 68, 68, 0.12);
+            color: #ef4444;
+            border: none;
+            cursor: pointer;
+            font-family: inherit;
+        }
+        .nav-btn.logout-btn:hover {
+            background: rgba(239, 68, 68, 0.22);
+        }
+
         .nav-badge {
             position: absolute;
             top: -6px;
@@ -317,6 +329,9 @@
     <a href="weekly_report_view.html" class="nav-btn"><i class="fa-solid fa-eye"></i> <span data-i18n="navReportView">عرض التقرير</span></a>
     <button onclick="toggleLanguage()" class="nav-btn translate-btn">
         <i class="fa-solid fa-language"></i> <span id="lang-btn-text">English</span>
+    </button>
+    <button onclick="logout()" class="nav-btn logout-btn" title="Logout">
+        <i class="fa-solid fa-right-from-bracket"></i> <span data-i18n="navLogout">تسجيل الخروج</span>
     </button>
 </div>
 
