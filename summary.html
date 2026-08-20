@@ -178,6 +178,14 @@
             color: var(--primary);
         }
 
+        .section-title-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
         .nav-btn.logout-btn {
             margin-inline-start: auto;
             background: rgba(239, 68, 68, 0.12);
@@ -466,12 +474,18 @@
             border-radius: 10px;
             border: 1px solid var(--border);
             display: flex;
+            flex-direction: column;
+            gap: 0;
+            text-align: start;
+            transition: background 0.15s, transform 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        .task-card-top {
+            display: flex;
             flex-direction: row;
             align-items: center;
             justify-content: space-between;
             gap: 20px;
-            text-align: start;
-            transition: background 0.15s, transform 0.15s ease, box-shadow 0.15s ease;
         }
 
         .task-card:hover {
@@ -598,6 +612,117 @@
             display: inline-flex;
             align-items: center;
             gap: 4px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            padding: 0;
+            font-family: inherit;
+        }
+
+        .extra-attachments-box {
+            border-top: 1px dashed var(--border);
+            margin-top: 10px;
+            padding-top: 8px;
+        }
+        .extra-attachments-label {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+        .extra-attachments-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        .attachment-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 5px 10px;
+            border-radius: 20px;
+            border: none;
+            cursor: pointer;
+            font-family: inherit;
+        }
+        .attachment-chip.approved {
+            background: var(--primary-light);
+            color: var(--primary);
+        }
+        .attachment-chip.approved:hover {
+            background: #dbeafe;
+        }
+        .attachment-chip.pending {
+            background: #fffbeb;
+            color: #b45309;
+            cursor: default;
+        }
+
+        .doc-viewer-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.65);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+        .doc-viewer-overlay.open {
+            display: flex;
+        }
+        .doc-viewer-box {
+            background: #fff;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 1000px;
+            height: 90vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: var(--shadow-lg);
+        }
+        .doc-viewer-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+        .doc-viewer-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-main);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .doc-viewer-close {
+            border: none;
+            background: var(--primary-light);
+            color: var(--primary);
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            flex-shrink: 0;
+            margin-inline-start: 12px;
+        }
+        .doc-viewer-close:hover {
+            background: #dbeafe;
+        }
+        .doc-viewer-body {
+            flex: 1;
+            position: relative;
+        }
+        .doc-viewer-body iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
         }
 
         .accordion-header .group-badge {
@@ -636,7 +761,7 @@
         }
 
         @media (max-width: 992px) {
-            .task-card {
+            .task-card-top {
                 flex-direction: column;
                 align-items: stretch;
                 gap: 14px;
@@ -776,7 +901,9 @@
 
     <!-- Accordion Folders Section -->
     <div class="section-card">
-        <div class="section-title" id="tasks-title"><i class="fa-solid fa-folder-open"></i> <span data-i18n="foldersTitle">مجلدات الاعتمادات (Submittals Folders)</span></div>
+        <div class="section-title-row">
+            <div class="section-title" id="tasks-title"><i class="fa-solid fa-folder-open"></i> <span data-i18n="foldersTitle">مجلدات الاعتمادات (Submittals Folders)</span></div>
+        </div>
         <div id="accordions-container"></div>
     </div>
 
@@ -794,6 +921,19 @@
     <div class="footer-dot"></div>
 </div>
 
+<!-- Embedded document viewer: opens attachments inside the page instead of a new Drive tab -->
+<div class="doc-viewer-overlay" id="docViewerOverlay" onclick="if(event.target===this) closeDocViewer();">
+    <div class="doc-viewer-box">
+        <div class="doc-viewer-header">
+            <span class="doc-viewer-title" id="docViewerTitle">المرفق الفني</span>
+            <button class="doc-viewer-close" onclick="closeDocViewer()" title="إغلاق"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="doc-viewer-body">
+            <iframe id="docViewerFrame" src="" allow="autoplay"></iframe>
+        </div>
+    </div>
+</div>
+
 <script>
 if (typeof window.registerDictionary === 'function') {
   window.registerDictionary({
@@ -802,6 +942,7 @@ if (typeof window.registerDictionary === 'function') {
   });
 }
 let allRows = [];
+let extraAttachmentsMap = {};
 let selectedActivity = null;
 let selectedDiscipline = null;
 let codesChartInstance = null;
@@ -810,6 +951,17 @@ let currentLang = (typeof window.getCurrentLang === 'function') ? window.getCurr
 const SUPABASE_URL = "https://uhhtvpxtpayovbtmnstz.supabase.co";
 const SUPABASE_KEY = "sb_publishable_QsS0UhLBORy6mOaBDgW62g_9OacC3oO";
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// نفس منطق توليد مفتاح التاسك المستخدم في task-list.html، عشان نربط
+// المرفقات الإضافية (upload_requests) بنفس معاملة الـ Submittal هنا.
+function generateTaskKey(row) {
+    let no = (row.no || "").trim();
+    if (no && no !== "-") {
+        return no.toLowerCase();
+    }
+    let fallback = `${row.title}_${row.discipline}_${row.activity}`.replace(/\s+/g, '').toLowerCase();
+    return fallback;
+}
 
 const dictionary = {
     ar: {
@@ -826,7 +978,9 @@ const dictionary = {
         refLabel: "المرجع",
         techDoc: "المرفق الفني",
         submittalsCount: "المعاملات",
-        noResults: "لا توجد نتائج مطابقة"
+        noResults: "لا توجد نتائج مطابقة",
+        extraAttachments: "مرفقات إضافية",
+        pendingApproval: "في انتظار الموافقة"
     },
     en: {
         kpiTotal: "Total Filtered",
@@ -842,7 +996,9 @@ const dictionary = {
         refLabel: "Ref",
         techDoc: "Technical Doc",
         submittalsCount: "Submittals",
-        noResults: "No matching results"
+        noResults: "No matching results",
+        extraAttachments: "Extra Attachments",
+        pendingApproval: "Awaiting Approval"
     }
 };
 window.registerDictionary(dictionary);
@@ -856,6 +1012,8 @@ async function loadSummaryData() {
 
         if (error) throw error;
         allRows = rows || [];
+
+        await loadExtraAttachments();
         processData();
     } catch (err) {
         console.error("Error fetching data:", err);
@@ -863,6 +1021,28 @@ async function loadSummaryData() {
     }
 }
 loadSummaryData();
+
+// المرفقات الإضافية اللي بتترفع من صفحة "task-list" (زرار Add Attachment) —
+// بتترسم هنا جنب الريكوست/الطلب بتاعها، مش بس الرابط الأساسي (link) للريفيجن.
+async function loadExtraAttachments() {
+    try {
+        const { data: rows, error } = await supabaseClient
+            .from('upload_requests')
+            .select('*')
+            .is('column_target', null);
+
+        if (error) throw error;
+
+        extraAttachmentsMap = {};
+        (rows || []).forEach(r => {
+            if (r.status === 'rejected') return;
+            if (!extraAttachmentsMap[r.task_key]) extraAttachmentsMap[r.task_key] = [];
+            extraAttachmentsMap[r.task_key].push(r);
+        });
+    } catch (err) {
+        console.error("Error fetching extra attachments:", err);
+    }
+}
 
 function processData() {
     renderActivities();
@@ -1146,7 +1326,7 @@ function renderTasks(filteredData) {
                                 <div style="color: var(--text-muted); font-size:11px; margin-top:4px;">
                                     <b>Sub:</b> ${sub} ${r.received ? ' | <b>Rec:</b> ' + r.received : ''}
                                 </div>
-                                ${r.link && r.link.startsWith('http') ? `<div style="margin-top:6px;"><a href="${r.link}" target="_blank" class="link-btn"><i class="fa-solid fa-arrow-up-right-from-square"></i> ${dictionary[currentLang].techDoc}</a></div>` : ''}
+                                ${r.link && r.link.startsWith('http') ? `<div style="margin-top:6px;"><button type="button" class="link-btn" onclick="openDocViewer('${encodeURIComponent(r.link)}','${encodeURIComponent((row.title || row.no || 'Document') + ' — ' + r.name)}')"><i class="fa-solid fa-eye"></i> ${dictionary[currentLang].techDoc}</button></div>` : ''}
                             </div>
                         `;
                     }
@@ -1156,25 +1336,47 @@ function renderTasks(filteredData) {
                 let statusText = isClosed ? "CLOSED" : "OPEN PENDING";
                 let statusClass = isClosed ? "closed" : "open";
 
+                // مرفقات إضافية اترفعت من صفحة الـ Task List على نفس الطلب ده
+                let taskKey = generateTaskKey(row);
+                let extraList = extraAttachmentsMap[taskKey] || [];
+                let extraChips = extraList.map(a => {
+                    if (a.status === 'approved') {
+                        let safeName = encodeURIComponent(a.file_name || '');
+                        let safeLink = encodeURIComponent(a.file_link || '');
+                        let safeTitle = encodeURIComponent((row.title || row.no || 'Attachment') + ' — ' + (a.file_name || ''));
+                        return `<button type="button" class="attachment-chip approved" onclick="openDocViewer('${safeLink}','${safeTitle}')">📎 ${a.file_name || ''}</button>`;
+                    }
+                    return `<span class="attachment-chip pending">📎 ${a.file_name || ''} — ${dictionary[currentLang].pendingApproval}</span>`;
+                }).join('');
+                let extraAttachmentsHtml = extraList.length > 0 ? `
+                    <div class="extra-attachments-box">
+                        <div class="extra-attachments-label">${dictionary[currentLang].extraAttachments} (${extraList.length})</div>
+                        <div class="extra-attachments-list">${extraChips}</div>
+                    </div>
+                ` : '';
+
                 cardsHtml += `
                     <div class="task-card" style="border-inline-start: 4px solid ${currentBorder}; border-top: none; border-inline-end: none;">
-                        <div class="task-row-main">
-                            <div class="task-meta-col">
-                                <span class="task-activity-label">${row.activity || 'N/A'}</span>
-                                <span class="task-discipline-label">${row.discipline || 'N/A'}</span>
+                        <div class="task-card-top">
+                            <div class="task-row-main">
+                                <div class="task-meta-col">
+                                    <span class="task-activity-label">${row.activity || 'N/A'}</span>
+                                    <span class="task-discipline-label">${row.discipline || 'N/A'}</span>
+                                </div>
+                                <div class="task-title-col">
+                                    <div class="task-title">${row.title || 'Untitled Proposal Doc'}</div>
+                                    <div class="task-ref">${dictionary[currentLang].refLabel}: <b>${row.no || 'N/A'}</b></div>
+                                </div>
+                                <div class="task-revisions-col">
+                                    ${revsHTML}
+                                </div>
                             </div>
-                            <div class="task-title-col">
-                                <div class="task-title">${row.title || 'Untitled Proposal Doc'}</div>
-                                <div class="task-ref">${dictionary[currentLang].refLabel}: <b>${row.no || 'N/A'}</b></div>
-                            </div>
-                            <div class="task-revisions-col">
-                                ${revsHTML}
+                            <div class="task-row-footer">
+                                <span class="status-tag ${statusClass}">${statusText}</span>
+                                <span style="font-size:12px; font-weight:600; color:var(--text-muted); white-space: nowrap;"><i class="fa-regular fa-user"></i> ${row.action_by || 'Staff'}</span>
                             </div>
                         </div>
-                        <div class="task-row-footer">
-                            <span class="status-tag ${statusClass}">${statusText}</span>
-                            <span style="font-size:12px; font-weight:600; color:var(--text-muted); white-space: nowrap;"><i class="fa-regular fa-user"></i> ${row.action_by || 'Staff'}</span>
-                        </div>
+                        ${extraAttachmentsHtml}
                     </div>
                 `;
             });
@@ -1201,6 +1403,44 @@ function renderTasks(filteredData) {
 
     document.getElementById('accordions-container').innerHTML = containerHtml;
 }
+
+// ---- عرض المرفق (المستند) جوه الصفحة نفسها بدل ما يفتح تاب جديد على جوجل درايف ----
+// بيحول رابط جوجل درايف العادي لصيغة "preview" القابلة للعرض جوه iframe.
+// لو الرابط مش من جوجل درايف أو الصيغة مش معروفة، بيجرب يعرضه زي ما هو.
+function toEmbeddableUrl(url) {
+    let driveMatch = url.match(/drive\.google\.com\/file\/d\/([^/]+)/);
+    if (driveMatch) {
+        return `https://drive.google.com/file/d/${driveMatch[1]}/preview`;
+    }
+    let openMatch = url.match(/drive\.google\.com\/open\?id=([^&]+)/);
+    if (openMatch) {
+        return `https://drive.google.com/file/d/${openMatch[1]}/preview`;
+    }
+    let docsMatch = url.match(/docs\.google\.com\/(document|spreadsheets|presentation)\/d\/([^/]+)/);
+    if (docsMatch) {
+        return `https://docs.google.com/${docsMatch[1]}/d/${docsMatch[2]}/preview`;
+    }
+    return url;
+}
+
+function openDocViewer(encodedUrl, encodedTitle) {
+    let url = decodeURIComponent(encodedUrl);
+    let title = decodeURIComponent(encodedTitle || '');
+    document.getElementById('docViewerTitle').innerText = title || dictionary[currentLang].techDoc;
+    document.getElementById('docViewerFrame').src = toEmbeddableUrl(url);
+    document.getElementById('docViewerOverlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeDocViewer() {
+    document.getElementById('docViewerOverlay').classList.remove('open');
+    document.getElementById('docViewerFrame').src = '';
+    document.body.style.overflow = '';
+}
+
+document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') closeDocViewer();
+});
 
 function updateChart(currentRows) {
     let stats = { A: 0, B: 0, C: 0, D: 0, Open: 0 };
