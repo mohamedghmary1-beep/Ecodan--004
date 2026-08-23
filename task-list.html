@@ -1092,6 +1092,9 @@ function escapeHtml(str) {
 function escapeForJsAttr(str) {
     return String(str == null ? "" : str)
         .replace(/\\/g, "\\\\")
+        .replace(/\r\n/g, " ")
+        .replace(/[\r\n]/g, " ")
+        .replace(/\t/g, " ")
         .replace(/'/g, "\\'")
         .replace(/"/g, "&quot;")
         .replace(/</g, "&lt;")

@@ -50,11 +50,22 @@
        one-time refresh instead of a repeating "shake".
 */
 (function () {
-    var RELOAD_COOLDOWN_MS = 15000; // don't force more than one reload per 15s for this page
+    var RELOAD_COOLDOWN_MS = 5 * 60 * 1000;  // at most one forced reload per 5 minutes for this page
+    var CHECK_INTERVAL_MS = 60 * 1000;       // don't even run the check again within 1 minute of the last one
 
     var path = location.pathname;
-    var VKEY = 'pageFingerprint::' + path;
-    var RKEY = 'pageLastForcedReload::' + path;
+    var VKEY = 'pageFingerprint::' + path;          // last CONFIRMED fingerprint
+    var PKEY = 'pagePendingFingerprint::' + path;   // a new value seen once, awaiting confirmation
+    var RKEY = 'pageLastForcedReload::' + path;      // sessionStorage: last time we forced a reload
+    var CKEY = 'pageLastCheckedAt::' + path;         // sessionStorage: last time we ran a check at all
+
+    // Throttle: don't even hit the server to check more than once a minute
+    // per tab. This alone stops any "every couple seconds" behavior, since
+    // fast successive page loads/navigations in the same tab will just skip
+    // the check entirely until the interval has passed.
+    var lastChecked = Number(sessionStorage.getItem(CKEY) || 0);
+    if (Date.now() - lastChecked < CHECK_INTERVAL_MS) return;
+    sessionStorage.setItem(CKEY, String(Date.now()));
 
     // Strips old "_cb" / "_r" cache-busting params this script itself adds,
     // so they don't pile up in the address bar across repeated reloads.
@@ -70,13 +81,14 @@
     }
 
     // Normalizes an ETag/Last-Modified value so that harmless variance
-    // (weak-validator prefix, gzip/br compression-variant suffixes some
-    // CDNs append) doesn't get mistaken for a genuinely new deployment.
+    // (weak-validator prefix, quoting, gzip/br compression-variant suffixes
+    // some CDNs append) doesn't get mistaken for a genuinely new deployment.
     function normalizeFingerprint(fp) {
         if (!fp) return fp;
         return fp
             .replace(/^W\//, '')
-            .replace(/-(gzip|br|deflate)("?)$/i, '$2')
+            .replace(/"/g, '')
+            .replace(/-(gzip|br|deflate)$/i, '')
             .trim();
     }
 
@@ -90,16 +102,37 @@
             if (!rawFp) return;
             var fp = normalizeFingerprint(rawFp);
             var prev = localStorage.getItem(VKEY);
-            localStorage.setItem(VKEY, fp);
 
-            if (!prev || prev === fp) return; // no real change, nothing to do
+            // First time ever checking this page on this device: just record
+            // a baseline, never reload on a "first sight".
+            if (!prev) {
+                localStorage.setItem(VKEY, fp);
+                return;
+            }
 
-            // Cooldown guard: don't force a second reload within the window,
-            // even if a mismatch is (still) detected — prevents any
-            // reload-ping-pong from feeling like a repeating "shake".
+            if (prev === fp) {
+                // Confirmed stable — clear any leftover pending candidate.
+                localStorage.removeItem(PKEY);
+                return;
+            }
+
+            // fp differs from the last CONFIRMED value. Don't trust a single
+            // mismatch on its own (CDN edge-node variance can produce a
+            // one-off false positive) — only act once we see the SAME new
+            // value on two separate checks in a row.
+            var pending = localStorage.getItem(PKEY);
+            if (pending !== fp) {
+                localStorage.setItem(PKEY, fp);
+                return;
+            }
+
+            // Seen this exact new value twice now — treat it as a real
+            // deploy. Still respect the reload cooldown as a last safeguard.
             var lastReload = Number(sessionStorage.getItem(RKEY) || 0);
             if (Date.now() - lastReload < RELOAD_COOLDOWN_MS) return;
 
+            localStorage.setItem(VKEY, fp);
+            localStorage.removeItem(PKEY);
             sessionStorage.setItem(RKEY, String(Date.now()));
             location.replace(path + cleanSearch + (cleanSearch ? '&' : '?') + '_r=' + Date.now());
         })
