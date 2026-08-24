@@ -300,7 +300,7 @@
                 <label id="lbl-username">Username</label>
                 <div class="input-wrapper">
                     <i class="fa-solid fa-user"></i>
-                    <input type="text" id="username" required autocomplete="username">
+                    <input type="email" id="username" required autocomplete="email">
                 </div>
             </div>
             
@@ -341,11 +341,11 @@
             langText: "العربية",
             loginTitle: "Account Login",
             loginSubtitle: "Enter your credentials to access the portal",
-            lblUsername: "Username",
+            lblUsername: "Email",
             lblPassword: "Password",
             btnInner: "Login",
             btnLoading: "Verifying...",
-            errFail: "Invalid username or password.",
+            errFail: "Invalid email or password.",
             errConn: "Connection error. Please try again later.",
             succOk: "Login successful! Redirecting...",
             footerProj: "Administrative Offices Project in Aspark"
@@ -356,11 +356,11 @@
             langText: "English",
             loginTitle: "تسجيل الدخول",
             loginSubtitle: "أدخل بيانات حسابك للوصول إلى البوابة الإلكترونية",
-            lblUsername: "اسم المستخدم",
+            lblUsername: "البريد الإلكتروني",
             lblPassword: "كلمة المرور",
             btnInner: "تسجيل الدخول",
             btnLoading: "جاري التحقق...",
-            errFail: "اسم المستخدم أو كلمة المرور غير صحيحة.",
+            errFail: "البريد الإلكتروني أو كلمة المرور غير صحيحة.",
             errConn: "خطأ في الاتصال بالنظام. حاول مرة أخرى لاحقاً.",
             succOk: "تم تسجيل الدخول بنجاح! جاري التوجيه...",
             footerProj: "مشروع المكاتب الإدارية في أسبارك"
@@ -404,11 +404,11 @@
         btnSubmit.disabled = true;
 
         // تسجيل الدخول عن طريق Supabase Auth الحقيقي (وليس مقارنة كلمة مرور
-        // نصّية بيدنا في المتصفح). اسم المستخدم بيتحوّل لصيغة إيميل داخلية
-        // ثابتة عشان يتوافق مع Supabase Auth، بدون الحاجة لإيميلات حقيقية.
-        // ملحوظة: ده بيتطلب إنشاء مستخدم Auth مقابل لكل صف في جدول users
-        // القديم - راجع migrate_users.mjs و security_migration.sql.
-        const email = usernameToEmail(userInp);
+        // نصّية بيدنا في المتصفح). خانة الدخول بقت بتاخد الإيميل الحقيقي
+        // للمستخدم مباشرة، وده لازم يتطابق مع الإيميل المسجّل فعليًا في
+        // Supabase Auth (راجع update_real_emails.mjs لتحديث الحسابات
+        // القديمة اللي كانت بإيميل وهمي @ecodan-portal.local).
+        const email = userInp.trim().toLowerCase();
         try {
             const { data: authData, error: authError } = await supabaseClient.auth.signInWithPassword({
                 email: email,
@@ -455,11 +455,6 @@
         }
     }
 
-    // خريطة اسم المستخدم -> إيميل داخلي وهمي يُستخدم فقط مع Supabase Auth.
-    // نفس المنطق المستخدم في migrate_users.mjs عند إنشاء المستخدمين.
-    function usernameToEmail(username) {
-        return username.trim().toLowerCase().replace(/[^a-z0-9_.-]/g, '') + '@ecodan-portal.local';
-    }
 </script>
 
 </body>
