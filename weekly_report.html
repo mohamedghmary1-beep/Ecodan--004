@@ -937,8 +937,18 @@ let perfSnapshotData = null;
 let perfChartInstances = {}; // canvasId -> Chart.js instance, so re-rendering can destroy+recreate safely
 
 // ---------- Permissions: page is open to everyone (any logged-in role); ----------
-// ---------- editing/saving/deleting requires the shared edit password.  ----------
-const EDIT_UNLOCK_PASSWORD = '2662002';
+// ---------- editing/saving/deleting requires re-entering YOUR OWN account ----------
+// ---------- password, verified by Supabase Auth (see auth-guard.js).     ----------
+// SECURITY FIX (Aug 2026): this used to be one shared password
+// ('2662002') hardcoded in plain text right here, visible to anyone who
+// viewed this file's source on the public GitHub repo - effectively a
+// master key to edit/delete every weekly report. It's been replaced with
+// window.reauthPassword(), which re-checks the CURRENT LOGGED-IN USER's
+// own password against Supabase Auth (never reads or stores the password
+// itself), and additionally requires that user to hold an editor role
+// (window.canEditDashboard, set by auth-guard.js from the server-side
+// `profiles` table) - so a "limited"/"no_files" account can't unlock
+// editing even with a correct password.
 window.isSuperAdmin = false; // "isSuperAdmin" here now just means "edit mode unlocked"
 
 function applyPermissions() {
@@ -956,9 +966,15 @@ function applyPermissions() {
   });
 }
 
-// Simple shared-password modal (client-side check against EDIT_UNLOCK_PASSWORD).
-// Note: this is NOT a secure server-side check — it only hides/shows UI.
+// Password modal - now verifies against the CURRENT USER's real account
+// password via Supabase Auth (window.reauthPassword, defined in
+// auth-guard.js), instead of comparing to one shared hardcoded string.
 function checkEditPassword(onConfirmed) {
+  if (window.canEditDashboard === false) {
+    alert('ماعندكش صلاحية تعدّل أو تحذف البيانات دي.');
+    return;
+  }
+
   let modal = document.createElement('div');
   modal.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.55);' +
     'display:flex;align-items:center;justify-content:center;z-index:9999;';
@@ -966,7 +982,7 @@ function checkEditPassword(onConfirmed) {
     <div style="background:#fff;padding:28px;border-radius:14px;max-width:360px;width:90%;
                 box-shadow:0 20px 40px rgba(0,0,0,0.2);font-family:'Segoe UI',system-ui,sans-serif;">
       <div style="font-weight:800;font-size:17px;margin-bottom:6px;color:#0f172a;">كلمة مرور التعديل</div>
-      <div style="color:#64748b;font-size:13px;margin-bottom:16px;">من فضلك أدخل كلمة المرور للتعديل أو الحذف</div>
+      <div style="color:#64748b;font-size:13px;margin-bottom:16px;">من فضلك أدخل كلمة مرور حسابك للتعديل أو الحذف</div>
       <input type="password" id="edit-pass-input" style="width:100%;box-sizing:border-box;padding:10px 12px;
              border:1px solid #e2e8f0;border-radius:8px;font-size:14px;margin-bottom:8px;" placeholder="كلمة المرور">
       <div id="edit-pass-error" style="color:#ef4444;font-size:12px;min-height:16px;margin-bottom:10px;"></div>
@@ -984,14 +1000,20 @@ function checkEditPassword(onConfirmed) {
   input.focus();
 
   modal.querySelector('#edit-pass-cancel').onclick = function () { modal.remove(); };
-  modal.querySelector('#edit-pass-confirm').onclick = function () {
+  modal.querySelector('#edit-pass-confirm').onclick = async function () {
     const typed = input.value.trim();
+    errBox.innerText = '';
     if (!typed) { errBox.innerText = 'اكتب كلمة المرور'; return; }
-    if (typed === EDIT_UNLOCK_PASSWORD) {
-      modal.remove();
-      onConfirmed();
-    } else {
-      errBox.innerText = 'كلمة المرور غير صحيحة';
+    try {
+      const ok = await window.reauthPassword(typed);
+      if (ok) {
+        modal.remove();
+        onConfirmed();
+      } else {
+        errBox.innerText = 'كلمة المرور غير صحيحة';
+      }
+    } catch (e) {
+      errBox.innerText = 'خطأ في الاتصال، حاول تاني';
     }
   };
   input.addEventListener('keydown', function (e) {

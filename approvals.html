@@ -647,14 +647,27 @@ function getReviewEmbedSrc(fileName, fileLink) {
     return null;
 }
 
-function reviewRequest(id) {
+// SECURITY FIX (Aug 2026): the task-attachments Storage bucket is now
+// private (see security_migration.sql) instead of publicly readable by
+// anyone with the link. A file that's already been approved has a Google
+// Drive link here and needs no change; a still-pending file's link points
+// at Supabase Storage and must be exchanged for a short-lived SIGNED URL
+// before it can actually be opened/embedded.
+async function resolveFileLinkForDisplay(fileLink) {
+    if (!fileLink || fileLink.indexOf('drive.google.com') !== -1) return fileLink;
+    if (fileLink.indexOf('/storage/v1/object/') === -1) return fileLink;
+    return await window.getAttachmentSignedUrl(fileLink, ATTACHMENTS_BUCKET, 3600);
+}
+
+async function reviewRequest(id) {
     let req = requests.find(r => r.id === id);
     if (!req) return;
     let t = dictionary[currentLang];
 
     document.getElementById('reviewModalTitle').textContent = `${t.reviewModalTitle}: ${req.file_name || ''}`;
 
-    let embedSrc = getReviewEmbedSrc(req.file_name, req.file_link);
+    let displayLink = await resolveFileLinkForDisplay(req.file_link);
+    let embedSrc = getReviewEmbedSrc(req.file_name, displayLink);
     let bodyEl = document.getElementById('reviewModalBody');
 
     if (embedSrc) {
@@ -669,7 +682,7 @@ function reviewRequest(id) {
     }
 
     document.getElementById('reviewModalFooter').innerHTML = `
-        <a class="btn btn-view" href="${req.file_link}" target="_blank"><i class="fa-solid fa-up-right-from-square"></i> ${t.reviewOpenInNewTab}</a>
+        <a class="btn btn-view" href="${displayLink}" target="_blank"><i class="fa-solid fa-up-right-from-square"></i> ${t.reviewOpenInNewTab}</a>
         <button class="btn" style="background:#e2e8f0; color:var(--text-main);" onclick="closeReviewModal()">${t.reviewClose}</button>
     `;
 
@@ -706,7 +719,11 @@ function blobToBase64(blob) {
 }
 
 async function uploadAttachmentToDrive(req) {
-    let response = await fetch(req.file_link);
+    // Bucket is private now, so req.file_link (a stable storage-path
+    // reference) isn't directly fetchable - exchange it for a short-lived
+    // signed URL first.
+    let fetchLink = await resolveFileLinkForDisplay(req.file_link);
+    let response = await fetch(fetchLink);
     if (!response.ok) throw new Error("تعذر تحميل الملف من التخزين المؤقت.");
     let blob = await response.blob();
     let base64 = await blobToBase64(blob);

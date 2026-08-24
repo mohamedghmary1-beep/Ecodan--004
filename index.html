@@ -403,39 +403,49 @@
         btnInner.innerText = t.btnLoading;
         btnSubmit.disabled = true;
 
-        // التحقق من بيانات الدخول مباشرة من Supabase
+        // تسجيل الدخول عن طريق Supabase Auth الحقيقي (وليس مقارنة كلمة مرور
+        // نصّية بيدنا في المتصفح). اسم المستخدم بيتحوّل لصيغة إيميل داخلية
+        // ثابتة عشان يتوافق مع Supabase Auth، بدون الحاجة لإيميلات حقيقية.
+        // ملحوظة: ده بيتطلب إنشاء مستخدم Auth مقابل لكل صف في جدول users
+        // القديم - راجع migrate_users.mjs و security_migration.sql.
+        const email = usernameToEmail(userInp);
         try {
-            const { data: users, error } = await supabaseClient
-                .from('users')
-                .select('username, permissions, password, page_performance, page_summary, page_task, page_home, page_weekly_report, page_general_by_activity')
-                .eq('username', userInp)
-                .limit(1);
+            const { data: authData, error: authError } = await supabaseClient.auth.signInWithPassword({
+                email: email,
+                password: passInp
+            });
 
-            if (error) throw error;
-
-            const matchedUser = (users && users.length > 0 && users[0].password === passInp) ? users[0] : null;
-
-            if (matchedUser) {
-                msgBox.innerText = t.succOk;
-                msgBox.className = "message-box success";
-                // تخزين اسم المستخدم + الصلاحيات + أعمدة الصفحات (yes/no) كاملة
-                localStorage.setItem("userSession", JSON.stringify({
-                    username: matchedUser.username,
-                    permissions: matchedUser.permissions,
-                    page_performance: matchedUser.page_performance,
-                    page_summary: matchedUser.page_summary,
-                    page_task: matchedUser.page_task,
-                    page_home: matchedUser.page_home,
-                    page_weekly_report: matchedUser.page_weekly_report,
-                    page_general_by_activity: matchedUser.page_general_by_activity
-                }));
-                setTimeout(() => { window.location.href = "home.html"; }, 1500);
-            } else {
+            if (authError || !authData || !authData.user) {
                 msgBox.innerText = t.errFail;
                 msgBox.className = "message-box error";
                 btnInner.innerText = t.btnInner;
                 btnSubmit.disabled = false;
+                return;
             }
+
+            // ملف الصلاحيات (profiles) بيتحمي بـ RLS: كل مستخدم يقدر يقرا صفّه بس.
+            const { data: profile, error: profileError } = await supabaseClient
+                .from('profiles')
+                .select('username')
+                .eq('id', authData.user.id)
+                .single();
+
+            if (profileError || !profile) {
+                console.error("Profile lookup failed:", profileError);
+                msgBox.innerText = t.errConn;
+                msgBox.className = "message-box error";
+                btnInner.innerText = t.btnInner;
+                btnSubmit.disabled = false;
+                await supabaseClient.auth.signOut();
+                return;
+            }
+
+            msgBox.innerText = t.succOk;
+            msgBox.className = "message-box success";
+            // ملحوظة أمنية: مفيش حاجة بتتخزن يدويًا في localStorage تاني -
+            // Supabase Auth بيحتفظ بجلسة موقّعة (JWT) بنفسه، وباقي الصفحات
+            // بتعيد التحقق من الصلاحيات من السيرفر في كل مرة (auth-guard.js).
+            setTimeout(() => { window.location.href = "home.html"; }, 1000);
         } catch (err) {
             console.error("Login Error:", err);
             msgBox.innerText = t.errConn;
@@ -443,6 +453,12 @@
             btnInner.innerText = t.btnInner;
             btnSubmit.disabled = false;
         }
+    }
+
+    // خريطة اسم المستخدم -> إيميل داخلي وهمي يُستخدم فقط مع Supabase Auth.
+    // نفس المنطق المستخدم في migrate_users.mjs عند إنشاء المستخدمين.
+    function usernameToEmail(username) {
+        return username.trim().toLowerCase().replace(/[^a-z0-9_.-]/g, '') + '@ecodan-portal.local';
     }
 </script>
 

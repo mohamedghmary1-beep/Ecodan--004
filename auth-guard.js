@@ -1,64 +1,56 @@
 /*
-  MDECO Portal - Shared Access Control Script
-  ---------------------------------------------
+  MDECO Portal - Shared Access Control Script (v2 - hardened)
+  -------------------------------------------------------------
+  SECURITY REWRITE (Aug 2026): this file used to trust whatever was sitting
+  in localStorage ("userSession": { permissions, page_xxx: 'yes'/'no', ... }).
+  Anyone could open DevTools, edit those fields, and grant themselves
+  administrator rights or access to any page/data - nothing on the server
+  ever re-checked it. This version fixes that by:
+
+    1) Using real Supabase Auth (supabase.auth.signInWithPassword at login,
+       see index.html) instead of a home-grown username/password table
+       check. The session Supabase keeps in localStorage is a signed JWT -
+       a user can look at it but cannot forge or edit it, unlike the old
+       plain JSON blob.
+    2) Re-reading the user's role/page-access from the `profiles` table on
+       EVERY page load, straight from Supabase (protected by RLS - see
+       security_migration.sql), instead of trusting a cached value.
+    3) Never selecting/handling the `password` column from the client at
+       all - password re-confirmation (guardUpload) now works by asking
+       Supabase Auth to re-verify the password (signInWithPassword again),
+       so the plaintext password is never read out of the database.
+
   Include this on EVERY protected page, right after the Supabase JS library
   <script> tag in <head>:
 
       <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
       <script src="auth-guard.js"></script>
 
-  It reads the session saved by index.html (localStorage "userSession":
-  { username, permissions, ...one 'yes'/'no' field per page, see PAGE_COLUMNS
-  below }) and enforces access in two layers:
+  This file is now ASYNC: it hides the page (body starts hidden via CSS
+  injected below) until the server-side check finishes, then either shows
+  the page or renders the access-denied screen. Pages should NOT assume
+  window.currentUserRole / window.canAccessFiles / window.canEditDashboard
+  are available synchronously at <script> time anymore - wait for the
+  'authguard:ready' event on `document` if you need them early:
 
-  1) Role (from the "permissions" column):
-    - "administrator"           -> super-admin. Sees EVERY page, no matter what,
-                                    including ADMIN_ONLY_PAGES (approvals.html,
-                                    team_overview.html) and ignores the per-page
-                                    yes/no columns entirely. Use window.guardUpload()
-                                    to require a password re-check before any
-                                    add/upload action.
-    - "admin" / "no_files" / "limited" (or empty/NULL -> "admin")
-                                 -> regular roles. ALWAYS blocked from
-                                    ADMIN_ONLY_PAGES. For every other page, access
-                                    now depends on layer 2 below.
-    - anything else / logged out -> blocked / redirected to index.html.
-
-  2) Per-page yes/no columns on the users table (see PAGE_COLUMNS): one text
-     column per page, holding literally "yes" or "no" (or empty = same as "no").
-    - For any page that ISN'T in ADMIN_ONLY_PAGES, a non-administrator user can
-      only open it if that page's column says "yes" for their row. Otherwise
-      they're blocked AND the matching nav-btn link is hidden.
-    - Add a new page to the portal? Add its filename + a new column name to
-      PAGE_COLUMNS below, then add that column to the users table.
-    - index.html (the login page) is always reachable regardless of this.
-
-  index.html must be updated to copy every PAGE_COLUMNS column from the users
-  table into the saved session at login time, same as it already does for
-  "permissions" — see index.html for that part.
+      document.addEventListener('authguard:ready', function () {
+          // window.currentUserRole, window.canAccessFiles, window.canEditDashboard
+          // are guaranteed to be set at this point.
+      });
 */
 (function () {
     const SUPABASE_URL = "https://uhhtvpxtpayovbtmnstz.supabase.co";
     const SUPABASE_KEY = "sb_publishable_QsS0UhLBORy6mOaBDgW62g_9OacC3oO";
     const guardClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    window.__guardClient = guardClient; // reused by pages that need the same authed client
 
     // Pages that ONLY the "administrator" (super-admin) role can open.
-    // Every other role (admin, no_files, limited) gets the access-denied
-    // screen automatically, and the matching nav-btn link is hidden for
-    // them too — regardless of their PAGE_COLUMNS values below.
-    // Add more page filenames here any time you need to lock a
-    // page to the administrator role.
-    // NOTE: change 'team_overview.html' below if your "نظرة عامة على الموظفين"
-    // page has a different filename.
     const ADMIN_ONLY_PAGES = ['approvals.html', 'team_overview.html'];
 
-    // Pages every logged-in user can always reach, no matter what — the
-    // login page itself.
+    // Pages every logged-in user can always reach, no matter what.
     const ALWAYS_ALLOWED_PAGES = ['index.html'];
 
-    // Maps each controllable page filename to its yes/no column in the
-    // users table. To add a new page: add a row here, then add that same
-    // column to the users table in Supabase (text, values "yes" or "no").
+    // Maps each controllable page filename to its yes/no column in `profiles`.
     const PAGE_COLUMNS = {
         'performance.html': 'page_performance',
         'summary.html': 'page_summary',
@@ -74,61 +66,17 @@
         return path || 'home.html';
     }
 
-    function getSession() {
-        try {
-            const raw = localStorage.getItem('userSession');
-            if (!raw) return null;
-            return JSON.parse(raw);
-        } catch (e) {
-            return null;
-        }
+    // Hide the page body until we've verified the session server-side, so
+    // protected content can't flash on screen before an access-denied
+    // screen replaces it.
+    const style = document.createElement('style');
+    style.id = 'authguard-hide-style';
+    style.textContent = 'body{visibility:hidden !important;}';
+    document.documentElement.appendChild(style);
+    function reveal() {
+        const el = document.getElementById('authguard-hide-style');
+        if (el) el.remove();
     }
-
-    const session = getSession();
-    const page = currentPage();
-
-    // Not logged in -> bounce to login immediately (skip check on login page itself)
-    if (!session || !session.username) {
-        if (page !== 'index.html') {
-            window.location.href = 'index.html';
-        }
-        return;
-    }
-
-    const rawPerm = (session.permissions || '').trim().toLowerCase();
-    let role;
-    if (rawPerm === 'administrator') {
-        role = 'super_admin';
-    } else if (rawPerm === 'admin' || rawPerm === '') {
-        role = 'admin';
-    } else if (rawPerm === 'no_files') {
-        role = 'no_files';
-    } else if (rawPerm === 'limited') {
-        role = 'limited';
-    } else {
-        role = 'blocked'; // unknown/unrecognized permission value -> safest default
-    }
-
-    // Per-page yes/no columns: session[PAGE_COLUMNS[pageName]] must be the
-    // literal string "yes" (case-insensitive) for a non-administrator user
-    // to be allowed onto that page. Anything else ("no", empty, missing) blocks it.
-    function pageIsAllowed(pageName) {
-        if (role === 'super_admin') return true;
-        if (ALWAYS_ALLOWED_PAGES.includes(pageName)) return true;
-        if (ADMIN_ONLY_PAGES.includes(pageName)) return false; // handled below, never via PAGE_COLUMNS
-        const col = PAGE_COLUMNS[pageName];
-        if (!col) return false; // page has no yes/no column defined -> deny by default
-        const val = (session[col] || '').toString().trim().toLowerCase();
-        return val === 'yes';
-    }
-
-    window.currentUserRole = role;
-    window.currentUsername = session.username;
-    // Who can see file/attachment links: admin/super_admin can, restricted roles cannot
-    window.canAccessFiles = (role === 'admin' || role === 'super_admin');
-    // Who can edit/save dashboard data (e.g. performance.html "Edit Data" + "Save" buttons):
-    // admin and super_admin only. Restricted roles can VIEW the dashboard but not edit it.
-    window.canEditDashboard = (role === 'admin' || role === 'super_admin');
 
     function showAccessDenied() {
         document.body.innerHTML = `
@@ -142,69 +90,116 @@
                    background:#eff6ff;padding:10px 20px;border-radius:8px;">الرجوع للداشبورد</a>
             </div>
         `;
+        reveal();
     }
 
-    if (role === 'blocked') {
-        document.addEventListener('DOMContentLoaded', showAccessDenied);
-        return;
+    function pageIsAllowed(profile, role, pageName) {
+        if (role === 'super_admin') return true;
+        if (ALWAYS_ALLOWED_PAGES.includes(pageName)) return true;
+        if (ADMIN_ONLY_PAGES.includes(pageName)) return false;
+        const col = PAGE_COLUMNS[pageName];
+        if (!col) return false;
+        const val = (profile[col] || '').toString().trim().toLowerCase();
+        return val === 'yes';
     }
 
-    // super_admin: no restrictions at all, sees every page including ADMIN_ONLY_PAGES.
-    // Everyone else (admin, no_files, limited) is blocked from ADMIN_ONLY_PAGES.
-    if (role !== 'super_admin' && ADMIN_ONLY_PAGES.includes(page)) {
-        document.addEventListener('DOMContentLoaded', showAccessDenied);
-        return;
-    }
+    async function init() {
+        const page = currentPage();
 
-    // Per-page yes/no columns: any page not in ADMIN_ONLY_PAGES/ALWAYS_ALLOWED_PAGES
-    // now requires this user's matching PAGE_COLUMNS column to say "yes".
-    if (!pageIsAllowed(page)) {
-        document.addEventListener('DOMContentLoaded', showAccessDenied);
-        return;
-    }
-
-    document.addEventListener('DOMContentLoaded', function () {
-        // Hide file/attachment links for roles without file access
-        if (!window.canAccessFiles) {
-            document.querySelectorAll('.file-protected, [data-file-link]').forEach(function (el) {
-                el.style.display = 'none';
-            });
-        }
-        // Hide edit/save controls (e.g. dashboard "Edit Data" button) for roles that
-        // cannot edit — mark those elements with class="admin-only" in the page HTML.
-        if (!window.canEditDashboard) {
-            document.querySelectorAll('.admin-only').forEach(function (el) {
-                el.style.display = 'none';
-            });
-        }
-        // Hide nav links this user isn't allowed to open (ADMIN_ONLY_PAGES
-        // restriction, or simply "no"/missing in their PAGE_COLUMNS value).
-        document.querySelectorAll('.nav-btn[href]').forEach(function (a) {
-            let href = a.getAttribute('href');
-            if (!href) return;
-            if (!pageIsAllowed(href.trim().toLowerCase())) {
-                a.style.display = 'none';
+        // 1) Real Supabase Auth session (a signed JWT, not user-editable JSON).
+        const { data: { session } } = await guardClient.auth.getSession();
+        if (!session) {
+            if (page !== 'index.html') {
+                window.location.href = 'index.html';
+            } else {
+                reveal();
             }
-        });
-    });
+            return;
+        }
+        window.__guardSession = session;
 
-    // Call this from anywhere to log the current user out
+        // 2) Always re-fetch role/page-access from the server (RLS-protected
+        //    `profiles` table), never from anything cached client-side.
+        const { data: profile, error } = await guardClient
+            .from('profiles')
+            .select('permissions, page_performance, page_summary, page_task, page_home, page_weekly_report, page_general_by_activity, username')
+            .eq('id', session.user.id)
+            .single();
+
+        if (error || !profile) {
+            console.error('AuthGuard: could not load profile', error);
+            if (page !== 'index.html') {
+                await guardClient.auth.signOut();
+                window.location.href = 'index.html';
+            } else {
+                reveal();
+            }
+            return;
+        }
+
+        const rawPerm = (profile.permissions || '').trim().toLowerCase();
+        let role;
+        if (rawPerm === 'administrator') role = 'super_admin';
+        else if (rawPerm === 'admin' || rawPerm === '') role = 'admin';
+        else if (rawPerm === 'no_files') role = 'no_files';
+        else if (rawPerm === 'limited') role = 'limited';
+        else role = 'blocked';
+
+        window.currentUserRole = role;
+        window.currentUsername = profile.username;
+        window.currentUserEmail = session.user.email;
+        window.canAccessFiles = (role === 'admin' || role === 'super_admin');
+        window.canEditDashboard = (role === 'admin' || role === 'super_admin');
+
+        if (page !== 'index.html') {
+            if (role === 'blocked') { showAccessDenied(); return; }
+            if (role !== 'super_admin' && ADMIN_ONLY_PAGES.includes(page)) { showAccessDenied(); return; }
+            if (!pageIsAllowed(profile, role, page)) { showAccessDenied(); return; }
+        }
+
+        reveal();
+
+        document.dispatchEvent(new CustomEvent('authguard:ready', { detail: { role, profile } }));
+
+        document.addEventListener('DOMContentLoaded', function () {
+            if (!window.canAccessFiles) {
+                document.querySelectorAll('.file-protected, [data-file-link]').forEach(function (el) {
+                    el.style.display = 'none';
+                });
+            }
+            if (!window.canEditDashboard) {
+                document.querySelectorAll('.admin-only').forEach(function (el) {
+                    el.style.display = 'none';
+                });
+            }
+            document.querySelectorAll('.nav-btn[href]').forEach(function (a) {
+                let href = a.getAttribute('href');
+                if (!href) return;
+                if (!pageIsAllowed(profile, role, href.trim().toLowerCase())) {
+                    a.style.display = 'none';
+                }
+            });
+        });
+    }
+
     window.logoutUser = function () {
-        localStorage.removeItem('userSession');
-        window.location.href = 'index.html';
+        guardClient.auth.signOut().finally(function () {
+            window.location.href = 'index.html';
+        });
     };
 
-    // Wrap any "add / upload / save" action with this. It shows a password
+    // Re-verify identity by asking Supabase Auth to check the password again
+    // (never reads the stored password/hash out to the client).
+    window.reauthPassword = async function (typedPassword) {
+        const email = window.currentUserEmail;
+        if (!email) return false;
+        const { error } = await guardClient.auth.signInWithPassword({ email: email, password: typedPassword });
+        return !error;
+    };
+
+    // Wrap any "add / upload / save" action with this. Shows a password
     // re-entry modal and only runs onConfirmed() if the password matches.
-    // Usage:
-    //     document.getElementById('upload-btn').onclick = function () {
-    //         guardUpload(function () {
-    //             // ...actual upload/save logic here...
-    //         });
-    //     };
     window.guardUpload = function (onConfirmed) {
-        // Defense-in-depth: even if a hidden button gets triggered some other way,
-        // block the save here too if this role isn't allowed to edit.
         if (window.canEditDashboard === false) {
             alert('ماعندكش صلاحية تحفظ أو تعدّل البيانات دي.');
             return;
@@ -242,13 +237,8 @@
             errBox.innerText = '';
             if (!typed) { errBox.innerText = 'اكتب كلمة المرور'; return; }
             try {
-                const { data: rows, error } = await guardClient
-                    .from('users')
-                    .select('password')
-                    .eq('username', window.currentUsername)
-                    .limit(1);
-                if (error) throw error;
-                if (rows && rows.length > 0 && rows[0].password === typed) {
+                const ok = await window.reauthPassword(typed);
+                if (ok) {
                     modal.remove();
                     onConfirmed();
                 } else {
@@ -263,4 +253,22 @@
             if (e.key === 'Enter') modal.querySelector('#guard-pass-confirm').click();
         });
     };
+
+    // Builds a short-lived signed URL for a file stored in the (now private)
+    // task-attachments bucket, given either a bare storage path or the old
+    // public-style URL string (kept for backward compatibility with rows
+    // created before this fix - see security_migration.sql).
+    window.getAttachmentSignedUrl = async function (storedValue, bucket, expirySeconds) {
+        bucket = bucket || 'task-attachments';
+        expirySeconds = expirySeconds || 3600;
+        let path = storedValue || '';
+        let marker = `/storage/v1/object/public/${bucket}/`;
+        let idx = path.indexOf(marker);
+        if (idx !== -1) path = decodeURIComponent(path.substring(idx + marker.length));
+        const { data, error } = await guardClient.storage.from(bucket).createSignedUrl(path, expirySeconds);
+        if (error || !data) return storedValue; // fall back rather than break the UI
+        return data.signedUrl;
+    };
+
+    init();
 })();
