@@ -159,6 +159,10 @@
 
         reveal();
 
+        if (page !== 'index.html') {
+            startIdleWatcher();
+        }
+
         document.dispatchEvent(new CustomEvent('authguard:ready', { detail: { role, profile } }));
 
         document.addEventListener('DOMContentLoaded', function () {
@@ -183,10 +187,43 @@
     }
 
     window.logoutUser = function () {
+        stopIdleWatcher();
         guardClient.auth.signOut().finally(function () {
             window.location.href = 'index.html';
         });
     };
+
+    // ---- Idle session timeout: auto logout after 20 minutes of no activity ----
+    const IDLE_TIMEOUT_MS = 20 * 60 * 1000; // 20 minutes
+    const IDLE_EVENTS = ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart', 'click'];
+    let idleTimer = null;
+
+    function resetIdleTimer() {
+        if (idleTimer) clearTimeout(idleTimer);
+        idleTimer = setTimeout(handleIdleTimeout, IDLE_TIMEOUT_MS);
+    }
+
+    function stopIdleWatcher() {
+        if (idleTimer) { clearTimeout(idleTimer); idleTimer = null; }
+        IDLE_EVENTS.forEach(function (evt) {
+            document.removeEventListener(evt, resetIdleTimer, true);
+        });
+    }
+
+    function handleIdleTimeout() {
+        stopIdleWatcher();
+        guardClient.auth.signOut().finally(function () {
+            alert('انتهت الجلسة بسبب عدم النشاط لمدة 20 دقيقة، من فضلك سجّل الدخول مرة أخرى.');
+            window.location.href = 'index.html';
+        });
+    }
+
+    function startIdleWatcher() {
+        IDLE_EVENTS.forEach(function (evt) {
+            document.addEventListener(evt, resetIdleTimer, true);
+        });
+        resetIdleTimer();
+    }
 
     // Re-verify identity by asking Supabase Auth to check the password again
     // (never reads the stored password/hash out to the client).
