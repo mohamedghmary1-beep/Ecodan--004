@@ -676,8 +676,15 @@
         <i class="fa-solid fa-clipboard-check"></i> <span data-i18n="navApprovals">طلبات الموافقة</span>
         <span id="pendingNavBadge" class="nav-badge">0</span>
     </a>
+    <a href="final-approval.html" class="nav-btn">
+        <i class="fa-solid fa-stamp"></i> <span data-i18n="navFinalApproval">الموافقة النهائية</span>
+        <span id="finalNavBadge" class="nav-badge">0</span>
+    </a>
     <a href="team_overview.html" class="nav-btn">
         <i class="fa-solid fa-users"></i> <span data-i18n="navTeam">نظرة عامة على الموظفين</span>
+    </a>
+    <a href="engineer-review.html" class="nav-btn">
+        <i class="fa-solid fa-user-check"></i> <span data-i18n="navEngineerReview">مراجعة المهندس</span>
     </a>
      <a href="performance.html" class="nav-btn">
         <i class="fa-solid fa-chart-column"></i> <span data-i18n="navDashboard">لوحة التحكم</span>
@@ -686,6 +693,9 @@
     <a href="weekly_report_view.html" class="nav-btn"><i class="fa-solid fa-eye"></i> <span data-i18n="navReportView">عرض التقرير</span></a>
     <button onclick="toggleLanguage()" class="nav-btn translate-btn">
         <i class="fa-solid fa-language"></i> <span id="lang-btn-text">English</span>
+    </button>
+    <button onclick="openChangePasswordModal()" class="nav-btn">
+        <i class="fa-solid fa-key"></i> <span data-i18n="navChangePassword">تغيير كلمة المرور</span>
     </button>
     <button onclick="logout()" class="nav-btn logout-btn" title="Logout">
         <i class="fa-solid fa-right-from-bracket"></i> <span data-i18n="navLogout">تسجيل الخروج</span>

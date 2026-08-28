@@ -65,7 +65,10 @@
             navTeam: "نظرة عامة على الموظفين",
             navDashboard: "لوحة التحكم",
             navReport: "التقرير الأسبوعي",
+            navEngineerReview: "مراجعة المهندس",
+            navFinalApproval: "الموافقة النهائية",
             navLogout: "تسجيل الخروج",
+            navChangePassword: "تغيير كلمة المرور",
             langBtnText: "English"
         },
         en: {
@@ -77,7 +80,10 @@
             navTeam: "Team Overview",
             navDashboard: "Dashboard",
             navReport: "Weekly Report",
+            navEngineerReview: "Engineer Review",
+            navFinalApproval: "Final Approval",
             navLogout: "Logout",
+            navChangePassword: "Change Password",
             langBtnText: "العربية"
         }
     };
@@ -247,5 +253,59 @@
         document.addEventListener('DOMContentLoaded', refreshPendingApprovalsBadge);
     } else {
         refreshPendingApprovalsBadge();
+    }
+})();
+
+/*
+  Shared "pending FINAL approval" nav badge (span id="finalNavBadge") -
+  same idea as the badge above, but counts contractor_requests rows
+  waiting on the admin's final sign-off (status = 'pending_final_admin')
+  after an engineer has written on the file and picked a code.
+  final-approval.html manages its own richer version of this badge
+  (it also renders the full list), so this shared version steps aside
+  there via window.loadFinalApprovalRequests.
+*/
+(function () {
+    const SUPABASE_URL = "https://uhhtvpxtpayovbtmnstz.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_QsS0UhLBORy6mOaBDgW62g_9OacC3oO";
+    let sharedClient = null;
+
+    function setBadge(count) {
+        const badge = document.getElementById('finalNavBadge');
+        if (!badge) return;
+        if (count > 0) {
+            badge.textContent = count > 99 ? "99+" : String(count);
+            badge.style.display = "flex";
+        } else {
+            badge.style.display = "none";
+        }
+    }
+
+    async function refreshFinalApprovalBadge() {
+        const badge = document.getElementById('finalNavBadge');
+        if (!badge) return;
+        if (typeof window.loadFinalApprovalRequests === 'function') return; // final-approval.html owns this itself
+
+        try {
+            if (!sharedClient) {
+                if (typeof window.supabase === 'undefined') return;
+                sharedClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+            }
+            const { data, error } = await sharedClient
+                .from('contractor_requests')
+                .select('id')
+                .eq('status', 'pending_final_admin');
+            if (error) throw error;
+            setBadge((data || []).length);
+        } catch (err) {
+            console.error('Error refreshing final-approval badge:', err);
+        }
+    }
+    window.refreshFinalApprovalBadge = refreshFinalApprovalBadge;
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', refreshFinalApprovalBadge);
+    } else {
+        refreshFinalApprovalBadge();
     }
 })();

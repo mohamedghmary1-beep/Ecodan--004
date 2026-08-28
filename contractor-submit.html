@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="ar" id="html-tag">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>رفع ريكوست جديد - MDECO</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <script>
+      document.write('<script src="./cache-buster.js?v=' + Date.now() + '"><' + '/script>');
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+      document.write('<script src="./auth-guard.js?v=' + Date.now() + '"><' + '/script>');
+      document.write('<script src="./lang.js?v=' + Date.now() + '"><' + '/script>');
+    </script>
+    <style>
+        :root {
+            --primary: #1e40af;
+            --primary-hover: #1d4ed8;
+            --primary-light: #eff6ff;
+            --bg-main: #f8fafc;
+            --bg-card: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.05);
+        }
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--bg-main);
+            color: var(--text-main);
+            direction: rtl;
+            box-sizing: border-box;
+        }
+        *, *:before, *:after { box-sizing: inherit; }
+
+        .header {
+            background: var(--primary);
+            color: #fff;
+            padding: 18px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            font-size: 22px;
+            font-weight: 700;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .top-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            padding: 10px 20px;
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border);
+        }
+        .top-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: #f8fafc;
+            color: var(--text-main);
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        .top-btn:hover { background: var(--primary-light); color: var(--primary); }
+
+        .container { max-width: 780px; margin: 24px auto; padding: 0 16px 60px; }
+
+        .card {
+            background: var(--bg-card);
+            border-radius: 14px;
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--border);
+            padding: 26px;
+            margin-bottom: 24px;
+        }
+        .card h2 {
+            margin: 0 0 4px 0;
+            font-size: 19px;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .card .sub { color: var(--text-muted); font-size: 13px; margin-bottom: 20px; }
+
+        .form-row { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 16px; }
+        .form-group { flex: 1 1 220px; }
+        .form-group label {
+            display: block;
+            font-weight: 700;
+            font-size: 13px;
+            margin-bottom: 6px;
+            color: var(--text-main);
+        }
+        .form-group label .req { color: var(--danger); }
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 14px;
+            background: #f8fafc;
+            color: var(--text-main);
+            font-family: inherit;
+        }
+        .form-group textarea { resize: vertical; min-height: 80px; }
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: #fff;
+            box-shadow: 0 0 0 3px rgba(30,64,175,0.12);
+        }
+
+        .file-drop {
+            border: 2px dashed var(--border);
+            border-radius: 10px;
+            padding: 22px;
+            text-align: center;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all .2s;
+            background: #f8fafc;
+        }
+        .file-drop:hover { border-color: var(--primary); background: var(--primary-light); color: var(--primary); }
+        .file-drop i { font-size: 26px; display: block; margin-bottom: 8px; }
+        .file-drop .chosen { font-weight: 700; color: var(--text-main); margin-top: 6px; }
+
+        .btn-submit {
+            width: 100%;
+            padding: 13px;
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            border-radius: 9px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 6px;
+        }
+        .btn-submit:hover { background: var(--primary-hover); }
+        .btn-submit:disabled { background: #94a3b8; cursor: not-allowed; }
+
+        .msg-box {
+            display: none;
+            padding: 12px 14px;
+            border-radius: 8px;
+            font-size: 14px;
+            margin-bottom: 16px;
+        }
+        .msg-box.error { display: block; background: #fee2e2; color: var(--danger); border: 1px solid #fca5a5; }
+        .msg-box.success { display: block; background: #d1fae5; color: var(--success); border: 1px solid #6ee7b7; }
+
+        .req-list { display: flex; flex-direction: column; gap: 12px; }
+        .req-card {
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 14px 16px;
+            background: #f8fafc;
+        }
+        .req-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; flex-wrap: wrap; }
+        .req-title { font-weight: 700; font-size: 15px; }
+        .req-meta { color: var(--text-muted); font-size: 12.5px; margin-top: 4px; line-height: 1.7; }
+        .status-pill {
+            padding: 4px 12px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+        .status-pending_admin { background: #fef3c7; color: #b45309; }
+        .status-pending_engineer { background: #dbeafe; color: #1d4ed8; }
+        .status-pending_final_admin { background: #ede9fe; color: #6d28d9; }
+        .status-completed { background: #d1fae5; color: #047857; }
+        .status-rejected_admin, .status-rejected_engineer { background: #fee2e2; color: #b91c1c; }
+        .empty-state { text-align: center; color: var(--text-muted); padding: 24px; }
+
+        .lock-overlay {
+            display: none;
+            position: fixed; inset: 0; background: rgba(15,23,42,0.55);
+            align-items: center; justify-content: center; z-index: 9999;
+        }
+        .lock-overlay.active { display: flex; }
+        .lock-modal {
+            background: #fff; padding: 26px; border-radius: 14px; max-width: 340px; width: 90%;
+            text-align: center;
+        }
+        .spinner {
+            width: 34px; height: 34px; border: 4px solid var(--primary-light);
+            border-top-color: var(--primary); border-radius: 50%;
+            margin: 0 auto 14px; animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <i class="fa-solid fa-file-circle-plus"></i>
+    <span data-i18n="pageTitle">رفع ريكوست جديد</span>
+</div>
+
+<div class="top-actions">
+    <button onclick="toggleLanguage()" class="top-btn">
+        <i class="fa-solid fa-language"></i> <span id="lang-btn-text">English</span>
+    </button>
+    <button onclick="openChangePasswordModal()" class="top-btn">
+        <i class="fa-solid fa-key"></i> <span data-i18n="navChangePassword">تغيير كلمة المرور</span>
+    </button>
+    <button onclick="logout()" class="top-btn">
+        <i class="fa-solid fa-right-from-bracket"></i> <span data-i18n="navLogout">تسجيل الخروج</span>
+    </button>
+</div>
+
+<div class="container">
+
+    <div class="card">
+        <h2><i class="fa-solid fa-paper-plane" style="color:var(--primary);"></i> <span data-i18n="formTitle">بيانات الريكوست الجديد</span></h2>
+        <div class="sub" data-i18n="formSub">املأ البيانات، اختار القسم والمهندس المختص، وارفع الملف - هيتراجع من الأدمن الأول قبل ما يوصل للمهندس.</div>
+
+        <div id="msgBox" class="msg-box"></div>
+
+        <form id="reqForm" onsubmit="handleSubmit(event)">
+            <div class="form-row">
+                <div class="form-group">
+                    <label data-i18n="lblNo">رقم الريكوست (Submittal No.)</label>
+                    <input type="text" id="f-no" placeholder="اختياري">
+                </div>
+                <div class="form-group">
+                    <label data-i18n="lblTitle">العنوان <span class="req">*</span></label>
+                    <input type="text" id="f-title" required>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label data-i18n="lblDiscipline">القسم <span class="req">*</span></label>
+                    <select id="f-discipline" required>
+                        <option value="" data-i18n="loadingOption">جاري التحميل...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label data-i18n="lblEngineer">المهندس المختص <span class="req">*</span></label>
+                    <select id="f-engineer" required>
+                        <option value="" data-i18n="loadingOption">جاري التحميل...</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label data-i18n="lblActivity">النشاط (Activity)</label>
+                    <input type="text" id="f-activity" placeholder="اختياري">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group" style="flex-basis:100%;">
+                    <label data-i18n="lblNotes">ملاحظات / وصف الريكوست</label>
+                    <textarea id="f-notes" placeholder=""></textarea>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group" style="flex-basis:100%;">
+                    <label data-i18n="lblFile">الملف <span class="req">*</span></label>
+                    <div class="file-drop" onclick="document.getElementById('f-file').click()">
+                        <input type="file" id="f-file" style="display:none" onchange="onFileChosen(this)">
+                        <i class="fa-solid fa-cloud-arrow-up"></i>
+                        <span data-i18n="dropHint">اضغط لاختيار الملف (PDF / Word / Excel / CAD)</span>
+                        <div class="chosen" id="chosenFileName"></div>
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" class="btn-submit" id="submitBtn">
+                <span id="submitBtnText" data-i18n="btnSubmit">إرسال الريكوست</span>
+            </button>
+        </form>
+    </div>
+
+    <div class="card">
+        <h2><i class="fa-solid fa-clock-rotate-left" style="color:var(--primary);"></i> <span data-i18n="myReqTitle">ريكوستاتي المرسلة</span></h2>
+        <div class="sub" data-i18n="myReqSub">متابعة حالة كل الريكوستات اللي رفعتها.</div>
+        <div id="myReqList" class="req-list"><div class="empty-state" data-i18n="loading">جاري التحميل...</div></div>
+    </div>
+
+</div>
+
+<div class="lock-overlay" id="lockOverlay">
+    <div class="lock-modal">
+        <div class="spinner"></div>
+        <div id="lockMsg" style="font-weight:700;" data-i18n="uploading">جاري رفع الريكوست...</div>
+    </div>
+</div>
+
+<script>
+const SUPABASE_URL = "https://uhhtvpxtpayovbtmnstz.supabase.co";
+const SUPABASE_KEY = "sb_publishable_QsS0UhLBORy6mOaBDgW62g_9OacC3oO";
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const ATTACHMENTS_BUCKET = "task-attachments";
+
+const ALLOWED_UPLOAD_EXTENSIONS = ["pdf", "xls", "xlsx", "xlsm", "csv", "doc", "docx", "dwg", "dxf", "dwf"];
+
+const dictionary = {
+    ar: {
+        pageTitle: "رفع ريكوست جديد",
+        formTitle: "بيانات الريكوست الجديد",
+        formSub: "املأ البيانات، اختار القسم والمهندس المختص، وارفع الملف - هيتراجع من الأدمن الأول قبل ما يوصل للمهندس.",
+        lblNo: "رقم الريكوست (Submittal No.)",
+        lblTitle: "العنوان",
+        lblDiscipline: "القسم",
+        lblEngineer: "المهندس المختص",
+        lblActivity: "النشاط (Activity)",
+        lblNotes: "ملاحظات / وصف الريكوست",
+        lblFile: "الملف",
+        dropHint: "اضغط لاختيار الملف (PDF / Word / Excel / CAD)",
+        loadingOption: "جاري التحميل...",
+        btnSubmit: "إرسال الريكوست",
+        myReqTitle: "ريكوستاتي المرسلة",
+        myReqSub: "متابعة حالة كل الريكوستات اللي رفعتها.",
+        loading: "جاري التحميل...",
+        uploading: "جاري رفع الريكوست...",
+        noRequests: "مفيش ريكوستات اتبعتت لسه.",
+        errFile: "من فضلك اختار ملف.",
+        errBadExt: "مسموح برفع ملفات PDF / Excel / Word / CAD بس.",
+        errNoDiscipline: "من فضلك اختار القسم.",
+        errNoEngineer: "من فضلك اختار المهندس المختص.",
+        errUpload: "حصل خطأ أثناء رفع الملف، حاول تاني.",
+        errSave: "حصل خطأ أثناء حفظ الريكوست، حاول تاني.",
+        successMsg: "تم إرسال الريكوست بنجاح، هيتراجع من الأدمن.",
+        statusPendingAdmin: "بانتظار مراجعة الأدمن",
+        statusPendingEngineer: "بانتظار مراجعة المهندس",
+        statusPendingFinalAdmin: "بانتظار الموافقة النهائية من الأدمن",
+        statusCompleted: "تم الاعتماد",
+        statusRejectedAdmin: "مرفوض من الأدمن",
+        statusRejectedEngineer: "مرفوض من المهندس",
+        engineerLabel: "المهندس",
+        codeLabel: "الكود",
+        commentLabel: "تعليق المهندس",
+        driveUploading: "جاري الرفع النهائي على جوجل درايف...",
+        driveFailed: "حصل خطأ في الرفع النهائي - هيتم إعادة المحاولة"
+    },
+    en: {
+        pageTitle: "Submit New Request",
+        formTitle: "New Request Details",
+        formSub: "Fill in the details, pick the discipline and the responsible engineer, and upload the file - it will be reviewed by the admin before it reaches the engineer.",
+        lblNo: "Submittal No.",
+        lblTitle: "Title",
+        lblDiscipline: "Discipline",
+        lblEngineer: "Responsible Engineer",
+        lblActivity: "Activity",
+        lblNotes: "Notes / Request Description",
+        lblFile: "File",
+        dropHint: "Click to choose file (PDF / Word / Excel / CAD)",
+        loadingOption: "Loading...",
+        btnSubmit: "Submit Request",
+        myReqTitle: "My Submitted Requests",
+        myReqSub: "Track the status of every request you've submitted.",
+        loading: "Loading...",
+        uploading: "Uploading request...",
+        noRequests: "No requests submitted yet.",
+        errFile: "Please choose a file.",
+        errBadExt: "Only PDF / Excel / Word / CAD files are allowed.",
+        errNoDiscipline: "Please choose a discipline.",
+        errNoEngineer: "Please choose the responsible engineer.",
+        errUpload: "An error occurred while uploading the file, please try again.",
+        errSave: "An error occurred while saving the request, please try again.",
+        successMsg: "Request submitted successfully - it will be reviewed by the admin.",
+        statusPendingAdmin: "Awaiting admin review",
+        statusPendingEngineer: "Awaiting engineer review",
+        statusPendingFinalAdmin: "Awaiting final admin approval",
+        statusCompleted: "Approved",
+        statusRejectedAdmin: "Rejected by admin",
+        statusRejectedEngineer: "Rejected by engineer",
+        engineerLabel: "Engineer",
+        codeLabel: "Code",
+        commentLabel: "Engineer's comment",
+        driveUploading: "Finishing upload to Google Drive...",
+        driveFailed: "The final upload failed - it will be retried"
+    }
+};
+window.registerDictionary(dictionary);
+window.onLanguageChanged = function () { renderMyRequests(); };
+
+let selectedFile = null;
+let engineersList = [];
+
+function getFileExtension(filename) {
+    let parts = (filename || "").toString().trim().split(".");
+    return parts.length > 1 ? parts.pop().toLowerCase() : "";
+}
+
+function onFileChosen(input) {
+    if (input.files.length === 0) { selectedFile = null; return; }
+    let file = input.files[0];
+    if (!ALLOWED_UPLOAD_EXTENSIONS.includes(getFileExtension(file.name))) {
+        alert(T('errBadExt'));
+        input.value = "";
+        selectedFile = null;
+        document.getElementById('chosenFileName').textContent = '';
+        return;
+    }
+    selectedFile = file;
+    document.getElementById('chosenFileName').textContent = file.name;
+}
+
+function showMsg(text, type) {
+    let box = document.getElementById('msgBox');
+    box.textContent = text;
+    box.className = 'msg-box ' + type;
+}
+
+// ============================================
+// تحميل قائمة الأقسام (من الأقسام الموجودة فعليًا في submittals)
+// وقائمة المهندسين (من profiles اللي عليهم is_engineer = true)
+// ============================================
+async function loadDropdowns() {
+    try {
+        const { data: rows, error } = await supabaseClient.from('submittals').select('discipline');
+        if (error) throw error;
+        let disciplines = Array.from(new Set((rows || [])
+            .map(r => (r.discipline || '').toString().trim())
+            .filter(d => d)))
+            .sort((a, b) => a.localeCompare(b));
+
+        let dSel = document.getElementById('f-discipline');
+        dSel.innerHTML = '<option value="">-- ' + T('lblDiscipline') + ' --</option>' +
+            disciplines.map(d => `<option value="${d}">${d}</option>`).join('');
+    } catch (err) {
+        console.error('Error loading disciplines:', err);
+    }
+
+    try {
+        const { data: rows, error } = await supabaseClient
+            .from('profiles')
+            .select('id, username')
+            .eq('is_engineer', true);
+        if (error) throw error;
+        engineersList = rows || [];
+        engineersList.sort((a, b) => (a.username || '').localeCompare(b.username || ''));
+
+        let eSel = document.getElementById('f-engineer');
+        eSel.innerHTML = '<option value="">-- ' + T('lblEngineer') + ' --</option>' +
+            engineersList.map(e => `<option value="${e.id}">${e.username}</option>`).join('');
+    } catch (err) {
+        console.error('Error loading engineers:', err);
+    }
+}
+
+function openLock(msg) {
+    document.getElementById('lockMsg').textContent = msg;
+    document.getElementById('lockOverlay').classList.add('active');
+}
+function closeLock() {
+    document.getElementById('lockOverlay').classList.remove('active');
+}
+
+async function handleSubmit(event) {
+    event.preventDefault();
+    showMsg('', '');
+
+    if (!selectedFile) { showMsg(T('errFile'), 'error'); return; }
+
+    let discipline = document.getElementById('f-discipline').value;
+    let engineerId = document.getElementById('f-engineer').value;
+    if (!discipline) { showMsg(T('errNoDiscipline'), 'error'); return; }
+    if (!engineerId) { showMsg(T('errNoEngineer'), 'error'); return; }
+
+    let engineerObj = engineersList.find(e => e.id === engineerId);
+    let title = document.getElementById('f-title').value.trim();
+    let no = document.getElementById('f-no').value.trim();
+    let activity = document.getElementById('f-activity').value.trim();
+    let notes = document.getElementById('f-notes').value.trim();
+
+    let submitBtn = document.getElementById('submitBtn');
+    submitBtn.disabled = true;
+    openLock(T('uploading'));
+
+    try {
+        let session = window.__guardSession;
+        let userId = session ? session.user.id : (await supabaseClient.auth.getSession()).data.session.user.id;
+
+        let safeName = selectedFile.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+        let path = `contractor-requests/${Date.now()}_${safeName}`;
+
+        const { error: uploadError } = await supabaseClient.storage
+            .from(ATTACHMENTS_BUCKET)
+            .upload(path, selectedFile, { upsert: false });
+        if (uploadError) throw uploadError;
+
+        const { error: insertError } = await supabaseClient
+            .from('contractor_requests')
+            .insert({
+                submittal_no: no || null,
+                title: title,
+                discipline: discipline,
+                activity: activity || null,
+                notes: notes || null,
+                contractor_id: userId,
+                contractor_username: window.currentUsername || null,
+                engineer_id: engineerId,
+                engineer_username: engineerObj ? engineerObj.username : null,
+                file_name: selectedFile.name,
+                file_link: path,
+                status: 'pending_admin'
+            });
+        if (insertError) throw insertError;
+
+        showMsg(T('successMsg'), 'success');
+        document.getElementById('reqForm').reset();
+        selectedFile = null;
+        document.getElementById('chosenFileName').textContent = '';
+        loadDropdowns();
+        loadMyRequests();
+    } catch (err) {
+        console.error('Submit error:', err);
+        showMsg(err.message || T('errSave'), 'error');
+    } finally {
+        submitBtn.disabled = false;
+        closeLock();
+    }
+}
+
+// ============================================
+// قائمة الريكوستات اللي رفعها نفس المقاول (RLS بترجع صفوفه بس)
+// ============================================
+let myRequests = [];
+
+async function loadMyRequests() {
+    try {
+        const { data: rows, error } = await supabaseClient
+            .from('contractor_requests')
+            .select('*')
+            .order('requested_at', { ascending: false });
+        if (error) throw error;
+        myRequests = rows || [];
+        renderMyRequests();
+    } catch (err) {
+        console.error('Error loading my requests:', err);
+    }
+}
+
+function statusLabel(status) {
+    switch (status) {
+        case 'pending_admin': return T('statusPendingAdmin');
+        case 'pending_engineer': return T('statusPendingEngineer');
+        case 'pending_final_admin': return T('statusPendingFinalAdmin');
+        case 'completed': return T('statusCompleted');
+        case 'rejected_admin': return T('statusRejectedAdmin');
+        case 'rejected_engineer': return T('statusRejectedEngineer');
+        default: return status;
+    }
+}
+
+function renderMyRequests() {
+    let listEl = document.getElementById('myReqList');
+    if (myRequests.length === 0) {
+        listEl.innerHTML = `<div class="empty-state">${T('noRequests')}</div>`;
+        return;
+    }
+    listEl.innerHTML = myRequests.map(r => `
+        <div class="req-card">
+            <div class="req-top">
+                <div>
+                    <div class="req-title">${r.title}${r.submittal_no ? ' - ' + r.submittal_no : ''}</div>
+                    <div class="req-meta">
+                        ${T('lblDiscipline')}: ${r.discipline} &nbsp;|&nbsp; ${T('engineerLabel')}: ${r.engineer_username || '-'}<br>
+                        ${new Date(r.requested_at).toLocaleString()}
+                        ${r.code ? `<br>${T('codeLabel')}: <b>${r.code}</b>` : ''}
+                        ${r.engineer_comment ? `<br>${T('commentLabel')}: ${r.engineer_comment}` : ''}
+                        ${r.status === 'completed' && r.drive_status === 'pending' ? `<br><span style="color:var(--warning);">${T('driveUploading')}</span>` : ''}
+                        ${r.status === 'completed' && r.drive_status === 'failed' ? `<br><span style="color:var(--danger);">${T('driveFailed')}</span>` : ''}
+                    </div>
+                </div>
+                <span class="status-pill status-${r.status}">${statusLabel(r.status)}</span>
+            </div>
+        </div>
+    `).join('');
+}
+
+document.addEventListener('authguard:ready', function () {
+    loadDropdowns();
+    loadMyRequests();
+});
+</script>
+
+</body>
+</html>

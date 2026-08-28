@@ -44,11 +44,23 @@
     const guardClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     window.__guardClient = guardClient; // reused by pages that need the same authed client
 
-    // Pages that ONLY the "administrator" (super-admin) role can open.
-    const ADMIN_ONLY_PAGES = ['approvals.html', 'team_overview.html'];
+    // Pages that ONLY the "administrator" (super-admin) role can open,
+    // regardless of any page_* column (team_overview and final-approval
+    // stay super_admin-only; approvals.html now follows page_approvals
+    // instead - see PAGE_COLUMNS below).
+    const ADMIN_ONLY_PAGES = ['team_overview.html', 'final-approval.html', 'permissions.html'];
 
     // Pages every logged-in user can always reach, no matter what.
     const ALWAYS_ALLOWED_PAGES = ['index.html'];
+
+    // Contractor accounts only ever see this one page (their new-submittal
+    // request form) - everything else in the portal is off-limits to them.
+    const CONTRACTOR_ONLY_PAGES = ['contractor-submit.html'];
+
+    // Engineer review page - open to whichever profiles have is_engineer = true
+    // (checked against the `profiles` row itself, not the permissions role,
+    // since an engineer keeps their normal admin/limited/no_files role too).
+    const ENGINEER_ONLY_PAGES = ['engineer-review.html'];
 
     // Maps each controllable page filename to its yes/no column in `profiles`.
     const PAGE_COLUMNS = {
@@ -58,7 +70,8 @@
         'home.html': 'page_home',
         'weekly_report.html': 'page_weekly_report',
         'weekly_report_view.html': 'page_weekly_report',
-        'general_by_activity.html': 'page_general_by_activity'
+        'general_by_activity.html': 'page_general_by_activity',
+        'approvals.html': 'page_approvals'
     };
 
     function currentPage() {
@@ -96,6 +109,15 @@
     function pageIsAllowed(profile, role, pageName) {
         if (role === 'super_admin') return true;
         if (ALWAYS_ALLOWED_PAGES.includes(pageName)) return true;
+
+        // Contractor accounts: ONLY the request-submission page, nothing else.
+        if (CONTRACTOR_ONLY_PAGES.includes(pageName)) return role === 'contractor';
+        if (role === 'contractor') return false;
+
+        // Engineer review page: gated on the is_engineer flag, not on role,
+        // so it layers on top of whatever normal role the engineer already has.
+        if (ENGINEER_ONLY_PAGES.includes(pageName)) return !!profile.is_engineer;
+
         if (ADMIN_ONLY_PAGES.includes(pageName)) return false;
         const col = PAGE_COLUMNS[pageName];
         if (!col) return false;
@@ -122,7 +144,7 @@
         //    `profiles` table), never from anything cached client-side.
         const { data: profile, error } = await guardClient
             .from('profiles')
-            .select('permissions, page_performance, page_summary, page_task, page_home, page_weekly_report, page_general_by_activity, username')
+            .select('permissions, page_performance, page_summary, page_task, page_home, page_weekly_report, page_general_by_activity, page_approvals, username, is_engineer')
             .eq('id', session.user.id)
             .single();
 
@@ -143,11 +165,13 @@
         else if (rawPerm === 'admin' || rawPerm === '') role = 'admin';
         else if (rawPerm === 'no_files') role = 'no_files';
         else if (rawPerm === 'limited') role = 'limited';
+        else if (rawPerm === 'contractor') role = 'contractor';
         else role = 'blocked';
 
         window.currentUserRole = role;
         window.currentUsername = profile.username;
         window.currentUserEmail = session.user.email;
+        window.currentUserIsEngineer = !!profile.is_engineer;
         window.canAccessFiles = (role === 'admin' || role === 'super_admin');
         window.canEditDashboard = (role === 'admin' || role === 'super_admin');
 
@@ -157,15 +181,13 @@
             if (!pageIsAllowed(profile, role, page)) { showAccessDenied(); return; }
         }
 
-        reveal();
-
-        if (page !== 'index.html') {
-            startIdleWatcher();
-        }
-
-        document.dispatchEvent(new CustomEvent('authguard:ready', { detail: { role, profile } }));
-
-        document.addEventListener('DOMContentLoaded', function () {
+        // ملحوظة: الكود ده async وبينتظر رد Supabase الأول، فبحلول ما نوصل هنا
+        // الصفحة تكون خلصت تحميلها بالفعل - يعني DOMContentLoaded يكون
+        // اتطلق من زمان ولو سجّلنا عليه listener هنا مش هيتنفذ خالص (وده كان
+        // سبب إن زراير الناف بار بتاعة الصفحات الممنوعة كانت فاضلة ظاهرة).
+        // بدل كده بنستخدم الدالة دي على طول، وبنتأكد الـ DOM جاهز لو حصل
+        // ونادر إن الصفحة لسه بتتحمل.
+        function hideDisallowedElements() {
             if (!window.canAccessFiles) {
                 document.querySelectorAll('.file-protected, [data-file-link]').forEach(function (el) {
                     el.style.display = 'none';
@@ -183,47 +205,28 @@
                     a.style.display = 'none';
                 }
             });
-        });
+        }
+
+        // بنخفي القوائم الممنوعة الأول، وبعدين نكشف الصفحة - عشان محدش
+        // يشوف حتى وميض بسيط لزرار صفحة مش مسموحله يدخلها.
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function () {
+                hideDisallowedElements();
+                reveal();
+            });
+        } else {
+            hideDisallowedElements();
+            reveal();
+        }
+
+        document.dispatchEvent(new CustomEvent('authguard:ready', { detail: { role, profile } }));
     }
 
     window.logoutUser = function () {
-        stopIdleWatcher();
         guardClient.auth.signOut().finally(function () {
             window.location.href = 'index.html';
         });
     };
-
-    // ---- Idle session timeout: auto logout after 20 minutes of no activity ----
-    const IDLE_TIMEOUT_MS = 20 * 60 * 1000; // 20 minutes
-    const IDLE_EVENTS = ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart', 'click'];
-    let idleTimer = null;
-
-    function resetIdleTimer() {
-        if (idleTimer) clearTimeout(idleTimer);
-        idleTimer = setTimeout(handleIdleTimeout, IDLE_TIMEOUT_MS);
-    }
-
-    function stopIdleWatcher() {
-        if (idleTimer) { clearTimeout(idleTimer); idleTimer = null; }
-        IDLE_EVENTS.forEach(function (evt) {
-            document.removeEventListener(evt, resetIdleTimer, true);
-        });
-    }
-
-    function handleIdleTimeout() {
-        stopIdleWatcher();
-        guardClient.auth.signOut().finally(function () {
-            alert('انتهت الجلسة بسبب عدم النشاط لمدة 20 دقيقة، من فضلك سجّل الدخول مرة أخرى.');
-            window.location.href = 'index.html';
-        });
-    }
-
-    function startIdleWatcher() {
-        IDLE_EVENTS.forEach(function (evt) {
-            document.addEventListener(evt, resetIdleTimer, true);
-        });
-        resetIdleTimer();
-    }
 
     // Re-verify identity by asking Supabase Auth to check the password again
     // (never reads the stored password/hash out to the client).
@@ -288,6 +291,93 @@
 
         input.addEventListener('keydown', function (e) {
             if (e.key === 'Enter') modal.querySelector('#guard-pass-confirm').click();
+        });
+    };
+
+    // Self-service "change my password" modal. Available on every page that
+    // includes auth-guard.js (home.html, contractor-submit.html, etc).
+    // Requires the CURRENT password before accepting a new one - this re-uses
+    // reauthPassword (a real Supabase Auth check), never reads/compares any
+    // password value stored in the database.
+    window.openChangePasswordModal = function () {
+        const email = window.currentUserEmail;
+        if (!email) return;
+
+        let modal = document.createElement('div');
+        modal.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.55);' +
+            'display:flex;align-items:center;justify-content:center;z-index:9999;';
+        modal.innerHTML = `
+            <div style="background:#fff;padding:28px;border-radius:14px;max-width:360px;width:90%;
+                        box-shadow:0 20px 40px rgba(0,0,0,0.2);font-family:'Segoe UI',system-ui,sans-serif;">
+                <div style="font-weight:800;font-size:17px;margin-bottom:6px;color:#0f172a;">تغيير كلمة المرور</div>
+                <div style="color:#64748b;font-size:13px;margin-bottom:16px;">أدخل كلمة المرور الحالية، ثم كلمة المرور الجديدة مرتين</div>
+                <input type="password" id="cp-current" style="width:100%;box-sizing:border-box;padding:10px 12px;
+                       border:1px solid #e2e8f0;border-radius:8px;font-size:14px;margin-bottom:8px;" placeholder="كلمة المرور الحالية">
+                <input type="password" id="cp-new" style="width:100%;box-sizing:border-box;padding:10px 12px;
+                       border:1px solid #e2e8f0;border-radius:8px;font-size:14px;margin-bottom:8px;" placeholder="كلمة المرور الجديدة (6 أحرف على الأقل)">
+                <input type="password" id="cp-new2" style="width:100%;box-sizing:border-box;padding:10px 12px;
+                       border:1px solid #e2e8f0;border-radius:8px;font-size:14px;margin-bottom:8px;" placeholder="تأكيد كلمة المرور الجديدة">
+                <div id="cp-error" style="color:#ef4444;font-size:12px;min-height:16px;margin-bottom:10px;"></div>
+                <div style="display:flex;gap:8px;">
+                    <button id="cp-cancel" style="flex:1;padding:10px;border-radius:8px;border:1px solid #e2e8f0;
+                            background:#f8fafc;cursor:pointer;font-weight:700;">إلغاء</button>
+                    <button id="cp-confirm" style="flex:1;padding:10px;border-radius:8px;border:none;
+                            background:#2563eb;color:#fff;cursor:pointer;font-weight:700;">تأكيد</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+
+        const curInput = modal.querySelector('#cp-current');
+        const newInput = modal.querySelector('#cp-new');
+        const new2Input = modal.querySelector('#cp-new2');
+        const errBox = modal.querySelector('#cp-error');
+        curInput.focus();
+
+        modal.querySelector('#cp-cancel').onclick = function () { modal.remove(); };
+
+        modal.querySelector('#cp-confirm').onclick = async function () {
+            const current = curInput.value.trim();
+            const next = newInput.value;
+            const next2 = new2Input.value;
+            errBox.innerText = '';
+
+            if (!current) { errBox.innerText = 'اكتب كلمة المرور الحالية'; return; }
+            if (!next || next.length < 6) { errBox.innerText = 'كلمة المرور الجديدة لازم تكون 6 أحرف على الأقل'; return; }
+            if (next !== next2) { errBox.innerText = 'كلمة المرور الجديدة غير متطابقة في الخانتين'; return; }
+
+            const confirmBtn = modal.querySelector('#cp-confirm');
+            confirmBtn.disabled = true;
+            confirmBtn.innerText = 'جاري التحديث...';
+
+            try {
+                const ok = await window.reauthPassword(current);
+                if (!ok) {
+                    errBox.innerText = 'كلمة المرور الحالية غير صحيحة';
+                    confirmBtn.disabled = false;
+                    confirmBtn.innerText = 'تأكيد';
+                    return;
+                }
+                const { error: updateError } = await guardClient.auth.updateUser({ password: next });
+                if (updateError) {
+                    errBox.innerText = 'حصل خطأ أثناء تحديث كلمة المرور، حاول تاني';
+                    confirmBtn.disabled = false;
+                    confirmBtn.innerText = 'تأكيد';
+                    return;
+                }
+                modal.remove();
+                alert('تم تغيير كلمة المرور بنجاح.');
+            } catch (e) {
+                errBox.innerText = 'خطأ في الاتصال، حاول تاني';
+                confirmBtn.disabled = false;
+                confirmBtn.innerText = 'تأكيد';
+            }
+        };
+
+        [curInput, newInput, new2Input].forEach(function (inp) {
+            inp.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter') modal.querySelector('#cp-confirm').click();
+            });
         });
     };
 

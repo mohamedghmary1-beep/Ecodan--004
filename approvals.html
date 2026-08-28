@@ -395,8 +395,15 @@
         <i class="fa-solid fa-clipboard-check"></i> <span data-i18n="navApprovals">طلبات الموافقة</span>
         <span id="pendingNavBadge" class="nav-badge">0</span>
     </a>
+    <a href="final-approval.html" class="nav-btn">
+        <i class="fa-solid fa-stamp"></i> <span data-i18n="navFinalApproval">الموافقة النهائية</span>
+        <span id="finalNavBadge" class="nav-badge">0</span>
+    </a>
     <a href="team_overview.html" class="nav-btn">
         <i class="fa-solid fa-users"></i> <span data-i18n="navTeam">نظرة عامة على الموظفين</span>
+    </a>
+    <a href="engineer-review.html" class="nav-btn">
+        <i class="fa-solid fa-user-check"></i> <span data-i18n="navEngineerReview">مراجعة المهندس</span>
     </a>
     <a href="performance.html" class="nav-btn">
         <i class="fa-solid fa-chart-column"></i> <span data-i18n="navDashboard">لوحة التحكم</span>
@@ -428,6 +435,10 @@
         <button class="tab-btn active" id="tab-pending" onclick="setTab('pending')" data-i18n="tabPending">قيد المراجعة</button>
         <button class="tab-btn" id="tab-approved" onclick="setTab('approved')" data-i18n="tabApproved">تمت الموافقة</button>
         <button class="tab-btn" id="tab-rejected" onclick="setTab('rejected')" data-i18n="tabRejected">مرفوضة</button>
+        <button class="tab-btn" id="tab-contractor" onclick="setTab('contractor')" data-i18n="tabContractor">
+            طلبات المقاولين
+            <span id="contractorNavBadge" class="nav-badge" style="position:static; display:inline-flex; margin-inline-start:6px;">0</span>
+        </button>
     </div>
 
     <div id="list"></div>
@@ -451,6 +462,23 @@ const dictionary = {
         tabPending: "قيد المراجعة",
         tabApproved: "تمت الموافقة",
         tabRejected: "مرفوضة",
+        tabContractor: "طلبات المقاولين",
+        noContractorPending: "لا يوجد ريكوستات جديدة من المقاولين بانتظار المراجعة.",
+        contractorNo: "رقم الريكوست",
+        contractorTitle: "العنوان",
+        contractorName: "المقاول",
+        engineerAssigned: "المهندس المختص",
+        engineerOverride: "تغيير المهندس (اختياري)",
+        notesLabel: "ملاحظات المقاول",
+        statusPendingAdmin: "بانتظار مراجعة الأدمن",
+        statusPendingEngineer: "بانتظار مراجعة المهندس",
+        statusCompleted: "تم الاعتماد",
+        statusRejectedAdmin: "مرفوض من الأدمن",
+        statusRejectedEngineer: "مرفوض من المهندس",
+        confirmApproveContractor: "تأكيد توجيه الريكوست للمهندس المختار؟",
+        confirmRejectContractor: "تأكيد رفض الريكوست ده؟",
+        errApproveContractor: "فشل توجيه الريكوست للمهندس.",
+        errRejectContractor: "فشل رفض الريكوست.",
         loading: "جاري التحميل...",
         loadError: "حدث خطأ أثناء تحميل الطلبات.",
         noPending: "لا يوجد طلبات معلّقة.",
@@ -494,6 +522,23 @@ const dictionary = {
         tabPending: "Pending",
         tabApproved: "Approved",
         tabRejected: "Rejected",
+        tabContractor: "Contractor Requests",
+        noContractorPending: "No new contractor requests awaiting review.",
+        contractorNo: "Submittal No.",
+        contractorTitle: "Title",
+        contractorName: "Contractor",
+        engineerAssigned: "Responsible Engineer",
+        engineerOverride: "Change engineer (optional)",
+        notesLabel: "Contractor notes",
+        statusPendingAdmin: "Awaiting admin review",
+        statusPendingEngineer: "Awaiting engineer review",
+        statusCompleted: "Approved",
+        statusRejectedAdmin: "Rejected by admin",
+        statusRejectedEngineer: "Rejected by engineer",
+        confirmApproveContractor: "Confirm routing this request to the chosen engineer?",
+        confirmRejectContractor: "Confirm rejecting this request?",
+        errApproveContractor: "Failed to route the request to the engineer.",
+        errRejectContractor: "Failed to reject the request.",
         loading: "Loading...",
         loadError: "An error occurred while loading the requests.",
         noPending: "No pending requests.",
@@ -560,7 +605,7 @@ async function loadRequests() {
 
 function setTab(tab) {
     currentTab = tab;
-    ['pending', 'approved', 'rejected'].forEach(t => {
+    ['pending', 'approved', 'rejected', 'contractor'].forEach(t => {
         document.getElementById(`tab-${t}`).classList.toggle('active', t === tab);
     });
     render();
@@ -572,6 +617,7 @@ function isClassificationMissing(r) {
 }
 
 function render() {
+    if (currentTab === 'contractor') { renderContractorTab(); return; }
     let filtered = requests.filter(r => r.status === currentTab);
     let listEl = document.getElementById('list');
     let t = dictionary[currentLang];
@@ -866,7 +912,197 @@ async function rejectRequest(id) {
     loadRequests();
 }
 
+// ============================================
+// تبويب "طلبات المقاولين" - ريكوستات جديدة (مش ريفيجن) رفعها مقاول،
+// بننتظر الأدمن يراجعها ويحدد/يأكد المهندس، وبعدين تروح تلقائيًا للمهندس.
+// ============================================
+let contractorRequests = [];
+let contractorEngineers = [];
+
+async function loadContractorEngineers() {
+    try {
+        const { data: rows, error } = await supabaseClient
+            .from('profiles')
+            .select('id, username')
+            .eq('is_engineer', true);
+        if (error) throw error;
+        contractorEngineers = rows || [];
+        contractorEngineers.sort((a, b) => (a.username || '').localeCompare(b.username || ''));
+    } catch (err) {
+        console.error('Error loading engineers:', err);
+    }
+}
+
+async function loadContractorRequests() {
+    try {
+        const { data: rows, error } = await supabaseClient
+            .from('contractor_requests')
+            .select('*')
+            .order('requested_at', { ascending: false });
+        if (error) throw error;
+        contractorRequests = rows || [];
+
+        let pendingCount = contractorRequests.filter(r => r.status === 'pending_admin').length;
+        let badge = document.getElementById('contractorNavBadge');
+        if (badge) {
+            badge.textContent = pendingCount > 99 ? '99+' : String(pendingCount);
+            badge.style.display = pendingCount > 0 ? 'inline-flex' : 'none';
+        }
+
+        if (currentTab === 'contractor') render();
+    } catch (err) {
+        console.error('Error loading contractor requests:', err);
+    }
+}
+
+function contractorStatusLabel(status, t) {
+    switch (status) {
+        case 'pending_admin': return t.statusPendingAdmin;
+        case 'pending_engineer': return t.statusPendingEngineer;
+        case 'completed': return t.statusCompleted;
+        case 'rejected_admin': return t.statusRejectedAdmin;
+        case 'rejected_engineer': return t.statusRejectedEngineer;
+        default: return status;
+    }
+}
+
+function renderContractorTab() {
+    let listEl = document.getElementById('list');
+    let t = dictionary[currentLang];
+
+    if (contractorRequests.length === 0) {
+        listEl.innerHTML = `<div class="empty-state">${t.noContractorPending}</div>`;
+        return;
+    }
+
+    listEl.innerHTML = contractorRequests.map(r => {
+        let engineerOptions = contractorEngineers.map(e =>
+            `<option value="${e.id}" ${e.id === r.engineer_id ? 'selected' : ''}>${e.username}</option>`
+        ).join('');
+
+        let isPending = r.status === 'pending_admin';
+        let statusClass = isPending ? 'pending' : (r.status === 'completed' ? 'approved' : (r.status.indexOf('rejected') !== -1 ? 'rejected' : 'pending'));
+
+        return `
+        <div class="request-card ${statusClass}">
+            <div class="request-top">
+                <div>
+                    <div class="request-title">${r.title}${r.submittal_no ? ' - ' + r.submittal_no : ''}</div>
+                    <span class="classification-line">${t.discipline}: ${r.discipline}${r.activity ? ` &nbsp;›&nbsp; ${t.activity}: ${r.activity}` : ''}</span>
+                    <div class="request-meta">
+                        ${t.contractorName}: ${r.contractor_username || '-'} &nbsp;|&nbsp;
+                        ${t.fileLabel}: ${r.file_name || '-'} &nbsp;|&nbsp;
+                        ${t.requestedAt}: ${new Date(r.requested_at).toLocaleString(currentLang === 'ar' ? 'ar-EG' : 'en-US')}
+                    </div>
+                    ${r.notes ? `<div class="request-meta"><b>${t.notesLabel}:</b> ${r.notes}</div>` : ''}
+                    <div class="request-meta" style="margin-top:8px;">
+                        <b>${t.engineerOverride}:</b>
+                        <select id="eng-override-${r.id}" ${isPending ? '' : 'disabled'} style="padding:4px 8px; border-radius:6px; border:1px solid var(--border);">
+                            ${engineerOptions}
+                        </select>
+                    </div>
+                </div>
+                <span class="status-pill ${statusClass}">${contractorStatusLabel(r.status, t)}</span>
+            </div>
+            <div class="actions">
+                <button class="btn btn-review" onclick="reviewContractorRequest(${r.id})"><i class="fa-solid fa-eye"></i> ${t.review}</button>
+                ${isPending ? `
+                    <button class="btn btn-approve" onclick="approveContractorRequest(${r.id})"><i class="fa-solid fa-check"></i> ${t.approve}</button>
+                    <button class="btn btn-reject" onclick="rejectContractorRequest(${r.id})"><i class="fa-solid fa-xmark"></i> ${t.reject}</button>
+                ` : ''}
+            </div>
+        </div>
+        `;
+    }).join('');
+}
+
+async function reviewContractorRequest(id) {
+    let req = contractorRequests.find(r => r.id === id);
+    if (!req) return;
+    let t = dictionary[currentLang];
+
+    document.getElementById('reviewModalTitle').textContent = `${t.reviewModalTitle}: ${req.file_name || ''}`;
+
+    let displayLink = await resolveFileLinkForDisplay(req.file_link);
+    let embedSrc = getReviewEmbedSrc(req.file_name, displayLink);
+    let bodyEl = document.getElementById('reviewModalBody');
+
+    if (embedSrc) {
+        bodyEl.innerHTML = `<iframe src="${embedSrc}"></iframe>`;
+    } else {
+        bodyEl.innerHTML = `
+            <div class="review-fallback">
+                <div style="font-size:40px; margin-bottom:10px;">📄</div>
+                <div>${t.reviewNoPreview}</div>
+            </div>
+        `;
+    }
+
+    document.getElementById('reviewModalFooter').innerHTML = `
+        <a class="btn btn-view" href="${displayLink}" target="_blank"><i class="fa-solid fa-up-right-from-square"></i> ${t.reviewOpenInNewTab}</a>
+        <button class="btn" style="background:#e2e8f0; color:var(--text-main);" onclick="closeReviewModal()">${t.reviewClose}</button>
+    `;
+
+    document.getElementById('reviewOverlay').classList.add('active');
+}
+
+async function approveContractorRequest(id) {
+    let req = contractorRequests.find(r => r.id === id);
+    if (!req) return;
+    let t = dictionary[currentLang];
+
+    if (!confirm(t.confirmApproveContractor)) return;
+
+    let overrideSelect = document.getElementById(`eng-override-${id}`);
+    let chosenEngineerId = overrideSelect ? overrideSelect.value : req.engineer_id;
+    let chosenEngineer = contractorEngineers.find(e => e.id === chosenEngineerId);
+
+    const { error } = await supabaseClient
+        .from('contractor_requests')
+        .update({
+            status: 'pending_engineer',
+            engineer_id: chosenEngineerId,
+            engineer_username: chosenEngineer ? chosenEngineer.username : req.engineer_username,
+            admin_reviewed_at: new Date().toISOString(),
+            admin_reviewed_by: window.currentUsername || null
+        })
+        .eq('id', id);
+
+    if (error) {
+        console.error(error);
+        alert(t.errApproveContractor);
+        return;
+    }
+
+    closeReviewModal();
+    loadContractorRequests();
+}
+
+async function rejectContractorRequest(id) {
+    let t = dictionary[currentLang];
+    if (!confirm(t.confirmRejectContractor)) return;
+
+    const { error } = await supabaseClient
+        .from('contractor_requests')
+        .update({
+            status: 'rejected_admin',
+            admin_reviewed_at: new Date().toISOString(),
+            admin_reviewed_by: window.currentUsername || null
+        })
+        .eq('id', id);
+
+    if (error) {
+        console.error(error);
+        alert(t.errRejectContractor);
+        return;
+    }
+
+    closeReviewModal();
+    loadContractorRequests();
+}
+
 loadRequests();
+loadContractorEngineers().then(loadContractorRequests);
 </script>
 </body>
 </html>

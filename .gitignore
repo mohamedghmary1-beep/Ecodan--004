@@ -1,0 +1,7 @@
+# لا ترفع أي بيانات اعتماد حقيقية (إيميلات / باسوردات) على GitHub أبدًا
+local-secrets/*.json
+!local-secrets/*.example
+
+# متغيرات البيئة المحلية
+.env
+.env.local

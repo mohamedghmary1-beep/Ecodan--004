@@ -265,6 +265,39 @@
             color: #f8fafc;
             margin-bottom: 6px;
         }
+
+        .login-tabs {
+            display: flex;
+            gap: 6px;
+            background: #f1f5f9;
+            padding: 4px;
+            border-radius: 10px;
+            margin-bottom: 26px;
+        }
+        .login-tab {
+            flex: 1;
+            text-align: center;
+            padding: 10px 8px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-muted);
+            cursor: pointer;
+            border: none;
+            background: transparent;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            transition: all 0.15s;
+        }
+        .login-tab.active {
+            background: #fff;
+            color: var(--primary);
+            box-shadow: var(--shadow-sm);
+        }
+        .login-panel { display: none; }
+        .login-panel.active { display: block; }
     </style>
 </head>
 <body>
@@ -292,30 +325,75 @@
     <div class="login-card">
         <h2 id="login-title">Account Login</h2>
         <div class="subtitle" id="login-subtitle">Enter your credentials to access the portal</div>
-        
+
+        <div class="login-tabs">
+            <button type="button" class="login-tab active" id="tab-btn-employee" onclick="switchLoginTab('employee')">
+                <i class="fa-solid fa-user-tie"></i> <span id="tab-label-employee">Employee Login</span>
+            </button>
+            <button type="button" class="login-tab" id="tab-btn-company" onclick="switchLoginTab('company')">
+                <i class="fa-solid fa-building"></i> <span id="tab-label-company">Company Login</span>
+            </button>
+        </div>
+
         <div id="message-id" class="message-box"></div>
 
-        <form id="login-form" onsubmit="handleLogin(event)">
-            <div class="form-group">
-                <label id="lbl-username">Username</label>
-                <div class="input-wrapper">
-                    <i class="fa-solid fa-user"></i>
-                    <input type="email" id="username" required autocomplete="email">
+        <!-- Employee login panel -->
+        <div class="login-panel active" id="panel-employee">
+            <form id="login-form" onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <label id="lbl-username">Email</label>
+                    <div class="input-wrapper">
+                        <i class="fa-solid fa-user"></i>
+                        <input type="email" id="username" required autocomplete="email">
+                    </div>
                 </div>
-            </div>
-            
-            <div class="form-group">
-                <label id="lbl-password">Password</label>
-                <div class="input-wrapper">
-                    <i class="fa-solid fa-lock"></i>
-                    <input type="password" id="password" required autocomplete="current-password">
-                </div>
-            </div>
 
-            <button type="submit" class="btn-submit" id="btn-submit">
-                <span id="btn-inner">Login</span>
-            </button>
-        </form>
+                <div class="form-group">
+                    <label id="lbl-password">Password</label>
+                    <div class="input-wrapper">
+                        <i class="fa-solid fa-lock"></i>
+                        <input type="password" id="password" required autocomplete="current-password">
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-submit" id="btn-submit">
+                    <span id="btn-inner">Login</span>
+                </button>
+            </form>
+        </div>
+
+        <!-- Company / contractor login panel -->
+        <div class="login-panel" id="panel-company">
+            <form id="company-login-form" onsubmit="handleCompanyLogin(event)">
+                <div class="form-group">
+                    <label id="lbl-company-name">Company Name</label>
+                    <div class="input-wrapper">
+                        <i class="fa-solid fa-building"></i>
+                        <input type="text" id="company-name" required autocomplete="organization">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label id="lbl-company-username">Email</label>
+                    <div class="input-wrapper">
+                        <i class="fa-solid fa-user"></i>
+                        <input type="email" id="company-username" required autocomplete="email">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label id="lbl-company-password">Password</label>
+                    <div class="input-wrapper">
+                        <i class="fa-solid fa-lock"></i>
+                        <input type="password" id="company-password" required autocomplete="current-password">
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-submit" id="company-btn-submit">
+                    <span id="company-btn-inner">Login</span>
+                </button>
+            </form>
+        </div>
     </div>
 </div>
 
@@ -341,12 +419,18 @@
             langText: "العربية",
             loginTitle: "Account Login",
             loginSubtitle: "Enter your credentials to access the portal",
+            tabEmployee: "Employee Login",
+            tabCompany: "Company Login",
             lblUsername: "Email",
             lblPassword: "Password",
+            lblCompanyName: "Company Name",
+            lblCompanyUsername: "Email",
+            lblCompanyPassword: "Password",
             btnInner: "Login",
             btnLoading: "Verifying...",
             errFail: "Invalid email or password.",
             errConn: "Connection error. Please try again later.",
+            errCompanyMismatch: "This company name doesn't match this account.",
             succOk: "Login successful! Redirecting...",
             footerProj: "Administrative Offices Project in Aspark"
         },
@@ -356,16 +440,33 @@
             langText: "English",
             loginTitle: "تسجيل الدخول",
             loginSubtitle: "أدخل بيانات حسابك للوصول إلى البوابة الإلكترونية",
+            tabEmployee: "تسجيل دخول موظف",
+            tabCompany: "تسجيل دخول شركة",
             lblUsername: "البريد الإلكتروني",
             lblPassword: "كلمة المرور",
+            lblCompanyName: "اسم الشركة",
+            lblCompanyUsername: "البريد الإلكتروني",
+            lblCompanyPassword: "كلمة المرور",
             btnInner: "تسجيل الدخول",
             btnLoading: "جاري التحقق...",
             errFail: "البريد الإلكتروني أو كلمة المرور غير صحيحة.",
             errConn: "خطأ في الاتصال بالنظام. حاول مرة أخرى لاحقاً.",
+            errCompanyMismatch: "اسم الشركة اللي كتبته مش متطابق مع هذا الحساب.",
             succOk: "تم تسجيل الدخول بنجاح! جاري التوجيه...",
             footerProj: "مشروع المكاتب الإدارية في أسبارك"
         }
     };
+
+    let activeLoginTab = 'employee';
+    function switchLoginTab(tab) {
+        activeLoginTab = tab;
+        document.getElementById('tab-btn-employee').classList.toggle('active', tab === 'employee');
+        document.getElementById('tab-btn-company').classList.toggle('active', tab === 'company');
+        document.getElementById('panel-employee').classList.toggle('active', tab === 'employee');
+        document.getElementById('panel-company').classList.toggle('active', tab === 'company');
+        const msgBox = document.getElementById('message-id');
+        msgBox.className = "message-box";
+    }
 
     // اللغة الحالية دلوقتي بتتحفظ وتتشارك بين كل صفحات البوابة عن طريق lang.js
     // toggleLanguage() بقت متعرّفة جوه lang.js (window.toggleLanguage)، مفيش داعي نعرّفها هنا تاني
@@ -379,9 +480,15 @@
         document.getElementById('lang-text').innerText = t.langText;
         document.getElementById('login-title').innerText = t.loginTitle;
         document.getElementById('login-subtitle').innerText = t.loginSubtitle;
+        document.getElementById('tab-label-employee').innerText = t.tabEmployee;
+        document.getElementById('tab-label-company').innerText = t.tabCompany;
         document.getElementById('lbl-username').innerText = t.lblUsername;
         document.getElementById('lbl-password').innerText = t.lblPassword;
+        document.getElementById('lbl-company-name').innerText = t.lblCompanyName;
+        document.getElementById('lbl-company-username').innerText = t.lblCompanyUsername;
+        document.getElementById('lbl-company-password').innerText = t.lblCompanyPassword;
         document.getElementById('btn-inner').innerText = t.btnInner;
+        document.getElementById('company-btn-inner').innerText = t.btnInner;
         document.getElementById('footer-proj').innerText = t.footerProj;
         
         document.getElementById('message-id').className = "message-box";
@@ -389,30 +496,21 @@
 
     // lang.js بيستدعي applyLanguage() تلقائيًا بمجرد ما الصفحة تحمّل، باستخدام آخر لغة محفوظة
 
-    async function handleLogin(event) {
-        event.preventDefault();
-        
-        const userInp = document.getElementById('username').value.trim();
-        const passInp = document.getElementById('password').value.trim();
-        const msgBox = document.getElementById('message-id');
-        const btnSubmit = document.getElementById('btn-submit');
-        const btnInner = document.getElementById('btn-inner');
-        const t = translations[window.getCurrentLang()];
-
+    // منطق تسجيل الدخول المشترك بين تاب "موظف" وتاب "شركة" - الاتنين
+    // بيستخدموا Supabase Auth الحقيقي بالإيميل والباسورد (وليس مقارنة نصّية
+    // يدوية). لو كان الدخول من تاب الشركة، بنتأكد كمان إن اسم الشركة اللي
+    // اتكتب مطابق لعمود company_name المحفوظ على البروفايل (لو الأدمن كان
+    // حاططه) - ده مجرد تأكيد إضافي إن الحساب المشترك ده فعلاً بتاع الشركة
+    // دي، مش بديل عن الإيميل والباسورد.
+    async function performLogin({ email, password, companyNameTyped, msgBox, btnSubmit, btnInner, t }) {
         msgBox.className = "message-box";
         btnInner.innerText = t.btnLoading;
         btnSubmit.disabled = true;
 
-        // تسجيل الدخول عن طريق Supabase Auth الحقيقي (وليس مقارنة كلمة مرور
-        // نصّية بيدنا في المتصفح). خانة الدخول بقت بتاخد الإيميل الحقيقي
-        // للمستخدم مباشرة، وده لازم يتطابق مع الإيميل المسجّل فعليًا في
-        // Supabase Auth (راجع update_real_emails.mjs لتحديث الحسابات
-        // القديمة اللي كانت بإيميل وهمي @ecodan-portal.local).
-        const email = userInp.trim().toLowerCase();
         try {
             const { data: authData, error: authError } = await supabaseClient.auth.signInWithPassword({
-                email: email,
-                password: passInp
+                email: email.trim().toLowerCase(),
+                password: password
             });
 
             if (authError || !authData || !authData.user) {
@@ -426,7 +524,7 @@
             // ملف الصلاحيات (profiles) بيتحمي بـ RLS: كل مستخدم يقدر يقرا صفّه بس.
             const { data: profile, error: profileError } = await supabaseClient
                 .from('profiles')
-                .select('username')
+                .select('username, permissions, company_name')
                 .eq('id', authData.user.id)
                 .single();
 
@@ -440,12 +538,31 @@
                 return;
             }
 
+            // تحقق اسم الشركة (تاب الشركة فقط) - لو company_name متسجل على
+            // الحساب ومختلف عن اللي اتكتب، نرفض الدخول ونعمل logout فورًا.
+            if (companyNameTyped !== undefined) {
+                const savedCompany = (profile.company_name || '').trim().toLowerCase();
+                const typedCompany = (companyNameTyped || '').trim().toLowerCase();
+                if (savedCompany && savedCompany !== typedCompany) {
+                    msgBox.innerText = t.errCompanyMismatch;
+                    msgBox.className = "message-box error";
+                    btnInner.innerText = t.btnInner;
+                    btnSubmit.disabled = false;
+                    await supabaseClient.auth.signOut();
+                    return;
+                }
+            }
+
             msgBox.innerText = t.succOk;
             msgBox.className = "message-box success";
             // ملحوظة أمنية: مفيش حاجة بتتخزن يدويًا في localStorage تاني -
             // Supabase Auth بيحتفظ بجلسة موقّعة (JWT) بنفسه، وباقي الصفحات
             // بتعيد التحقق من الصلاحيات من السيرفر في كل مرة (auth-guard.js).
-            setTimeout(() => { window.location.href = "home.html"; }, 1000);
+            // حساب الشركة/المقاول ليه صفحة واحدة بس (رفع الريكوستات ومتابعتها)،
+            // فيروح عليها على طول بدل صفحة الداشبورد العادية.
+            const rawPerm = (profile.permissions || '').trim().toLowerCase();
+            const landingPage = (rawPerm === 'contractor') ? 'contractor-submit.html' : 'home.html';
+            setTimeout(() => { window.location.href = landingPage; }, 1000);
         } catch (err) {
             console.error("Login Error:", err);
             msgBox.innerText = t.errConn;
@@ -453,6 +570,34 @@
             btnInner.innerText = t.btnInner;
             btnSubmit.disabled = false;
         }
+    }
+
+    async function handleLogin(event) {
+        event.preventDefault();
+        const t = translations[window.getCurrentLang()];
+        await performLogin({
+            email: document.getElementById('username').value,
+            password: document.getElementById('password').value.trim(),
+            companyNameTyped: undefined, // مفيش تحقق اسم شركة في تاب الموظف
+            msgBox: document.getElementById('message-id'),
+            btnSubmit: document.getElementById('btn-submit'),
+            btnInner: document.getElementById('btn-inner'),
+            t: t
+        });
+    }
+
+    async function handleCompanyLogin(event) {
+        event.preventDefault();
+        const t = translations[window.getCurrentLang()];
+        await performLogin({
+            email: document.getElementById('company-username').value,
+            password: document.getElementById('company-password').value.trim(),
+            companyNameTyped: document.getElementById('company-name').value,
+            msgBox: document.getElementById('message-id'),
+            btnSubmit: document.getElementById('company-btn-submit'),
+            btnInner: document.getElementById('company-btn-inner'),
+            t: t
+        });
     }
 
 </script>

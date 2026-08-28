@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>الموافقة النهائية - MDECO</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <script>
+      document.write('<script src="./cache-buster.js?v=' + Date.now() + '"><' + '/script>');
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+      document.write('<script src="./auth-guard.js?v=' + Date.now() + '"><' + '/script>');
+      document.write('<script src="./lang.js?v=' + Date.now() + '"><' + '/script>');
+    </script>
+    <style>
+        :root {
+            --primary: #1e40af;
+            --primary-hover: #1d4ed8;
+            --bg-main: #f8fafc;
+            --bg-card: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+        }
+        body { margin: 0; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--bg-main); color: var(--text-main); direction: rtl; }
+        .header { background: var(--primary); color: #fff; padding: 18px 24px; display:flex; align-items:center; justify-content:center; gap:12px; font-size:22px; font-weight:700; box-shadow:0 2px 4px rgba(0,0,0,0.1); }
+        .nav-container { display:flex; justify-content:center; flex-wrap:wrap; gap:16px; background:var(--bg-card); padding:14px; box-shadow:0 1px 3px rgba(0,0,0,0.05); border-bottom:1px solid var(--border); }
+        .nav-btn { display:inline-flex; align-items:center; gap:8px; padding:10px 20px; color:var(--text-muted); text-decoration:none; font-weight:600; font-size:15px; border-radius:8px; transition:all .2s ease; position:relative; }
+        .nav-badge { position:absolute; top:-6px; right:-6px; background:#ef4444; color:#fff; font-size:11px; font-weight:700; min-width:18px; height:18px; border-radius:999px; display:none; align-items:center; justify-content:center; padding:0 4px; line-height:1; }
+        .nav-btn:hover { background:#eff6ff; color:var(--primary); }
+        .nav-btn.active { background:var(--primary); color:#fff; box-shadow:0 2px 8px -2px rgba(30,64,175,0.45); }
+        .translate-btn { background:#eff6ff; color:var(--primary); border:none; cursor:pointer; font-family:inherit; }
+        .nav-btn.logout-btn { margin-inline-start:auto; background:rgba(239,68,68,0.12); color:#ef4444; }
+        .nav-btn.logout-btn:hover { background:rgba(239,68,68,0.22); }
+
+        .container { max-width: 900px; margin: 0 auto; padding: 24px; }
+
+        .req-card { background: var(--bg-card); border-radius: 12px; padding: 18px 20px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border-right: 5px solid var(--warning); }
+        .req-top { display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:8px; }
+        .req-title { font-weight:700; font-size:16px; }
+        .req-meta { font-size:13px; color:var(--text-muted); margin-top:4px; line-height:1.9; }
+        .code-pill { display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; border-radius:6px; background:var(--primary); color:#fff; font-weight:800; font-size:13px; }
+
+        .btn { padding:8px 16px; border-radius:6px; border:none; cursor:pointer; font-weight:600; font-size:13px; text-decoration:none; display:inline-flex; align-items:center; gap:6px; }
+        .btn-view { background:#6366f1; color:#fff; }
+        .btn-approve { background: var(--success); color:#fff; }
+        .btn-reject { background: var(--danger); color:#fff; }
+
+        .actions-row { display:flex; justify-content:flex-end; gap:8px; margin-top:14px; }
+
+        .empty-state { text-align:center; color:var(--text-muted); padding:40px 0; }
+
+        .review-overlay { display:none; position:fixed; inset:0; background:rgba(15,23,42,0.55); z-index:1000; align-items:center; justify-content:center; padding:20px; }
+        .review-overlay.active { display:flex; }
+        .review-modal { background:#fff; border-radius:12px; width:100%; max-width:820px; max-height:90vh; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 20px 40px rgba(0,0,0,0.25); }
+        .review-modal-header { display:flex; align-items:center; justify-content:space-between; padding:14px 18px; border-bottom:1px solid var(--border); }
+        .review-modal-close { background:#f1f5f9; border:none; border-radius:6px; width:30px; height:30px; cursor:pointer; font-size:15px; color:var(--text-muted); }
+        .review-modal-body { flex:1; overflow:auto; padding:0; background:#f1f5f9; min-height:300px; display:flex; align-items:center; justify-content:center; }
+        .review-modal-body iframe { width:100%; height:70vh; border:none; background:#fff; }
+        .review-fallback { text-align:center; padding:40px 20px; color:var(--text-muted); }
+        .review-modal-footer { padding:12px 18px; border-top:1px solid var(--border); display:flex; justify-content:flex-end; gap:8px; }
+
+        .lock-overlay { display:none; position:fixed; inset:0; background:rgba(15,23,42,0.55); align-items:center; justify-content:center; z-index:9999; }
+        .lock-overlay.active { display:flex; }
+        .lock-modal { background:#fff; padding:26px; border-radius:14px; max-width:340px; width:90%; text-align:center; }
+        .spinner { width:34px; height:34px; border:4px solid #eff6ff; border-top-color:var(--primary); border-radius:50%; margin:0 auto 14px; animation:spin .8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <i class="fa-solid fa-stamp"></i> <span data-i18n="pageTitle">الموافقة النهائية على الريكوستات</span>
+</div>
+
+<div class="nav-container">
+    <a href="home.html" class="nav-btn"><i class="fa-solid fa-house"></i> <span data-i18n="navHome">الرئيسية</span></a>
+    <a href="task-list.html" class="nav-btn"><i class="fa-solid fa-list-check"></i> <span data-i18n="navTasks">المهام</span></a>
+    <a href="approvals.html" class="nav-btn">
+        <i class="fa-solid fa-clipboard-check"></i> <span data-i18n="navApprovals">طلبات الموافقة</span>
+        <span id="pendingNavBadge" class="nav-badge">0</span>
+    </a>
+    <a href="final-approval.html" class="nav-btn active">
+        <i class="fa-solid fa-stamp"></i> <span data-i18n="navFinalApproval">الموافقة النهائية</span>
+        <span id="finalNavBadge" class="nav-badge">0</span>
+    </a>
+    <button onclick="toggleLanguage()" class="nav-btn translate-btn">
+        <i class="fa-solid fa-language"></i> <span id="lang-btn-text">English</span>
+    </button>
+    <button onclick="logout()" class="nav-btn logout-btn" title="Logout">
+        <i class="fa-solid fa-right-from-bracket"></i> <span data-i18n="navLogout">تسجيل الخروج</span>
+    </button>
+</div>
+
+<div class="container">
+    <div id="listWrap">
+        <div class="empty-state" id="loadingState">جاري التحميل...</div>
+    </div>
+</div>
+
+<div class="review-overlay" id="reviewOverlay">
+    <div class="review-modal">
+        <div class="review-modal-header">
+            <div id="reviewModalTitle" style="font-weight:700;"></div>
+            <button class="review-modal-close" onclick="closeReviewModal()">&times;</button>
+        </div>
+        <div class="review-modal-body" id="reviewModalBody"></div>
+        <div class="review-modal-footer" id="reviewModalFooter"></div>
+    </div>
+</div>
+
+<div class="lock-overlay" id="lockOverlay">
+    <div class="lock-modal">
+        <div class="spinner"></div>
+        <div id="lockMsg" style="font-weight:700;"></div>
+    </div>
+</div>
+
+<script>
+const SUPABASE_URL = "https://uhhtvpxtpayovbtmnstz.supabase.co";
+const SUPABASE_KEY = "sb_publishable_QsS0UhLBORy6mOaBDgW62g_9OacC3oO";
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const ATTACHMENTS_BUCKET = "task-attachments";
+const GOOGLE_SCRIPT_UPLOAD_URL = "https://script.google.com/macros/s/AKfycbxP9S7qbgK888SHhCejIGZUx-wXN7pFtJ0OHbFvAUV9ARbtfxtI1_KwUNaU3c-LTubKnw/exec";
+
+window.registerDictionary({
+    ar: { pageTitle: "الموافقة النهائية على الريكوستات" },
+    en: { pageTitle: "Final Request Approval" }
+});
+
+const CODE_LABELS = { A: 'Approved', B: 'Approved as Noted', C: 'Revise & Resubmit', D: 'Rejected' };
+
+let requests = [];
+
+async function loadRequests() {
+    document.getElementById('loadingState').textContent = 'جاري التحميل...';
+    const { data, error } = await supabaseClient
+        .from('contractor_requests')
+        .select('*')
+        .eq('status', 'pending_final_admin')
+        .order('engineer_reviewed_at', { ascending: true });
+
+    if (error) {
+        console.error('loadRequests error:', error);
+        document.getElementById('loadingState').textContent = 'حصل خطأ أثناء تحميل الريكوستات.';
+        return;
+    }
+    requests = data || [];
+    render();
+}
+
+function render() {
+    let wrap = document.getElementById('listWrap');
+    let badge = document.getElementById('finalNavBadge');
+    badge.textContent = requests.length;
+    badge.style.display = requests.length > 0 ? 'flex' : 'none';
+
+    if (requests.length === 0) {
+        wrap.innerHTML = `<div class="empty-state">مفيش ريكوستات محتاجة موافقتك النهائية دلوقتي.</div>`;
+        return;
+    }
+
+    wrap.innerHTML = requests.map(r => `
+        <div class="req-card">
+            <div class="req-top">
+                <div>
+                    <div class="req-title">${r.title}${r.submittal_no ? ' - ' + r.submittal_no : ''}</div>
+                    <div class="req-meta">
+                        القسم: ${r.discipline} &nbsp;|&nbsp; المهندس: ${r.engineer_username || '-'} &nbsp;|&nbsp; المقاول: ${r.contractor_name || r.contractor_username || '-'}<br>
+                        تاريخ إرسال المهندس: ${r.engineer_reviewed_at ? new Date(r.engineer_reviewed_at).toLocaleString() : '-'}<br>
+                        الكود: <span class="code-pill">${r.code || '-'}</span> ${CODE_LABELS[r.code] || ''}
+                        ${r.engineer_comment ? `<br>تعليق المهندس: ${r.engineer_comment}` : ''}
+                    </div>
+                </div>
+            </div>
+            <div class="actions-row">
+                <button class="btn btn-view" onclick="reviewRequest(${r.id})">
+                    <i class="fa-solid fa-eye"></i> معاينة الملف
+                </button>
+                <button class="btn btn-reject" onclick="rejectRequest(${r.id})">
+                    <i class="fa-solid fa-xmark"></i> رفض ورجّعه للمهندس
+                </button>
+                <button class="btn btn-approve" onclick="approveRequest(${r.id})">
+                    <i class="fa-solid fa-check-double"></i> اعتماد نهائي وإرسال لجوجل درايف
+                </button>
+            </div>
+        </div>
+    `).join('');
+}
+
+// ============================================
+// معاينة الملف النهائي (اللي المهندس كتب عليه)
+// ============================================
+async function resolveFileLinkForDisplay(fileLink) {
+    if (!fileLink || fileLink.indexOf('drive.google.com') !== -1) return fileLink;
+    return await window.getAttachmentSignedUrl(fileLink, ATTACHMENTS_BUCKET, 3600);
+}
+
+async function reviewRequest(id) {
+    let req = requests.find(r => r.id === id);
+    if (!req) return;
+
+    let fileLink = req.final_file_link || req.file_link;
+    document.getElementById('reviewModalTitle').textContent = `معاينة: ${req.title || ''}`;
+    let displayLink = await resolveFileLinkForDisplay(fileLink);
+    let bodyEl = document.getElementById('reviewModalBody');
+
+    if (displayLink) {
+        bodyEl.innerHTML = `<iframe src="${displayLink}"></iframe>`;
+    } else {
+        bodyEl.innerHTML = `<div class="review-fallback">مفيش نسخة متاحة للمعاينة.</div>`;
+    }
+
+    document.getElementById('reviewModalFooter').innerHTML = `
+        <a class="btn btn-view" href="${displayLink}" target="_blank"><i class="fa-solid fa-up-right-from-square"></i> فتح في تاب جديد</a>
+        <button class="btn" style="background:#e2e8f0; color:var(--text-main);" onclick="closeReviewModal()">إغلاق</button>
+    `;
+
+    document.getElementById('reviewOverlay').classList.add('active');
+}
+
+function closeReviewModal() {
+    document.getElementById('reviewOverlay').classList.remove('active');
+    document.getElementById('reviewModalBody').innerHTML = '';
+}
+
+function openLock(msg) {
+    document.getElementById('lockMsg').textContent = msg;
+    document.getElementById('lockOverlay').classList.add('active');
+}
+function closeLock() {
+    document.getElementById('lockOverlay').classList.remove('active');
+}
+
+function extractStoragePath(publicUrl) {
+    let marker = `/storage/v1/object/public/${ATTACHMENTS_BUCKET}/`;
+    let idx = (publicUrl || "").indexOf(marker);
+    if (idx === -1) return publicUrl; // already a bare storage path
+    return decodeURIComponent(publicUrl.substring(idx + marker.length));
+}
+
+async function deleteFromAttachmentsStorage(fileLink) {
+    let path = extractStoragePath(fileLink);
+    if (!path) return;
+    try {
+        await supabaseClient.storage.from(ATTACHMENTS_BUCKET).remove([path]);
+    } catch (e) {
+        console.warn('Could not clean up storage file:', e);
+    }
+}
+
+function blobToBase64(blob) {
+    return new Promise((resolve, reject) => {
+        let reader = new FileReader();
+        reader.onload = () => resolve(reader.result.split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+    });
+}
+
+// ============================================
+// اعتماد نهائي: بيعمل insert في submittals + يرفع النسخة اللي المهندس
+// كتب عليها بالظبط (final_file_link) على جوجل درايف - من غير أي تعديل
+// تاني على الملف، لأنه خلاص جاهز.
+// ============================================
+// ============================================
+// اعتماد نهائي: جدول submittals عندك "عريض" - مش صف لكل مراجعة، لكل صف
+// submittal فيه أعمدة المراجعة الأساسية (submitted_on/received_on/code/
+// duration/link) وبعدين _1/_2/_3 لكل مراجعة تالية بنفس رقم الـ "no".
+// فلو رقم السبمتال ده موجود بالفعل، بنملى أول عمود مراجعة فاضي بدل ما
+// نعمل صف مكرر؛ ولو مش موجود، بنعمل صف جديد بالمراجعة الأساسية.
+// ============================================
+const REVISION_SLOTS = ['', '_1', '_2', '_3'];
+
+function slotLabel(slot) {
+    return 'R0' + (slot === '' ? '0' : slot.replace('_', ''));
+}
+
+async function approveRequest(id) {
+    let req = requests.find(r => r.id === id);
+    if (!req) return;
+    if (!confirm('تأكيد الاعتماد النهائي وإرسال الملف على جوجل درايف؟')) return;
+
+    openLock('جاري الاعتماد...');
+    try {
+        let today = new Date().toISOString().slice(0, 10);
+        let newSubmittalId, linkColumn;
+
+        let existing = null;
+        if (req.submittal_no) {
+            const { data: existingRows, error: findError } = await supabaseClient
+                .from('submittals')
+                .select('*')
+                .eq('no', req.submittal_no)
+                .limit(1);
+            if (findError) throw findError;
+            existing = (existingRows && existingRows[0]) ? existingRows[0] : null;
+        }
+
+        if (existing) {
+            let freeSlot = REVISION_SLOTS.find(slot => !existing['submitted_on' + slot]);
+            if (freeSlot === undefined) {
+                // كل مراجعات الصف ده (R00 لـ R03) اتملوا بالفعل - نعمل صف
+                // جديد منفصل بدل ما نضيع بيانات المراجعة الجديدة دي.
+                const { data: inserted, error: insErr } = await supabaseClient
+                    .from('submittals')
+                    .insert({
+                        no: req.submittal_no, title: req.title, discipline: req.discipline,
+                        activity: req.activity || null, rev: 'R00',
+                        action_by: req.engineer_username || null,
+                        submitted_on: today, received_on: today, code: req.code
+                    }).select();
+                if (insErr) throw insErr;
+                newSubmittalId = inserted[0].id;
+                linkColumn = 'link';
+            } else {
+                let payload = { rev: slotLabel(freeSlot) };
+                payload['submitted_on' + freeSlot] = today;
+                payload['received_on' + freeSlot] = today;
+                payload['code' + freeSlot] = req.code;
+                const { error: updErr } = await supabaseClient
+                    .from('submittals')
+                    .update(payload)
+                    .eq('id', existing.id);
+                if (updErr) throw updErr;
+                newSubmittalId = existing.id;
+                linkColumn = 'link' + freeSlot;
+            }
+        } else {
+            const { data: inserted, error: insErr } = await supabaseClient
+                .from('submittals')
+                .insert({
+                    no: req.submittal_no || null, title: req.title, discipline: req.discipline,
+                    activity: req.activity || null, rev: 'R00',
+                    action_by: req.engineer_username || null,
+                    submitted_on: today, received_on: today, code: req.code
+                }).select();
+            if (insErr) throw insErr;
+            newSubmittalId = inserted[0].id;
+            linkColumn = 'link';
+        }
+
+        const { error: updateError } = await supabaseClient
+            .from('contractor_requests')
+            .update({
+                status: 'completed',
+                created_submittal_id: newSubmittalId,
+                drive_status: 'pending',
+                admin_final_reviewed_by: window.currentUsername || null,
+                admin_final_reviewed_at: new Date().toISOString()
+            })
+            .eq('id', id);
+        if (updateError) throw updateError;
+
+        requests = requests.filter(r => r.id !== id);
+        render();
+        closeLock();
+
+        pushFinalFileToDriveInBackground(req, newSubmittalId, linkColumn, id);
+    } catch (err) {
+        console.error('approveRequest error:', err);
+        alert(err.message || 'حصل خطأ أثناء الاعتماد.');
+        closeLock();
+    }
+}
+
+async function pushFinalFileToDriveInBackground(req, newSubmittalId, linkColumn, requestId) {
+    try {
+        let fileLinkToUpload = req.final_file_link || req.file_link;
+        let fetchLink = await resolveFileLinkForDisplay(fileLinkToUpload);
+        let response = await fetch(fetchLink);
+        if (!response.ok) throw new Error('تعذر تحميل الملف النهائي من التخزين المؤقت.');
+        let blob = await response.blob();
+        let base64 = await blobToBase64(blob);
+
+        let uploadResponse = await fetch(GOOGLE_SCRIPT_UPLOAD_URL, {
+            method: "POST",
+            headers: { "Content-Type": "text/plain" },
+            body: JSON.stringify({
+                filename: req.file_name,
+                mimeType: blob.type || "application/pdf",
+                data: base64,
+                taskNo: req.submittal_no || req.title,
+                revName: "Original",
+                notify: false,
+                taskTitle: req.title,
+                employee: req.engineer_username,
+                discipline: req.discipline,
+                activity: req.activity
+            })
+        });
+        let result = await uploadResponse.json();
+        if (!result.url) throw new Error(result.error || 'فشل رفع الملف على جوجل درايف.');
+        let driveUrl = result.url;
+
+        const { error: submittalUpdateError } = await supabaseClient
+            .from('submittals')
+            .update({ [linkColumn]: driveUrl })
+            .eq('id', newSubmittalId);
+        if (submittalUpdateError) console.error('Could not update submittals link column:', submittalUpdateError);
+
+        const { error: reqUpdateError } = await supabaseClient
+            .from('contractor_requests')
+            .update({ file_link: driveUrl, drive_status: 'done' })
+            .eq('id', requestId);
+        if (reqUpdateError) console.error('Could not update contractor_requests.file_link:', reqUpdateError);
+
+        // تنظيف النسخ المؤقتة (الأصلية + النسخة اللي كتب عليها المهندس)
+        // بعد ما اتأكدنا إن النسخة النهائية وصلت درايف بنجاح.
+        deleteFromAttachmentsStorage(req.file_link);
+        if (req.final_file_link) deleteFromAttachmentsStorage(req.final_file_link);
+    } catch (err) {
+        console.error('Background Drive upload failed:', err);
+        await supabaseClient
+            .from('contractor_requests')
+            .update({ drive_status: 'failed' })
+            .eq('id', requestId);
+    }
+}
+
+// ============================================
+// رفض: يرجّع الريكوست للمهندس بحالة pending_engineer، مع ملاحظتك عشان
+// يعرف يعدّل ايه.
+// ============================================
+async function rejectRequest(id) {
+    let req = requests.find(r => r.id === id);
+    if (!req) return;
+
+    let note = prompt('اكتب سبب الرفض عشان يوصل للمهندس:');
+    if (note === null) return; // اتلغى
+    note = note.trim();
+    if (!note) { alert('لازم تكتب سبب الرفض.'); return; }
+
+    openLock('جاري الإرسال للمهندس...');
+    try {
+        const { error } = await supabaseClient
+            .from('contractor_requests')
+            .update({
+                status: 'pending_engineer',
+                admin_final_note: note,
+                final_file_link: null,
+                admin_final_reviewed_by: window.currentUsername || null,
+                admin_final_reviewed_at: new Date().toISOString()
+            })
+            .eq('id', id);
+        if (error) throw error;
+
+        requests = requests.filter(r => r.id !== id);
+        render();
+    } catch (err) {
+        console.error('rejectRequest error:', err);
+        alert(err.message || 'حصل خطأ أثناء الرفض.');
+    } finally {
+        closeLock();
+    }
+}
+
+document.addEventListener('authguard:ready', function () {
+    loadRequests();
+});
+window.loadFinalApprovalRequests = loadRequests; // lets lang.js's shared badge step aside on this page
+</script>
+
+</body>
+</html>
