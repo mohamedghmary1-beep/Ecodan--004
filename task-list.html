@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MDECO Submittals Dashboard</title>
+    <title>MDCEO Submittals Dashboard</title>
     <!-- منع أي كاش للصفحة نفسها (Browser cache) -->
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
@@ -15,7 +15,13 @@
       document.write('<script src="./cache-buster.js?v=' + Date.now() + '"><' + '/script>');
     </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;800;900&family=Tajawal:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+   <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+   <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
+   <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
 <script>
   // تحميل الملفات المهمة (auth-guard.js / lang.js) برقم إصدار مختلف
   // في كل مرة، عشان أي تحديث يترفع على GitHub يوصل فورًا للمستخدمين
@@ -37,58 +43,72 @@
             --danger: #ef4444;
             --shadow-sm: 0 1px 3px rgba(0,0,0,0.05);
             --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            --shadow-lg: 0 12px 28px -8px rgba(15, 23, 42, 0.16);
+            --radius-lg: 16px;
+            --radius-md: 12px;
+            --radius-sm: 8px;
         }
+
+        * { box-sizing: border-box; }
 
         body {
             margin: 0;
             font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
             background: var(--bg-main);
             color: var(--text-main);
-            box-sizing: border-box;
+            -webkit-font-smoothing: antialiased;
         }
 
-        *, *:before, *:after {
-            box-sizing: inherit;
-        }
-
+        /* ============================================
+           الهيدر
+           ============================================ */
         .header {
-            background: var(--primary);
+            background: linear-gradient(135deg, var(--primary), var(--primary-hover));
             color: #fff;
-            padding: 18px 24px;
+            padding: 20px 24px;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 12px;
-            font-size: 24px;
-            font-weight: 700;
-            letter-spacing: 0.5px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            font-size: 23px;
+            font-weight: 800;
+            letter-spacing: 0.3px;
+            box-shadow: 0 4px 14px -4px rgba(30, 64, 175, 0.45);
             text-align: center;
+            position: relative;
+            z-index: 2;
+            animation: header-fade-in 0.5s ease;
         }
+        .header i { font-size: 21px; opacity: 0.92; }
 
+        /* ============================================
+           الناف بار
+           ============================================ */
         .nav-container {
             display: flex;
             justify-content: center;
-            flex-wrap: wrap; /* للسماح للأزرار بالنزول لسطر جديد في الشاشات الصغيرة */
-            gap: 16px;
+            flex-wrap: wrap;
+            gap: 8px;
             background: var(--bg-card);
-            padding: 14px;
+            padding: 12px 16px;
             box-shadow: var(--shadow-sm);
             border-bottom: 1px solid var(--border);
+            animation: header-fade-in 0.6s ease;
         }
 
         .nav-btn {
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            padding: 10px 20px;
+            padding: 9px 16px;
             color: var(--text-muted);
             text-decoration: none;
             font-weight: 600;
-            font-size: 15px;
-            border-radius: 8px;
-            transition: all 0.2s ease;
+            font-size: 14px;
+            border-radius: 999px;
+            transition: background 0.18s ease, color 0.18s ease, transform 0.12s ease;
             position: relative;
+            border: 1px solid transparent;
         }
 
         .nav-badge {
@@ -107,6 +127,7 @@
             justify-content: center;
             padding: 0 4px;
             line-height: 1;
+            box-shadow: 0 0 0 2px #fff;
         }
 
         .nav-btn:hover {
@@ -117,78 +138,132 @@
         .nav-btn.active {
             background: var(--primary);
             color: #fff;
-            box-shadow: 0 2px 8px -2px rgba(30, 64, 175, 0.45);
+            box-shadow: 0 4px 12px -3px rgba(30, 64, 175, 0.5);
         }
 
-        .nav-btn:active {
-            transform: scale(0.96);
+        .nav-btn:active { transform: scale(0.96); }
+
+        .translate-btn {
+            background: var(--primary-light) !important;
+            color: var(--primary) !important;
+            border-color: var(--primary-light) !important;
         }
 
+        .nav-btn.logout-btn {
+            margin-inline-start: auto;
+            background: rgba(239, 68, 68, 0.1) !important;
+            color: #ef4444 !important;
+            border-color: rgba(239, 68, 68, 0.1) !important;
+        }
+        .nav-btn.logout-btn:hover { background: rgba(239, 68, 68, 0.2) !important; }
+
+        /* ============================================
+           هيرو الترحيب
+           ============================================ */
         .welcome-hero {
-            background: linear-gradient(135deg, #0f172a, #1e293b);
+            background:
+                radial-gradient(circle at 15% 20%, rgba(59,130,246,0.18), transparent 45%),
+                radial-gradient(circle at 85% 80%, rgba(59,130,246,0.12), transparent 45%),
+                linear-gradient(135deg, #0f172a, #1e293b);
             color: #ffffff;
             text-align: center;
-            padding: 35px 24px;
+            padding: 34px 24px;
             box-shadow: var(--shadow-md);
+            position: relative;
+            overflow: hidden;
         }
 
         .welcome-hero h1 {
-            margin: 0 0 8px 0;
-            font-size: 30px;
+            margin: 0 0 6px 0;
+            font-size: 28px;
             font-weight: 800;
+            letter-spacing: 0.2px;
         }
 
         .welcome-hero p {
             margin: 0;
-            font-size: 15px;
+            font-size: 14.5px;
             color: #94a3b8;
             font-weight: 400;
         }
 
+        /* ============================================
+           تخطيط الصفحة: سايدبار + محتوى
+           ============================================ */
         .container {
+            display: block;
+            height: auto;
+        }
+
+        .employee-toolbar {
             display: flex;
-            height: calc(100vh - 245px);
-            flex-direction: row;
+            align-items: center;
+            gap: 16px;
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border);
+            padding: 10px 22px;
+        }
+
+        .employee-toolbar-label {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            flex-shrink: 0;
+            font-size: 12px;
+            font-weight: 800;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .sidebar {
-            width: 300px;
-            background: var(--bg-card);
-            padding: 15px;
-            overflow-y: auto;
-            border-right: 1px solid var(--border);
-            box-shadow: 2px 0 8px rgba(0,0,0,0.02);
-            flex-shrink: 0;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            gap: 8px;
+            overflow-x: auto;
+            overflow-y: hidden;
+            padding: 4px 2px;
+            flex: 1;
+            scrollbar-width: thin;
         }
 
         .content {
-            flex: 1;
             padding: 24px;
-            overflow-y: auto;
             width: 100%;
+            box-sizing: border-box;
         }
 
+        /* ============================================
+           قائمة الموظفين — شريط أفقي (زي المواقع الكبيرة)
+           بدل عمود جانبي ثابت ياخد مساحة من الشاشة
+           ============================================ */
         .employee {
-            padding: 12px 16px;
-            margin: 8px 0;
+            padding: 8px 16px;
+            margin: 0;
             border: 1px solid var(--border);
-            border-radius: 8px;
+            border-radius: 999px;
             cursor: pointer;
-            transition: all 0.2s ease;
-            font-weight: 500;
-            display: flex;
+            transition: background 0.16s ease, border-color 0.16s ease, transform 0.12s ease;
+            font-weight: 600;
+            font-size: 13px;
+            display: inline-flex;
             align-items: center;
-            justify-content: space-between;
+            justify-content: center;
             gap: 8px;
+            position: relative;
+            white-space: nowrap;
+            flex-shrink: 0;
+            background: #f8fafc;
         }
 
         .emp-open-badge {
             background: #fef3c7;
             color: #b45309;
-            font-size: 12px;
+            font-size: 11.5px;
             font-weight: 700;
-            min-width: 22px;
-            height: 22px;
+            min-width: 20px;
+            height: 20px;
             border-radius: 999px;
             display: inline-flex;
             align-items: center;
@@ -198,48 +273,65 @@
         }
 
         .employee.active .emp-open-badge {
-            background: #dbeafe;
-            color: var(--primary);
+            background: rgba(255,255,255,0.25);
+            color: #fff;
         }
 
         .employee:hover {
-            background: #f1f5f9;
-            border-color: #cbd5e1;
-            transform: translateX(-3px);
-            box-shadow: 0 3px 10px -4px rgba(15, 23, 42, 0.18);
+            background: #eef2f7;
+            transform: translateY(-1px);
         }
 
         .employee.active {
-            background: #eff6ff;
-            border-color: #bfdbfe;
-            color: var(--primary);
+            background: var(--primary);
+            border-color: var(--primary);
+            color: #fff;
+            box-shadow: 0 4px 12px -3px rgba(30,64,175,0.5);
         }
 
+        /* ============================================
+           بطاقة أدوات التحكم (فلاتر + بحث + إحصائيات)
+           ============================================ */
         .card {
             background: var(--bg-card);
-            padding: 20px;
-            border-radius: 12px;
+            padding: 20px 22px;
+            border-radius: var(--radius-md);
             margin-bottom: 20px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border);
         }
 
         .card h2 {
             margin-top: 0;
-            margin-bottom: 15px;
-            font-size: 20px;
+            margin-bottom: 16px;
+            font-size: 19px;
+            font-weight: 800;
             color: var(--text-main);
         }
 
         .filter-group {
             display: flex;
-            gap: 8px;
-            margin-bottom: 15px;
+            gap: 6px;
+            margin-bottom: 16px;
             flex-wrap: wrap;
+            background: #f1f5f9;
+            padding: 4px;
+            border-radius: 999px;
+            width: fit-content;
         }
+
+        .filter-group button {
+            border-radius: 999px;
+            border: none;
+            background: transparent;
+            font-size: 13px;
+            padding: 7px 16px;
+        }
+        .filter-group button:hover { background: rgba(30, 64, 175, 0.08); }
 
         .stats-bar {
             display: flex;
-            gap: 10px;
+            gap: 8px;
             margin-bottom: 12px;
             flex-wrap: wrap;
         }
@@ -248,18 +340,16 @@
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            padding: 6px 14px;
+            padding: 7px 15px;
             border-radius: 999px;
-            font-size: 13px;
-            font-weight: 600;
+            font-size: 12.5px;
+            font-weight: 700;
             background: #f1f5f9;
             color: var(--text-main);
             border: 1px solid var(--border);
         }
 
-        .stat-pill b {
-            font-size: 14px;
-        }
+        .stat-pill b { font-size: 14px; }
 
         .stat-total { background: #eef2ff; color: #4338ca; border-color: #e0e7ff; }
         .stat-open { background: #fef9c3; color: #a16207; border-color: #fef08a; }
@@ -271,296 +361,300 @@
             color: var(--text-main);
             border: 1px solid var(--border);
             padding: 8px 16px;
-            border-radius: 6px;
+            border-radius: var(--radius-sm);
             cursor: pointer;
-            font-weight: 500;
-            transition: all 0.2s ease;
+            font-weight: 600;
+            font-size: 13.5px;
+            transition: background 0.16s ease, transform 0.1s ease;
         }
 
-        button:hover {
-            background: #e2e8f0;
-        }
+        button:hover { background: #e2e8f0; }
+        button:active { transform: scale(0.97); }
 
         button.active-filter {
-            background: var(--primary);
-            color: white;
-            border-color: var(--primary);
-        }
-
-        .translate-btn {
-            background: var(--primary-light) !important;
-            color: var(--primary) !important;
-            border-color: var(--primary-light) !important;
-        }
-
-        .nav-btn.logout-btn {
-            margin-inline-start: auto;
-            background: rgba(239, 68, 68, 0.12) !important;
-            color: #ef4444 !important;
-            border-color: rgba(239, 68, 68, 0.12) !important;
-        }
-        .nav-btn.logout-btn:hover {
-            background: rgba(239, 68, 68, 0.22) !important;
+            background: var(--primary) !important;
+            color: white !important;
+            border-color: var(--primary) !important;
+            box-shadow: 0 3px 10px -3px rgba(30, 64, 175, 0.5);
         }
 
         .search-input {
             width: 100%;
-            padding: 10px 14px;
+            padding: 11px 16px;
             border: 1px solid var(--border);
-            border-radius: 6px;
+            border-radius: 999px;
             font-size: 14px;
             outline: none;
-            transition: border-color 0.2s;
+            background: #f8fafc;
+            transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
         }
 
         .search-input:focus {
             border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+            background: #fff;
+            box-shadow: 0 0 0 4px rgba(30, 64, 175, 0.1);
         }
 
+        /* ============================================
+           كارت التاسك — الشكل الجديد
+           ============================================ */
         .task {
             background: var(--bg-card);
-            padding: 20px;
-            margin-bottom: 16px;
-            border-radius: 12px;
-            border-left: 5px solid var(--primary);
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            padding: 14px 16px;
+            margin-bottom: 12px;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border);
+            border-top: 3px solid var(--primary);
+            box-shadow: var(--shadow-sm);
             opacity: 0;
-            transform: translateY(14px);
-            animation: task-fade-in 0.45s ease forwards;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            transform: translateY(12px);
+            animation: task-fade-in 0.4s ease forwards;
+            transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
         }
 
         .task:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 20px -6px rgba(15, 23, 42, 0.15);
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
         }
 
         @keyframes task-fade-in {
-            from {
-                opacity: 0;
-                transform: translateY(14px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
+        .task-header-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 4px; }
+
         .task-activity {
-            font-size: 18px;
-            font-weight: 600;
+            font-size: 11.5px;
+            font-weight: 800;
             color: var(--primary);
-            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            background: var(--primary-light);
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 999px;
         }
 
         .title {
-            font-size: 15px;
+            font-size: 14.5px;
+            font-weight: 700;
             color: var(--text-main);
-            margin: 6px 0;
+            margin: 6px 0 6px;
             line-height: 1.4;
         }
 
-        .small {
-            font-size: 12px;
-            color: var(--text-muted);
-        }
+        .small { font-size: 12px; color: var(--text-muted); }
 
         .meta-tags {
             display: flex;
-            gap: 10px;
-            margin-top: 4px;
+            gap: 6px;
+            margin-top: 2px;
             margin-bottom: 8px;
-            flex-wrap: wrap; /* التفاف الكلمات في الشاشات الصغيرة */
+            flex-wrap: wrap;
         }
 
         .tag {
             font-size: 11px;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-weight: 600;
-            background: #e2e8f0;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-weight: 700;
+            background: #f1f5f9;
             color: #475569;
+            border: 1px solid var(--border);
         }
 
+        /* ============================================
+           كارت الريفيجن — الشكل الجديد
+           ============================================ */
         .revision-box {
-            margin-top: 12px;
-            padding: 12px;
+            margin-top: 8px;
+            padding: 10px 12px;
             background: #f8fafc;
             border: 1px solid var(--border);
-            border-radius: 8px;
+            border-radius: var(--radius-sm);
+            border-inline-start: 4px solid var(--border);
+            transition: border-color 0.2s ease;
         }
 
         .revision-box.is-pending {
             background: #fffbeb;
             border-color: #fde68a;
+            border-inline-start-color: #f59e0b;
         }
 
         .revision-header {
             display: flex;
             justify-content: space-between;
-            font-weight: 600;
-            font-size: 13px;
-            margin-bottom: 4px;
+            align-items: center;
+            font-weight: 700;
+            font-size: 13.5px;
+            margin-bottom: 6px;
         }
 
         .code-tag {
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-weight: bold;
+            padding: 4px 12px;
+            border-radius: 999px;
+            font-weight: 800;
+            font-size: 11.5px;
             white-space: nowrap;
+            letter-spacing: 0.2px;
         }
-        .code-success { background: #ecfdf5; color: #10b981; } 
-        .code-danger { background: #fef2f2; color: #ef4444; }  
-        .code-pending { background: #fffbeb; color: #b45309; } 
-        .code-open { background: #fef9c3; color: #a16207; }    
-        .code-review { background: #fef3c7; color: #b45309; }
+        .code-success { background: #d1fae5; color: #047857; }
+        .code-danger  { background: #fee2e2; color: #b91c1c; }
+        .code-pending { background: #fef3c7; color: #92400e; }
+        .code-open    { background: #fef9c3; color: #854d0e; }
+        .code-review  { background: #fef3c7; color: #92400e; }
 
         .status-container {
-            margin-top: 15px;
-            padding-top: 12px;
+            margin-top: 10px;
+            padding-top: 10px;
             border-top: 1px solid var(--border);
-            font-size: 14px;
+            font-size: 13.5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .status-badge {
             display: inline-block;
-            padding: 3px 8px;
-            border-radius: 4px;
-            font-weight: 600;
-            font-size: 12px;
+            padding: 4px 12px;
+            border-radius: 999px;
+            font-weight: 800;
+            font-size: 11px;
             text-transform: uppercase;
+            letter-spacing: 0.4px;
         }
 
-        .closed { background: #ecfdf5; color: var(--success); }
-        .open { background: #fef9c3; color: #a16207; } 
-        .delay { background: #fef2f2; color: var(--danger); }
+        .closed { background: #d1fae5; color: #047857; }
+        .open   { background: #fef9c3; color: #854d0e; }
+        .delay  { background: #fee2e2; color: #b91c1c; }
 
+        /* ============================================
+           أزرار الروابط داخل كارت الريفيجن
+           ============================================ */
         .link-btn {
-            display: inline-block;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
             margin-top: 8px;
-            padding: 6px 12px;
+            padding: 7px 14px;
             background: var(--primary);
             color: white;
-            border-radius: 6px;
+            border-radius: 999px;
             text-decoration: none;
             font-size: 12px;
-            font-weight: 500;
-            transition: background 0.2s;
-            margin-right: 5px;
+            font-weight: 700;
+            transition: background 0.18s ease, transform 0.12s ease;
+            margin-inline-end: 5px;
             border: none;
             cursor: pointer;
         }
 
-        .link-btn:hover {
-            background: var(--primary-hover);
-        }
-        
+        .link-btn:hover { background: var(--primary-hover); transform: translateY(-1px); }
+        .link-btn:active { transform: translateY(0); }
+
         .upload-btn { background: #22c55e; }
         .upload-btn:hover { background: #16a34a; }
         .view-btn { background: #6366f1; }
         .view-btn:hover { background: #4f46e5; }
         .pending-btn { background: #f59e0b; }
-        .danger-btn { background: var(--danger); margin-top:0; padding: 6px 10px; }
+        .danger-btn { background: var(--danger); margin-top: 0; padding: 7px 10px; }
         .danger-btn:hover { background: #dc2626; }
+
         .task-delete-btn {
             background: #fee2e2; color: var(--danger); border: 1px solid #fecaca;
-            border-radius: 6px; padding: 6px 12px; font-size: 12px; font-weight: 700;
+            border-radius: 999px; padding: 6px 14px; font-size: 11.5px; font-weight: 700;
             cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
         }
         .task-delete-btn:hover { background: #fecaca; }
-        .task-header-row { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
 
+        /* ============================================
+           صندوق المرفقات
+           ============================================ */
         .attachments-box {
             margin-top: 12px;
-            padding: 12px;
+            padding: 14px 16px;
             background: #f8fafc;
             border: 1px dashed var(--border);
-            border-radius: 8px;
+            border-radius: var(--radius-md);
         }
         .attachments-header {
-            font-weight: 700;
-            font-size: 13px;
+            font-weight: 800;
+            font-size: 12.5px;
             margin-bottom: 8px;
             color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
         }
-        .attachments-list {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-        }
+        .attachments-list { display: flex; flex-wrap: wrap; gap: 6px; }
         .attachment-chip {
             display: inline-flex;
             align-items: center;
             gap: 4px;
-            padding: 4px 10px;
+            padding: 5px 12px;
             border-radius: 999px;
             font-size: 12px;
-            font-weight: 600;
+            font-weight: 700;
             text-decoration: none;
-            background: #e2e8f0;
+            background: #f1f5f9;
             color: #475569;
             border: none;
             font-family: inherit;
         }
-        .attachment-chip.approved {
-            background: #dbeafe;
-            color: var(--primary);
-            cursor: pointer;
-        }
+        .attachment-chip.approved { background: #dbeafe; color: var(--primary); cursor: pointer; }
         .attachment-chip.approved:hover { background: #bfdbfe; }
-        .attachment-chip.pending {
-            background: #fef3c7;
-            color: #b45309;
-        }
+        .attachment-chip.pending { background: #fef3c7; color: #92400e; }
         .attach-btn { background: #8b5cf6; }
         .attach-btn:hover { background: #7c3aed; }
 
+        /* ============================================
+           مودال المعاينة
+           ============================================ */
         .review-overlay {
             display: none;
             position: fixed;
             inset: 0;
-            background: rgba(15, 23, 42, 0.55);
+            background: rgba(15, 23, 42, 0.6);
             z-index: 1000;
             align-items: center;
             justify-content: center;
-            padding: 20px;
+            padding: 0;
+            backdrop-filter: blur(2px);
         }
         .review-overlay.active { display: flex; }
 
         .review-modal {
             background: #fff;
-            border-radius: 12px;
-            width: 100%;
-            max-width: 820px;
-            max-height: 90vh;
+            border-radius: 0;
+            width: 100vw;
+            height: 100vh;
+            max-width: 100vw;
+            max-height: 100vh;
             display: flex;
             flex-direction: column;
             overflow: hidden;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.25);
+            box-shadow: 0 24px 48px rgba(0,0,0,0.3);
         }
 
         .review-modal-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 14px 18px;
+            padding: 16px 20px;
             border-bottom: 1px solid var(--border);
         }
 
-        .review-modal-title {
-            font-weight: 700;
-            font-size: 15px;
-        }
+        .review-modal-title { font-weight: 800; font-size: 15px; }
 
         .review-modal-close {
             background: #f1f5f9;
             border: none;
-            border-radius: 6px;
-            width: 30px;
-            height: 30px;
+            border-radius: 999px;
+            width: 32px;
+            height: 32px;
             cursor: pointer;
-            font-size: 15px;
+            font-size: 14px;
             color: var(--text-muted);
         }
         .review-modal-close:hover { background: #e2e8f0; }
@@ -575,28 +669,20 @@
             align-items: center;
             justify-content: center;
         }
-
-        .review-modal-body iframe {
-            width: 100%;
-            height: 70vh;
-            border: none;
-            background: #fff;
-        }
-
-        .review-fallback {
-            text-align: center;
-            padding: 40px 20px;
-            color: var(--text-muted);
-        }
+        .review-modal-body iframe { width: 100%; height: 100%; border: none; background: #fff; }
+        .review-fallback { text-align: center; padding: 40px 20px; color: var(--text-muted); }
 
         .review-modal-footer {
-            padding: 12px 18px;
+            padding: 14px 20px;
             border-top: 1px solid var(--border);
             display: flex;
             justify-content: flex-end;
             gap: 8px;
         }
 
+        /* ============================================
+           التوست
+           ============================================ */
         .toast-container {
             position: fixed;
             bottom: 20px;
@@ -613,11 +699,11 @@
         .toast {
             background: #1e293b;
             color: #fff;
-            padding: 12px 20px;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 600;
-            box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+            padding: 12px 22px;
+            border-radius: 999px;
+            font-size: 13.5px;
+            font-weight: 700;
+            box-shadow: 0 10px 24px rgba(0,0,0,0.3);
             opacity: 1;
             transition: opacity 0.4s ease, transform 0.4s ease;
             max-width: 90vw;
@@ -631,57 +717,14 @@
         /* =========================================
            إعدادات التجاوب (Responsive Media Queries)
            ========================================= */
-
-        /* للهواتف والشاشات الصغيرة (الوضع الطولي) */
         @media screen and (max-width: 768px) {
-            .header {
-                font-size: 20px;
-                padding: 14px 16px;
-            }
-
-            .container {
-                flex-direction: column;
-                height: auto;
-                min-height: calc(100vh - 245px);
-            }
-
-            /* تحويل القائمة الجانبية لشريط تمرير أفقي بالأعلى */
-            .sidebar {
-                width: 100%;
-                max-height: 85px;
-                display: flex;
-                flex-direction: row;
-                overflow-x: auto;
-                overflow-y: hidden;
-                border-right: none;
-                border-bottom: 1px solid var(--border);
-                padding: 10px;
-                align-items: center;
-                white-space: nowrap;
-            }
-
-            .employee {
-                margin: 0 8px 0 0;
-                flex-shrink: 0; /* لمنع العناصر من الانضغاط */
-            }
-
-            .content {
-                padding: 15px;
-            }
-
-            .revision-header {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 8px;
-            }
+            .header { font-size: 19px; padding: 16px; }
+            .employee-toolbar { padding: 8px 12px; flex-wrap: nowrap; }
+            .employee-toolbar-label { display: none; }
+            .content { padding: 14px; }
+            .revision-header { flex-direction: column; align-items: flex-start; gap: 8px; }
         }
 
-        /* للأجهزة اللوحية (التابلت) في الوضع العمودي */
-        @media screen and (max-width: 1024px) and (orientation: portrait) {
-            .sidebar {
-                width: 200px; /* تصغير عرض القائمة الجانبية قليلاً */
-            }
-        }
         /* ============================================
            قفل الصفحة أثناء الرفع + مودال التأكيد في النص
            ============================================ */
@@ -689,22 +732,20 @@
             display: none;
             position: fixed;
             inset: 0;
-            background: rgba(15, 23, 42, 0.55);
+            background: rgba(15, 23, 42, 0.6);
             z-index: 9999;
             align-items: center;
             justify-content: center;
+            backdrop-filter: blur(2px);
         }
-
-        .upload-lock-overlay.active {
-            display: flex;
-        }
+        .upload-lock-overlay.active { display: flex; }
 
         .upload-modal {
             background: var(--bg-card);
-            border-radius: 14px;
-            padding: 28px 32px;
+            border-radius: var(--radius-lg);
+            padding: 30px 32px;
             width: min(90vw, 380px);
-            box-shadow: 0 20px 40px rgba(0,0,0,0.25);
+            box-shadow: 0 24px 48px rgba(0,0,0,0.3);
             text-align: center;
         }
 
@@ -718,50 +759,104 @@
             animation: upload-spin 0.8s linear infinite;
         }
 
-        .upload-modal .upload-icon {
-            font-size: 38px;
-            margin-bottom: 12px;
-        }
-
+        .upload-modal .upload-icon { font-size: 38px; margin-bottom: 12px; }
         .upload-modal .upload-icon.success { color: var(--success); }
         .upload-modal .upload-icon.error { color: var(--danger); }
 
-        .upload-modal h3 {
-            margin: 0 0 8px 0;
-            font-size: 17px;
-            color: var(--text-main);
-        }
-
-        .upload-modal p {
-            margin: 0;
-            font-size: 14px;
-            color: var(--text-muted);
-            line-height: 1.6;
-            white-space: pre-line;
-        }
+        .upload-modal h3 { margin: 0 0 8px 0; font-size: 17px; font-weight: 800; color: var(--text-main); }
+        .upload-modal p { margin: 0; font-size: 14px; color: var(--text-muted); line-height: 1.6; white-space: pre-line; }
 
         .upload-modal .upload-modal-close {
             display: none;
             margin-top: 18px;
-            padding: 10px 24px;
+            padding: 10px 26px;
             background: var(--primary);
             color: #fff;
             border: none;
-            border-radius: 8px;
-            font-weight: 600;
+            border-radius: 999px;
+            font-weight: 700;
             cursor: pointer;
         }
+        .upload-modal.done .upload-modal-close { display: inline-block; }
 
-        .upload-modal.done .upload-modal-close {
-            display: inline-block;
-        }
+        @keyframes upload-spin { to { transform: rotate(360deg); } }
 
-        @keyframes upload-spin {
-            to { transform: rotate(360deg); }
+        /* ============================================
+           ودجت مدموجة جوه كارت الريفيجن نفسه (مش مودال منفصل) -
+           اختيار الملف + الكود (A/B/C/D) ظاهرين على طول في الكارت،
+           والمهندس لازم يختار الاتنين قبل ما زرار الإرسال يشتغل.
+           ============================================ */
+        .inline-rev-upload {
+            margin-top: 12px;
+            padding: 14px;
+            border: 1px dashed #cbd5e1;
+            border-radius: var(--radius-md);
+            background: #fff;
         }
+        .inline-rev-file-input {
+            position: absolute;
+            width: 1px; height: 1px;
+            padding: 0; margin: -1px;
+            overflow: hidden;
+            clip: rect(0,0,0,0);
+            white-space: nowrap;
+            border: 0;
+        }
+        .inline-rev-file-label {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 9px 18px;
+            border-radius: 999px;
+            background: var(--primary-light);
+            color: var(--primary);
+            font-weight: 700;
+            font-size: 13px;
+            cursor: pointer;
+            transition: background 0.16s ease, transform 0.12s ease;
+            border: 1px solid #dbeafe;
+        }
+        .inline-rev-file-label:hover { background: #dbeafe; }
+        .inline-rev-file-label:active { transform: scale(0.97); }
+        .inline-rev-filename {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            margin: 10px 0 12px;
+            font-size: 12.5px;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+        .inline-rev-filename.has-file { color: var(--success); }
+        .inline-rev-filename i { font-size: 13px; }
+        .inline-rev-codes { display: flex; gap: 6px; margin-bottom: 12px; }
+        .inline-rev-code-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; }
+        .inline-rev-codes button {
+            width: 100%; padding: 9px 0; border-radius: var(--radius-sm); border: 2px solid var(--border);
+            background: #fff; font-weight: 800; font-size: 14px; cursor: pointer; color: var(--text-main);
+            transition: all 0.15s ease;
+        }
+        .inline-rev-codes button:hover { border-color: var(--primary); transform: translateY(-1px); }
+        .inline-rev-codes button.selected { border-color: var(--primary); background: var(--primary); color: #fff; box-shadow: 0 3px 10px -3px rgba(30,64,175,0.5); }
+        .inline-rev-code-hint {
+            font-size: 9.5px;
+            color: var(--text-muted);
+            text-align: center;
+            margin-top: 4px;
+            line-height: 1.3;
+            font-weight: 600;
+        }
+        .inline-rev-send {
+            width: 100%; padding: 10px 0; border-radius: var(--radius-sm); border: none;
+            background: var(--success); color: #fff; font-weight: 700; font-size: 13px; cursor: pointer;
+            transition: background 0.16s ease;
+        }
+        .inline-rev-send:hover:not(:disabled) { background: #0d9668; }
+        .inline-rev-send:disabled { background: #94a3b8; cursor: not-allowed; }
+        .inline-rev-hint { font-size: 11px; color: var(--danger); margin-top: 8px; min-height: 14px; font-weight: 600; }
 
         /* =========================================================
-           لمسات احترافية عامة — سكرول بار مخصص + دخول ناعم للهيدر
+           لمسات احترافية عامة — سكرول بار مخصص
            ========================================================= */
         ::-webkit-scrollbar { width: 10px; height: 10px; }
         ::-webkit-scrollbar-track { background: var(--bg-main); }
@@ -773,25 +868,152 @@
         ::-webkit-scrollbar-thumb:hover { background: var(--primary); }
         * { scrollbar-width: thin; scrollbar-color: #cbd5e1 var(--bg-main); }
 
-        .header {
-            animation: header-fade-in 0.5s ease;
-        }
-        .nav-container {
-            animation: header-fade-in 0.6s ease;
-        }
         @keyframes header-fade-in {
             from { opacity: 0; transform: translateY(-8px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
+    
+        /* ============================================
+           MDCEO Professional Header/Nav — تحديث موحّد
+           ============================================ */
+        .header {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            gap: 14px !important;
+            position: relative !important;
+        }
+        .mdceo-mark {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 900;
+            letter-spacing: 1.2px;
+            padding-inline-end: 14px;
+            margin-inline-end: 4px;
+            border-inline-end: 1px solid rgba(255,255,255,0.32);
+            white-space: nowrap;
+        }
+        .mdceo-mark i {
+            color: #93c5fd;
+            font-size: 0.95em;
+            animation: mdceo-icon-pulse 3s ease-in-out infinite;
+        }
+        @keyframes mdceo-icon-pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.15) rotate(-4deg); }
+        }
+        .nav-container {
+            display: flex !important;
+            justify-content: center !important;
+            flex-wrap: wrap !important;
+            gap: 8px !important;
+        }
+        .nav-btn {
+            border-radius: 999px !important;
+            font-weight: 600 !important;
+            transition: background 0.18s ease, color 0.18s ease, transform 0.12s ease, box-shadow 0.18s ease !important;
+            border: 1px solid transparent !important;
+        }
+        .nav-btn:hover { transform: translateY(-1px); }
+        .nav-btn:active { transform: scale(0.96); }
+        .nav-btn.active {
+            box-shadow: 0 4px 12px -3px rgba(30,64,175,0.5) !important;
+        }
+
+        /* ============================================
+           كارت ريكوستات المقاولين — مدموج جوه نفس قائمة التاسكات
+           (نفس المهام + مراجعة المهندس بقوا صفحة واحدة)
+           ============================================ */
+        .task.contractor-task { border-top-color: var(--warning, #f59e0b); }
+        .contractor-summary { cursor: pointer; }
+        .contractor-summary:hover .title { color: var(--primary); }
+        .contractor-notes-box {
+            background: #f8fafc; border: 1px solid var(--border); border-radius: 8px;
+            padding: 7px 10px; margin-top: 8px; font-size: 12.5px;
+        }
+        .contractor-notes-box.admin-note { border-color: var(--danger); background: #fef2f2; }
+        .contractor-expand-hint {
+            font-size: 11.5px; color: var(--text-muted); margin-top: 6px; font-weight: 600;
+            display: flex; align-items: center; gap: 6px;
+        }
+        .contractor-body { margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border); }
+        .contractor-comment-box {
+            width: 100%; box-sizing: border-box; padding: 7px 10px; border: 1px solid var(--border);
+            border-radius: 8px; font-family: inherit; font-size: 13px; min-height: 44px; resize: vertical;
+        }
+        .contractor-code-row { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+        .contractor-code-wrap { flex: 1 1 60px; display: flex; flex-direction: column; }
+        .contractor-code-btn {
+            width: 100%; padding: 5px 0; text-align: center; border-radius: var(--radius-sm);
+            border: 2px solid var(--border); background: #fff; font-weight: 800; font-size: 13px;
+            cursor: pointer; color: var(--text-main);
+        }
+        .contractor-code-btn:hover { border-color: var(--primary); }
+        .contractor-code-btn.selected { border-color: var(--primary); background: var(--primary); color: #fff; }
+        .contractor-code-hint { font-size: 9.5px; color: var(--text-muted); margin-top: 2px; text-align: center; font-weight: 600; }
+        .contractor-actions-row { display: flex; justify-content: flex-end; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+        .contractor-empty { text-align: center; color: var(--text-muted); padding: 40px 0; }
+
+        .lock-overlay { display:none; position:fixed; inset:0; background:rgba(15,23,42,0.55); align-items:center; justify-content:center; z-index:9999; }
+        .lock-overlay.active { display:flex; }
+        .lock-modal { background:#fff; padding:26px; border-radius:14px; max-width:340px; width:90%; text-align:center; }
+        .lock-modal .spinner { width:34px; height:34px; border:4px solid #eff6ff; border-top-color:var(--primary); border-radius:50%; margin:0 auto 14px; animation:lock-spin .8s linear infinite; }
+        @keyframes lock-spin { to { transform: rotate(360deg); } }
+
+        .sig-overlay { display:none; position:fixed; inset:0; background:rgba(15,23,42,0.55); z-index:1000; align-items:center; justify-content:center; padding:20px; }
+        .sig-overlay.active { display:flex; }
+        .sig-modal { background:#fff; border-radius:12px; width:100%; max-width:340px; box-shadow:0 20px 40px rgba(0,0,0,0.25); padding:22px; }
+        .sig-modal h3 { margin:0 0 4px 0; font-size:17px; font-weight:800; }
+        .sig-modal .sig-sub { color:var(--text-muted); font-size:13px; margin-bottom:14px; }
+        .sig-canvas-wrap { border:2px dashed var(--border); border-radius:10px; background:#fff; position:relative; }
+        .sig-canvas-wrap canvas { width:100%; height:140px; display:block; touch-action:none; border-radius:8px; }
+        .sig-hint { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); color:#cbd5e1; font-size:13px; pointer-events:none; }
+        .sig-actions { display:flex; gap:8px; margin-top:12px; }
+        .sig-actions button { flex:1; padding:10px; border-radius:8px; border:none; cursor:pointer; font-weight:700; font-size:13.5px; }
+        .sig-clear-btn { background:#f1f5f9; color:var(--text-main); }
+        .sig-upload-btn { background:#eff6ff; color:#1e40af; display:flex; align-items:center; justify-content:center; gap:6px; }
+        .sig-cancel-btn { background:#f1f5f9; color:var(--text-main); }
+        .sig-confirm-btn { background:var(--success); color:#fff; }
+        .sig-confirm-btn:disabled { background:#94a3b8; cursor:not-allowed; }
+
+        /* محرر الكتابة الحرة على الملف (نص/توقيع) قبل ما يترفع للأدمن */
+        .annot-overlay { display:none; position:fixed; inset:0; background:rgba(15,23,42,0.7); z-index:1001; align-items:center; justify-content:center; padding:0; }
+        .annot-overlay.active { display:flex; }
+        .annot-modal { background:#fff; border-radius:0; width:100vw; height:100vh; max-width:100vw; max-height:100vh; display:flex; flex-direction:column; overflow:hidden; box-shadow:none; }
+        .annot-toolbar { display:flex; align-items:center; gap:8px; padding:10px 14px; background:#f8fafc; border-bottom:1px solid var(--border); flex-wrap:wrap; }
+        .annot-toolbar .annot-title { font-weight:800; font-size:14px; margin-inline-end:auto; }
+        .annot-tool-btn { padding:7px 12px; border-radius:7px; border:1px solid var(--border); background:#fff; cursor:pointer; font-size:12.5px; font-weight:700; color:var(--text-main); display:flex; align-items:center; gap:6px; }
+        .annot-tool-btn.active-tool { background:var(--primary); color:#fff; border-color:var(--primary); }
+        .annot-tool-btn.danger { color:var(--danger); border-color:#fecaca; }
+        .font-size-group { display:flex; align-items:center; gap:4px; border:1px solid var(--border); border-radius:7px; padding:2px 4px; background:#fff; }
+        .font-size-group .annot-tool-btn { padding:5px 8px; border:none; }
+        .font-size-val { font-weight:800; font-size:13px; min-width:20px; text-align:center; color:var(--text-main); }
+        .font-family-select { padding:7px 8px; border-radius:7px; border:1px solid var(--border); background:#fff; font-size:12.5px; font-weight:600; color:var(--text-main); }
+        .annot-canvas-area { flex:1; overflow:auto; background:#e2e8f0; display:flex; justify-content:center; padding:14px; }
+        .annot-page-wrap { position:relative; background:#fff; box-shadow:0 2px 10px rgba(0,0,0,0.15); }
+        .annot-page-wrap canvas.pdf-render { display:block; }
+        .annot-layer { position:absolute; inset:0; cursor:crosshair; }
+        .annot-layer.tool-none { cursor:default; }
+        .annot-item { position:absolute; cursor:move; user-select:none; }
+        .annot-item.text-item { min-width:20px; padding:2px 4px; font-size:15px; color:#c0202b; font-weight:700; background:rgba(255,255,255,0.55); border:1px dashed rgba(192,32,43,0.5); border-radius:3px; outline:none; white-space:pre-wrap; }
+        .annot-item.text-item.annot-selected { border:2px solid var(--primary); background:rgba(255,255,255,0.8); }
+        .annot-item.sig-item { width:130px; }
+        .annot-item.sig-item img { width:100%; display:block; pointer-events:none; }
+        .annot-item .del-btn { position:absolute; top:-9px; left:-9px; width:18px; height:18px; background:var(--danger); color:#fff; border-radius:50%; font-size:11px; display:flex; align-items:center; justify-content:center; cursor:pointer; box-shadow:0 1px 3px rgba(0,0,0,0.3); }
+        .annot-footer { display:flex; align-items:center; gap:10px; padding:12px 14px; border-top:1px solid var(--border); background:#fff; }
+        .annot-footer .annot-hint { font-size:12px; color:var(--text-muted); flex:1; }
+        .annot-footer button { padding:10px 18px; border-radius:8px; border:none; cursor:pointer; font-weight:700; font-size:13.5px; }
+        .annot-cancel-btn { background:#f1f5f9; color:var(--text-main); }
+        .annot-submit-btn { background:var(--success); color:#fff; }
+        .annot-submit-btn:disabled { background:#94a3b8; cursor:not-allowed; }
+        .annot-nopreview { padding:40px; text-align:center; color:var(--text-muted); }
     </style>
+    <link rel="stylesheet" href="./design-system.css?v=3">
+    <script src="./nav-toggle.js?v=1" defer></script>
 </head>
 <body>
-
-<!-- حقل الرفع المخفي العام (ريفيجن) -->
-<input type="file" id="global-file-input"
-       accept=".pdf,.xls,.xlsx,.xlsm,.csv,.doc,.docx,.dwg,.dxf,.dwf,.zip"
-       style="display: none;" onchange="handleFileSelection(this)">
 
 <!-- حقل الرفع المخفي الخاص بمرفقات التاسك (مش مرتبط بريفيجن معينة) -->
 <input type="file" id="attachment-file-input"
@@ -821,11 +1043,80 @@
     </div>
 </div>
 
+<!-- قفل شاشة بسيط (سبينر) بيستخدمه فلو مراجعة المقاولين وقت الرفع/التجهيز -->
+<div class="lock-overlay" id="lockOverlay">
+    <div class="lock-modal">
+        <div class="spinner"></div>
+        <div id="lockMsg" style="font-weight:700;"></div>
+    </div>
+</div>
+
+<!-- مودال رسم التوقيع بالإصبع/الماوس، أو رفع صورة توقيع جاهزة، بيستخدمه المهندس وهو بيراجع ريكوست مقاول -->
+<div class="sig-overlay" id="sigOverlay">
+    <div class="sig-modal">
+        <h3>وقّع الملف</h3>
+        <div class="sig-sub">ارسم التوقيع في المربع، أو ارفع صورة توقيع جاهزة من جهازك</div>
+        <div class="sig-canvas-wrap">
+            <canvas id="sigCanvas"></canvas>
+            <div class="sig-hint" id="sigHint">وقّع هنا</div>
+        </div>
+        <input type="file" id="sigImageInput" accept="image/*" style="display:none;" onchange="handleSigImageUpload(this)">
+        <div class="sig-actions">
+            <button class="sig-clear-btn" onclick="clearSignaturePad()">مسح</button>
+            <button class="sig-upload-btn" onclick="document.getElementById('sigImageInput').click()">
+                <i class="fa-solid fa-image"></i> رفع صورة
+            </button>
+        </div>
+        <div class="sig-actions" style="margin-top:8px;">
+            <button class="sig-cancel-btn" onclick="closeSigDrawModal()">إلغاء</button>
+            <button class="sig-confirm-btn" onclick="confirmSigDraw()">استخدام التوقيع المرسوم</button>
+        </div>
+    </div>
+</div>
+
+<!-- محرر الكتابة الحرة (نص/توقيع) فوق ملف الريكوست قبل ما يترفع نهائيًا للأدمن -->
+<div class="annot-overlay" id="annotOverlay">
+    <div class="annot-modal">
+        <div class="annot-toolbar">
+            <div class="annot-title">اكتب على الملف براحتك</div>
+            <button class="annot-tool-btn" id="toolTextBtn" onclick="setAnnotTool('text')">
+                <i class="fa-solid fa-font"></i> نص
+            </button>
+            <button class="annot-tool-btn" id="toolSigBtn" onclick="setAnnotTool('sig')">
+                <i class="fa-solid fa-signature"></i> توقيع
+            </button>
+            <div class="font-size-group">
+                <button class="annot-tool-btn" onclick="changeFontSize(-1)" title="تصغير الخط"><i class="fa-solid fa-minus"></i></button>
+                <span class="font-size-val" id="fontSizeVal">15</span>
+                <button class="annot-tool-btn" onclick="changeFontSize(1)" title="تكبير الخط"><i class="fa-solid fa-plus"></i></button>
+            </div>
+            <select class="font-family-select" id="fontFamilySelect" onchange="changeFontFamily(this.value)"></select>
+            <button class="annot-tool-btn danger" onclick="clearAllAnnotations()">
+                <i class="fa-solid fa-trash"></i> مسح الكل
+            </button>
+        </div>
+        <div class="annot-canvas-area" id="annotCanvasArea">
+            <div class="annot-page-wrap" id="annotPageWrap">
+                <canvas class="pdf-render" id="pdfRenderCanvas"></canvas>
+                <div class="annot-layer tool-none" id="annotLayer" onclick="handleAnnotLayerClick(event)"></div>
+            </div>
+        </div>
+        <div class="annot-footer">
+            <span class="annot-hint" id="annotHint">دوس "نص" أو "توقيع" فوق، وبعدين دوس في أي مكان في الصفحة عشان تضيف هناك.</span>
+            <button class="annot-cancel-btn" onclick="closeAnnotationModal()">إلغاء</button>
+            <button class="annot-submit-btn" id="annotSubmitBtn" onclick="submitAnnotatedRequest()">
+                <i class="fa-solid fa-paper-plane"></i> إرسال للأدمن للموافقة
+            </button>
+        </div>
+    </div>
+</div>
+
 <!-- حاوية إشعارات (Toast) بتظهر لما حالة مرفق تتغيّر -->
 <div id="toastContainer" class="toast-container"></div>
 
 <div class="header">
-    <i class="fa-solid fa-folder-open"></i> <span data-i18n="pageTitle">MDECO SUBMITTALS DASHBOARD</span>
+    <span class="mdceo-mark"><i class="fa-solid fa-drafting-compass"></i>MDCEO</span>
+    <i class="fa-solid fa-folder-open"></i> <span data-i18n="pageTitle">MDCEO SUBMITTALS DASHBOARD</span>
 </div>
 
 <div class="nav-container">
@@ -848,9 +1139,6 @@
     <a href="team_overview.html" class="nav-btn">
         <i class="fa-solid fa-users"></i> <span data-i18n="navTeam">نظرة عامة على الموظفين</span>
     </a>
-    <a href="engineer-review.html" class="nav-btn">
-        <i class="fa-solid fa-user-check"></i> <span data-i18n="navEngineerReview">مراجعة المهندس</span>
-    </a>
     <a href="performance.html" class="nav-btn">
         <i class="fa-solid fa-chart-column"></i> <span data-i18n="navDashboard">لوحة التحكم</span>
     </a>
@@ -865,13 +1153,16 @@
 </div>
 
 <div class="welcome-hero">
-    <h1 data-i18n="welcomeTitle">Welcome to MDECO </h1>
+    <h1 data-i18n="welcomeTitle">Welcome to MDCEO </h1>
     <p data-i18n="welcomeSubtitle">Centralized Engineering Consultancy & Document Control Management System</p>
 </div>
 
 <div class="container">
-    <div class="sidebar" id="sidebar" data-i18n="loadingEmployees">Loading Employees...</div>
-    
+    <div class="employee-toolbar">
+        <div class="employee-toolbar-label"><i class="fa-solid fa-users"></i> <span data-i18n="employeesLabel">الموظفين</span></div>
+        <div class="sidebar" id="sidebar" data-i18n="loadingEmployees">Loading Employees...</div>
+    </div>
+
     <div class="content">
         <div class="card">
             <h2 id="empName" data-i18n="selectEmployee">Select Employee</h2>
@@ -940,16 +1231,42 @@ const SUPABASE_KEY = "sb_publishable_QsS0UhLBORy6mOaBDgW62g_9OacC3oO";
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const GOOGLE_SCRIPT_UPLOAD_URL = "https://script.google.com/macros/s/AKfycbxP9S7qbgK888SHhCejIGZUx-wXN7pFtJ0OHbFvAUV9ARbtfxtI1_KwUNaU3c-LTubKnw/exec";
 
+// ============================================
+// مراجعة ريكوستات المقاولين — بقت جوه نفس صفحة المهام
+// (بدل ما كانت صفحة منفصلة engineer-review.html)
+// ============================================
+const CONTRACTOR_BUCKET_KEY = "__contractor__";
+let contractorRequests = [];              // الريكوستات المعلّقة للمهندس الحالي (pending_engineer)
+let selectedContractorCode = {};          // { [id]: 'A'|'B'|'C' }
+let expandedContractorCards = {};         // { [id]: true } — الكارت مفتوح ولا لأ
+
+// حالة محرر الكتابة على الملف (نص/توقيع) + التوقيع نفسه
+let annotState = null;
+let draggingEl = null, dragStartX = 0, dragStartY = 0, dragOrigLeft = 0, dragOrigTop = 0;
+let selectedAnnotItem = null, selectedAnnotEl = null;
+let sigPad = null;
+let pendingSigPos = null;
+
+const FONT_OPTIONS = [
+    { key: 'Helvetica',      label: 'Helvetica',   css: 'Helvetica, Arial, sans-serif',        weight: '700' },
+    { key: 'HelveticaBold',  label: 'Helvetica (سميك)', css: 'Helvetica, Arial, sans-serif',   weight: '800' },
+    { key: 'TimesRoman',     label: 'Times',       css: '"Times New Roman", Times, serif',     weight: '700' },
+    { key: 'TimesRomanBold', label: 'Times (سميك)', css: '"Times New Roman", Times, serif',    weight: '800' },
+    { key: 'Courier',        label: 'Courier',     css: '"Courier New", Courier, monospace',   weight: '700' },
+    { key: 'CourierBold',    label: 'Courier (سميك)', css: '"Courier New", Courier, monospace', weight: '800' }
+];
+
 // كل قد ايه (بالثواني) الشارة والبيانات المعلّقة بتتحدّث تلقائيًا
-const PENDING_POLL_INTERVAL = 5000;
+const PENDING_POLL_INTERVAL = 60000; // كل دقيقة بدل كل 5 ثواني - كانت بتعمل رعشة وتمسح شغل المهندس
 
 const dictionary = {
     ar: {
         navReportView: "عرض التقرير",
-        pageTitle: "MDECO SUBMITTALS DASHBOARD",
-        welcomeTitle: "أهلًا بك في MDECO",
+        pageTitle: "MDCEO SUBMITTALS DASHBOARD",
+        welcomeTitle: "أهلًا بك في MDCEO",
         welcomeSubtitle: "نظام إدارة ومتابعة المستندات والاستشارات الهندسية",
         loadingEmployees: "جاري تحميل الموظفين...",
+        employeesLabel: "الموظفين",
         selectEmployee: "اختر موظف",
         statTotal: "إجمالي التاسكات",
         statOpen: "مفتوح",
@@ -1001,14 +1318,52 @@ const dictionary = {
         attachmentApprovedToast: "تمت الموافقة على مرفقك",
         attachmentRejectedToast: "تم رفض مرفقك",
         attachmentUploadedCount: "معاك دلوقتي {count} من {max} مرفقات على التاسك ده.",
-        confirmAttachmentUpload: "متأكد إن ده المرفق اللي عايز ترفعه؟\n\nاسم الملف: {file}\nالتاسك: {task}"
+        confirmAttachmentUpload: "متأكد إن ده المرفق اللي عايز ترفعه؟\n\nاسم الملف: {file}\nالتاسك: {task}",
+        revCodeTitle: "رفع الملف واعتماد الكود",
+        revCodeFileLabel: "الملف",
+        revCodePickLabel: "الكود",
+        revCodeCancel: "إلغاء",
+        revCodeSend: "إرسال للموافقة",
+        revCodeMissingFile: "اختار الملف الأول.",
+        revCodeMissingCode: "اختار الكود (A/B/C/D) الأول.",
+        revCodeChooseFile: "اختر الملف",
+        revCodeNoFileYet: "لسه مفيش ملف مختار",
+        revCodeHintA: "بدون ملاحظات",
+        revCodeHintB: "معتمد مع ملاحظات",
+        revCodeHintC: "أعد التقديم",
+        revCodeHintD: "مرفوض",
+        revCodeMissingBoth: "لازم تختار الملف والكود مع بعض قبل الإرسال.",
+        requestedCodeLabel: "الكود المطلوب",
+
+        contractorChipLabel: "مراجعة المقاولين",
+        contractorNoPending: "مفيش ريكوستات محتاجة مراجعتك دلوقتي.",
+        contractorLoadError: "حصل خطأ أثناء تحميل الريكوستات.",
+        contractorContractor: "المقاول",
+        contractorSubmittedAt: "تاريخ الطلب",
+        contractorNotesLabel: "ملاحظات المقاول",
+        contractorAdminNote: "ملاحظة الأدمن (اتبعت تاني عشان تتعدّل)",
+        contractorCommentPlaceholder: "اكتب تعليقك هنا...",
+        contractorReviewFile: "معاينة الملف",
+        contractorSubmitBtn: "اعتماد وإرسال",
+        contractorErrNoCode: "من فضلك اختار كود (A/B/C) الأول.",
+        contractorErrCommentRequired: "الكود ده لازم تعليق - من فضلك اكتب السبب قبل ما تبعت.",
+        contractorWorking: "جاري الرفع على جوجل درايف...",
+        contractorErrSubmit: "حصل خطأ أثناء الاعتماد، حاول تاني.",
+        contractorAHint: "موافقة - من غير تعليق",
+        contractorBHint: "موافقة - بتعليق",
+        contractorCHint: "مرفوضة - بتعليق",
+        contractorDHint: "مرفوضة - إعادة تقديم - بتعليق",
+        contractorExpandHint: "دوس على الكارت لفتح/قفل المراجعة",
+        contractorPickCode: "اختار الكود",
+        contractorActivityLabel: "النشاط"
     },
     en: {
         navReportView: "View Report",
-        pageTitle: "MDECO SUBMITTALS DASHBOARD",
-        welcomeTitle: "Welcome to MDECO",
+        pageTitle: "MDCEO SUBMITTALS DASHBOARD",
+        welcomeTitle: "Welcome to MDCEO",
         welcomeSubtitle: "Centralized Engineering Consultancy & Document Control Management System",
         loadingEmployees: "Loading Employees...",
+        employeesLabel: "Employees",
         selectEmployee: "Select Employee",
         statTotal: "Total Tasks",
         statOpen: "Open",
@@ -1060,7 +1415,44 @@ const dictionary = {
         attachmentApprovedToast: "Your attachment was approved",
         attachmentRejectedToast: "Your attachment was rejected",
         attachmentUploadedCount: "You now have {count} of {max} attachments on this task.",
-        confirmAttachmentUpload: "Are you sure this is the attachment you want to upload?\n\nFile name: {file}\nTask: {task}"
+        confirmAttachmentUpload: "Are you sure this is the attachment you want to upload?\n\nFile name: {file}\nTask: {task}",
+        revCodeTitle: "Upload File & Set Code",
+        revCodeFileLabel: "File",
+        revCodePickLabel: "Code",
+        revCodeCancel: "Cancel",
+        revCodeSend: "Send for Approval",
+        revCodeMissingFile: "Please choose the file first.",
+        revCodeMissingCode: "Please choose a code (A/B/C/D) first.",
+        revCodeChooseFile: "Choose File",
+        revCodeNoFileYet: "No file chosen yet",
+        revCodeHintA: "No Comments",
+        revCodeHintB: "Approved as Noted",
+        revCodeHintC: "Revise & Resubmit",
+        revCodeHintD: "Rejected",
+        revCodeMissingBoth: "You must choose both the file and the code before sending.",
+        requestedCodeLabel: "Requested code",
+
+        contractorChipLabel: "Contractor Reviews",
+        contractorNoPending: "No requests need your review right now.",
+        contractorLoadError: "An error occurred while loading requests.",
+        contractorContractor: "Contractor",
+        contractorSubmittedAt: "Requested at",
+        contractorNotesLabel: "Contractor notes",
+        contractorAdminNote: "Admin note (sent back for edits)",
+        contractorCommentPlaceholder: "Write your comment here...",
+        contractorReviewFile: "Preview File",
+        contractorSubmitBtn: "Approve & Submit",
+        contractorErrNoCode: "Please choose a code (A/B/C) first.",
+        contractorErrCommentRequired: "This code requires a comment - please explain why before submitting.",
+        contractorWorking: "Uploading to Google Drive...",
+        contractorErrSubmit: "An error occurred while finalizing, please try again.",
+        contractorAHint: "Approved - no comment",
+        contractorBHint: "Approved - with comment",
+        contractorCHint: "Rejected - with comment",
+        contractorDHint: "Disapproved, Resubmit - with comment",
+        contractorExpandHint: "Click the card to open/close the review",
+        contractorPickCode: "Choose the code",
+        contractorActivityLabel: "Activity"
     }
 };
 window.registerDictionary(dictionary);
@@ -1129,6 +1521,21 @@ async function loadTasks() {
 }
 loadTasks();
 
+// ============================================
+// حماية من "الرعشة": طول ما فيه مهندس مختار ملف أو كود لسه ما
+// بعتهمش، أي تحديث تلقائي في الخلفية (polling) مش هيعمل render()
+// كامل يمسحله اختياره - بيستنى لحد ما يخلص أو يمسح اختياره.
+// ============================================
+let activeRevSelections = new Set();
+
+function markRevSelectionActive(uid) { activeRevSelections.add(uid); }
+function clearRevSelectionActive(uid) { activeRevSelections.delete(uid); }
+
+function renderIfNoActiveSelections() {
+    if (activeRevSelections.size > 0) return;
+    render();
+}
+
 // جلب الطلبات المعلّقة فقط (status = pending) وبناء الخريطة + تحديث الشارة
 async function loadPendingRequests() {
     try {
@@ -1146,7 +1553,7 @@ async function loadPendingRequests() {
         });
 
         updatePendingBadge((rows || []).length);
-        render();
+        renderIfNoActiveSelections();
     } catch (err) {
         console.error("Error loading pending requests:", err);
     }
@@ -1198,7 +1605,7 @@ async function loadTaskAttachments() {
             attachmentsMap[r.task_key].push(r);
         });
 
-        render();
+        renderIfNoActiveSelections();
     } catch (err) {
         console.error("Error loading task attachments:", err);
     }
@@ -1451,91 +1858,6 @@ function validateFile(file) {
     return null;
 }
 
-async function handleFileSelection(input) {
-    if (input.files.length === 0) return;
-    if (isUploadInProgress) return; // منع أي رفع تاني وقت رفع شغال بالفعل
-
-    let file = input.files[0]; // ملف واحد بس - المرفقات الإضافية اتلغت
-    input.value = "";
-
-    // تحقق من الملف (الامتداد + الحجم) في خطوة واحدة
-    let validationError = validateFile(file);
-    if (validationError) {
-        alert(validationError);
-        return;
-    }
-
-    // فتح مودال القفل في نص الشاشة + منع أي تفاعل تاني مع الصفحة لحد ما الرفع يخلص
-    openUploadModal(
-        "جاري رفع الملف...",
-        `الرجاء الانتظار وعدم إغلاق الصفحة: ${file.name}`
-    );
-
-    let columnTarget = "link";
-    let currentRevClean = currentUploadRevName.trim().toLowerCase();
-    if (currentRevClean === "revision 1") columnTarget = "link_1";
-    else if (currentRevClean === "revision 2") columnTarget = "link_2";
-    else if (currentRevClean === "revision 3") columnTarget = "link_3";
-
-    try {
-        let uploadedUrl = await uploadFileToDrive(file);
-
-        // بدل تحديث submittals مباشرة، بننشئ "طلب موافقة" معلّق
-        // مع تسجيل الـ discipline والـ activity عشان تظهر واضحة
-        // في صفحة الموافقات قبل ما الأدمن يوافق.
-        const { data: insertedRows, error: insertError } = await supabaseClient
-            .from('upload_requests')
-            .insert({
-                task_key: currentUploadTaskKey,
-                raw_no: currentUploadRawNo,
-                task_title: currentUploadTaskTitle,
-                employee: currentUploadEmployee,
-                discipline: currentUploadDiscipline,
-                activity: currentUploadActivity,
-                revision_name: currentUploadRevName,
-                column_target: columnTarget,
-                file_name: file.name,
-                file_link: uploadedUrl,
-                status: 'pending'
-            })
-            .select();
-
-        if (insertError) {
-            console.error("Failed to create approval request:", insertError);
-            finishUploadModal(false, "فشل الرفع", insertError.message || "فشل حفظ طلب الموافقة");
-            loadPendingRequests();
-            return;
-        }
-
-        let newReq = (insertedRows && insertedRows[0]) ? insertedRows[0] : {
-            task_key: currentUploadTaskKey,
-            revision_name: currentUploadRevName,
-            discipline: currentUploadDiscipline,
-            activity: currentUploadActivity,
-            file_name: file.name,
-            file_link: uploadedUrl,
-            status: 'pending'
-        };
-
-        let key = `${newReq.task_key}||${newReq.revision_name.trim().toLowerCase()}`;
-        pendingMap[key] = newReq;
-
-        render();
-        updatePendingBadge(Object.keys(pendingMap).length);
-
-        finishUploadModal(
-            true,
-            "تم الإرسال بنجاح",
-            "تم إرسال الملف بنجاح لمراجعة المسؤول. هيظهر الرابط بعد الموافقة عليه."
-        );
-    } catch (err) {
-        console.error("Upload failed for file:", file.name, err);
-        finishUploadModal(false, "فشل الرفع", err && err.message ? err.message : "حصل خطأ غير متوقع أثناء الرفع.");
-    }
-
-    loadPendingRequests();
-}
-
 // ============================================
 // مرفقات التاسك (Attachments) — ملفات إضافية جوه نفس التاسك،
 // مش مرتبطة بريفيجن معينة. بتترفع أولاً على Supabase Storage
@@ -1714,6 +2036,7 @@ function build(rows) {
         let taskKey = generateTaskKey(row);
 
         data[emp].push({
+            type: 'submittal',
             taskKey: taskKey,
             rowId: row.id,
             no: row.no,
@@ -1756,6 +2079,7 @@ function renderSidebar() {
     let isAdmin = !window.currentUserRole || window.currentUserRole === 'admin' || window.currentUserRole === 'super_admin';
     let html = "";
     Object.keys(data).forEach(emp => {
+        if (emp === CONTRACTOR_BUCKET_KEY) return; // بيتحط آخر حاجة في الشريط، مش مع الموظفين
         let activeClass = emp === currentEmployee ? "active" : "";
         let openCount = data[emp].filter(t => computeTaskStatus(t) === "OPEN").length;
         let badgeHtml = openCount > 0 ? `<span class="emp-open-badge">${openCount}</span>` : "";
@@ -1768,13 +2092,14 @@ function renderSidebar() {
             ${T('noTasksForUser')}
         </div>`;
     }
+
     document.getElementById('sidebar').innerHTML = html;
 }
 
 function selectEmployee(emp) {
     currentEmployee = emp;
-    selected = data[emp];
-    document.getElementById('empName').textContent = emp;
+    selected = (emp === CONTRACTOR_BUCKET_KEY) ? contractorRequests : (data[emp] || []);
+    document.getElementById('empName').textContent = (emp === CONTRACTOR_BUCKET_KEY) ? T('contractorChipLabel') : emp;
     renderSidebar();
     render();
 }
@@ -1846,6 +2171,10 @@ function closeReviewModal() {
 
 // بيحسب حالة أي تاسك (OPEN / CLOSED / DELAY) بناءً على آخر Revision عندها بيانات
 function computeTaskStatus(t) {
+    // ريكوستات المقاولين مالهاش revisions زي تاسكات الموظفين - هي دايمًا
+    // "قيد المراجعة" لحد ما المهندس يبعتها للأدمن، فبنعتبرها OPEN في الإحصائيات/الفلتر
+    if (t.type === 'contractor') return "OPEN";
+
     let activeRevisions = [];
     t.revisions.forEach(rev => {
         let submitted = (rev.submitted || "").trim();
@@ -1913,15 +2242,19 @@ function buildRevision(rev, taskKey, rawNo, taskTitle, employee, discipline, act
     if (pendingRequest) {
         uploadButtonHtml = `<button class="link-btn pending-btn" style="opacity:0.7; cursor:not-allowed;" disabled>⏳ ${T('pendingApproval')}</button>`;
     } else if (isRevisionDone) {
-        // الريفيجن خلصت (فيها كود واستلام) — مفيش داعي لزرار رفع ملف تاني، بيقلل ارتفاع الكارت
+        // الريفيجن خلصت (فيها كود واستلام) — مفيش داعي لودجت رفع تانية، بيقلل ارتفاع الكارت
         uploadButtonHtml = "";
     } else {
-        uploadButtonHtml = `<button class="link-btn upload-btn" onclick="triggerUpload('${escapeForJsAttr(taskKey)}', '${escapeForJsAttr(rev.name)}', '${escapeForJsAttr(rawNo || '-')}', '${escapeForJsAttr(taskTitle || '')}', '${escapeForJsAttr(employee || '')}', '${escapeForJsAttr(discipline || '')}', '${escapeForJsAttr(activity || '')}')">📁 ${T('uploadFile')}</button>`;
+        let uid = toDomId(taskKey) + '_' + revIndex;
+        uploadButtonHtml = buildInlineRevUploadHtml(uid, taskKey, rev.name, rawNo || '-', taskTitle || '', employee || '', discipline || '', activity || '');
     }
 
     let submittedLine = submitted
         ? `${T('submitted')}: ${submitted} ${received ? " | " + T('received') + ": " + received : ""}`
-        : (pendingRequest ? `${T('pendingUploadNote')} (${escapeHtml(pendingRequest.file_name || '')})` : "");
+        : (pendingRequest
+            ? `${T('pendingUploadNote')} (${escapeHtml(pendingRequest.file_name || '')})` +
+              (pendingRequest.code ? ` — ${T('requestedCodeLabel')}: <b>${escapeHtml(pendingRequest.code)}</b>` : '')
+            : "");
 
     let isSuperAdmin = window.currentUserRole === 'super_admin';
     let rowIdLiteral = (typeof rowId === 'string') ? `'${escapeForJsAttr(rowId)}'` : rowId;
@@ -1950,15 +2283,200 @@ function buildRevision(rev, taskKey, rawNo, taskTitle, employee, discipline, act
     return { html: html, delay: delay, hasData: true };
 }
 
-function triggerUpload(taskKey, revName, rawNo, taskTitle, employee, discipline, activity) {
-    currentUploadTaskKey = taskKey;
-    currentUploadRevName = revName;
-    currentUploadRawNo = rawNo;
-    currentUploadTaskTitle = taskTitle;
-    currentUploadEmployee = employee;
-    currentUploadDiscipline = discipline;
-    currentUploadActivity = activity;
-    document.getElementById('global-file-input').click();
+// ============================================
+// ودجت مدموجة جوه كارت الريفيجن (مش مودال منفصل) - اختيار الملف
+// والكود (A/B/C/D) ظاهرين على طول جوه الكارت، وزرار "إرسال للموافقة"
+// مقفول لحد ما المهندس يختار الاتنين مع بعض.
+// ============================================
+let inlineRevMeta = {};   // uid -> بيانات التاسك/الريفيجن المطلوبة وقت الإرسال
+let inlineRevCode = {};   // uid -> الكود المختار حاليًا (A/B/C/D)
+
+function toDomId(str) {
+    return (str || '').toString().replace(/[^a-zA-Z0-9_-]/g, '_');
+}
+
+function buildInlineRevUploadHtml(uid, taskKey, revName, rawNo, taskTitle, employee, discipline, activity) {
+    inlineRevMeta[uid] = { taskKey, revName, rawNo, taskTitle, employee, discipline, activity };
+    return `
+    <div class="inline-rev-upload" data-uid="${uid}">
+        <label class="inline-rev-file-label" for="rf-${uid}">
+            <i class="fa-solid fa-paperclip"></i> ${T('revCodeChooseFile')}
+        </label>
+        <input type="file" id="rf-${uid}" class="inline-rev-file-input"
+               accept=".pdf,.xls,.xlsx,.xlsm,.csv,.doc,.docx,.dwg,.dxf,.dwf,.zip"
+               onchange="onInlineRevFileChange('${uid}', this)">
+        <div class="inline-rev-filename" id="rfname-${uid}">
+            <i class="fa-regular fa-circle"></i> ${T('revCodeNoFileYet')}
+        </div>
+        <div class="inline-rev-codes">
+            <div class="inline-rev-code-wrap">
+                <button type="button" data-code="A" onclick="pickInlineRevCode('${uid}','A')">A</button>
+                <div class="inline-rev-code-hint">${T('revCodeHintA')}</div>
+            </div>
+            <div class="inline-rev-code-wrap">
+                <button type="button" data-code="B" onclick="pickInlineRevCode('${uid}','B')">B</button>
+                <div class="inline-rev-code-hint">${T('revCodeHintB')}</div>
+            </div>
+            <div class="inline-rev-code-wrap">
+                <button type="button" data-code="C" onclick="pickInlineRevCode('${uid}','C')">C</button>
+                <div class="inline-rev-code-hint">${T('revCodeHintC')}</div>
+            </div>
+            <div class="inline-rev-code-wrap">
+                <button type="button" data-code="D" onclick="pickInlineRevCode('${uid}','D')">D</button>
+                <div class="inline-rev-code-hint">${T('revCodeHintD')}</div>
+            </div>
+        </div>
+        <button type="button" class="inline-rev-send" id="rs-${uid}" disabled onclick="submitInlineRevUpload('${uid}')">📨 ${T('revCodeSend')}</button>
+        <div class="inline-rev-hint" id="rh-${uid}"></div>
+    </div>
+    `;
+}
+
+function onInlineRevFileChange(uid, input) {
+    if (input.files.length > 0) {
+        let validationError = validateFile(input.files[0]);
+        if (validationError) {
+            alert(validationError);
+            input.value = '';
+        }
+    }
+
+    let nameEl = document.getElementById(`rfname-${uid}`);
+    if (nameEl) {
+        if (input.files.length > 0) {
+            nameEl.innerHTML = `<i class="fa-solid fa-circle-check"></i> ${escapeHtml(input.files[0].name)}`;
+            nameEl.classList.add('has-file');
+        } else {
+            nameEl.innerHTML = `<i class="fa-regular fa-circle"></i> ${T('revCodeNoFileYet')}`;
+            nameEl.classList.remove('has-file');
+        }
+    }
+
+    updateInlineRevSendState(uid);
+}
+
+function pickInlineRevCode(uid, code) {
+    inlineRevCode[uid] = code;
+    let card = document.querySelector(`.inline-rev-upload[data-uid="${uid}"]`);
+    if (card) {
+        card.querySelectorAll('.inline-rev-codes button').forEach(b => {
+            b.classList.toggle('selected', b.getAttribute('data-code') === code);
+        });
+    }
+    updateInlineRevSendState(uid);
+}
+
+function updateInlineRevSendState(uid) {
+    let fileInput = document.getElementById(`rf-${uid}`);
+    let hasFile = fileInput && fileInput.files.length > 0;
+    let hasCode = !!inlineRevCode[uid];
+    let sendBtn = document.getElementById(`rs-${uid}`);
+    if (sendBtn) sendBtn.disabled = !(hasFile && hasCode);
+    let hint = document.getElementById(`rh-${uid}`);
+    if (hint) hint.textContent = '';
+
+    if (hasFile || hasCode) markRevSelectionActive(uid);
+    else clearRevSelectionActive(uid);
+}
+
+async function submitInlineRevUpload(uid) {
+    let meta = inlineRevMeta[uid];
+    if (!meta) return;
+
+    let fileInput = document.getElementById(`rf-${uid}`);
+    let file = fileInput && fileInput.files[0];
+    let code = inlineRevCode[uid];
+    let hint = document.getElementById(`rh-${uid}`);
+
+    if (!file && !code) { if (hint) hint.textContent = T('revCodeMissingBoth'); return; }
+    if (!file) { if (hint) hint.textContent = T('revCodeMissingFile'); return; }
+    if (!code) { if (hint) hint.textContent = T('revCodeMissingCode'); return; }
+    if (isUploadInProgress) return;
+
+    // بمجرد ما نبدأ الإرسال فعليًا، مبقاش محتاجين نحمي الكارت ده من الـ render
+    // التلقائي - أي رفريش جاي دلوقتي هيلاقي حالة "pending" وهيرسمها صح.
+    clearRevSelectionActive(uid);
+
+    // uploadFileToDrive() لسه بيقرا من المتغيرات العامة دي لبيانات جوجل درايف
+    // (اسم التاسك/الموظف/التخصص..)، فلازم نظبطها هنا قبل ما ننادي عليها.
+    currentUploadTaskKey = meta.taskKey;
+    currentUploadRevName = meta.revName;
+    currentUploadRawNo = meta.rawNo;
+    currentUploadTaskTitle = meta.taskTitle;
+    currentUploadEmployee = meta.employee;
+    currentUploadDiscipline = meta.discipline;
+    currentUploadActivity = meta.activity;
+
+    openUploadModal(
+        "جاري رفع الملف...",
+        `الرجاء الانتظار وعدم إغلاق الصفحة: ${file.name}`
+    );
+
+    let columnTarget = "link";
+    let revClean = meta.revName.trim().toLowerCase();
+    if (revClean === "revision 1") columnTarget = "link_1";
+    else if (revClean === "revision 2") columnTarget = "link_2";
+    else if (revClean === "revision 3") columnTarget = "link_3";
+
+    try {
+        let uploadedUrl = await uploadFileToDrive(file);
+
+        // بدل تحديث submittals مباشرة، بننشئ "طلب موافقة" معلّق - شايل معاه
+        // كمان الكود (A/B/C/D) اللي المهندس اختاره مع الملف، عشان الأدمن
+        // يعتمدهم مع بعض لما يوافق (الكود + الرابط + تاريخ الاستلام).
+        const { data: insertedRows, error: insertError } = await supabaseClient
+            .from('upload_requests')
+            .insert({
+                task_key: meta.taskKey,
+                raw_no: meta.rawNo,
+                task_title: meta.taskTitle,
+                employee: meta.employee,
+                discipline: meta.discipline,
+                activity: meta.activity,
+                revision_name: meta.revName,
+                column_target: columnTarget,
+                file_name: file.name,
+                file_link: uploadedUrl,
+                code: code,
+                status: 'pending'
+            })
+            .select();
+
+        if (insertError) {
+            console.error("Failed to create approval request:", insertError);
+            finishUploadModal(false, "فشل الرفع", insertError.message || "فشل حفظ طلب الموافقة");
+            loadPendingRequests();
+            return;
+        }
+
+        let newReq = (insertedRows && insertedRows[0]) ? insertedRows[0] : {
+            task_key: meta.taskKey,
+            revision_name: meta.revName,
+            discipline: meta.discipline,
+            activity: meta.activity,
+            file_name: file.name,
+            file_link: uploadedUrl,
+            code: code,
+            status: 'pending'
+        };
+
+        let key = `${newReq.task_key}||${newReq.revision_name.trim().toLowerCase()}`;
+        pendingMap[key] = newReq;
+
+        render();
+        updatePendingBadge(Object.keys(pendingMap).length);
+
+        finishUploadModal(
+            true,
+            "تم الإرسال بنجاح",
+            "تم إرسال الملف والكود لمراجعة المسؤول. هيتسجلوا مع بعض بعد الموافقة."
+        );
+    } catch (err) {
+        console.error("Upload failed for file:", file.name, err);
+        finishUploadModal(false, "فشل الرفع", err && err.message ? err.message : "حصل خطأ غير متوقع أثناء الرفع.");
+    }
+
+    loadPendingRequests();
 }
 
 // ============================================
@@ -1966,13 +2484,29 @@ function triggerUpload(taskKey, revName, rawNo, taskTitle, employee, discipline,
 // ============================================
 const REV_COLUMN_SUFFIXES = ['', '_1', '_2', '_3']; // Original, Revision 1, 2, 3
 
+// دالة مشتركة: أي إجراء حذف نهائي للسوبر أدمن لازم يعدّي منها —
+// بتتأكد إنه فعلاً super_admin، وبتلف الإجراء جوه نفس مودال تأكيد
+// الباسورد/الـ PIN المستخدم في باقي إجراءات الحذف بالموقع (guardUpload).
+// ده بديل التكرار اللي كان موجود قبل كده جوه كل دالة حذف لوحدها.
+function runWithSuperAdminGuard(action) {
+    if (window.currentUserRole !== 'super_admin') return;
+    if (typeof window.guardUpload === 'function') {
+        try {
+            window.guardUpload(action);
+        } catch (e) {
+            console.error('guardUpload failed:', e);
+        }
+    } else {
+        action();
+    }
+}
+
 // بيمسح تاسك كامل (الصف كله) نهائيًا من جدول submittals
-async function deleteTaskCompletely(rowId, taskKey, employeeKey) {
-    // Defense-in-depth: الزرار أصلاً بيظهر بس للسوبر أدمن
+function deleteTaskCompletely(rowId, taskKey, employeeKey) {
     if (window.currentUserRole !== 'super_admin') return;
     if (!confirm(T('confirmDeleteTask'))) return;
 
-    async function doDelete() {
+    runWithSuperAdminGuard(async () => {
         try {
             const { error } = await supabaseClient.from('submittals').delete().eq('id', rowId);
             if (error) throw error;
@@ -1991,25 +2525,12 @@ async function deleteTaskCompletely(rowId, taskKey, employeeKey) {
             console.error('deleteTaskCompletely failed:', e);
             alert(T('deleteTaskErr'));
         }
-    }
-
-    // نفس مودال تأكيد الباسورد/الـ PIN بتاع السوبر أدمن المستخدم في باقي
-    // إجراءات الحذف بالموقع — تأكيد إضافي قبل أي حذف نهائي من القاعدة.
-    if (typeof window.guardUpload === 'function') {
-        try {
-            window.guardUpload(doDelete);
-        } catch (e) {
-            console.error('guardUpload failed:', e);
-        }
-    } else {
-        doDelete();
-    }
+    });
 }
 
 // بيمسح بيانات ريفيجن واحدة بس (submitted/received/duration/code/link)
 // من نفس صف التاسك، من غير ما يمسح التاسك كله
-async function deleteRevisionData(rowId, taskKey, employeeKey, revIndex, revName) {
-    // Defense-in-depth: الزرار أصلاً بيظهر بس للسوبر أدمن
+function deleteRevisionData(rowId, taskKey, employeeKey, revIndex, revName) {
     if (window.currentUserRole !== 'super_admin') return;
     if (!confirm(T('confirmDeleteRevision'))) return;
 
@@ -2021,7 +2542,7 @@ async function deleteRevisionData(rowId, taskKey, employeeKey, revIndex, revName
     payload['code' + suffix] = null;
     payload['link' + suffix] = null;
 
-    async function doDelete() {
+    runWithSuperAdminGuard(async () => {
         try {
             const { error } = await supabaseClient.from('submittals').update(payload).eq('id', rowId);
             if (error) throw error;
@@ -2041,17 +2562,7 @@ async function deleteRevisionData(rowId, taskKey, employeeKey, revIndex, revName
             console.error('deleteRevisionData failed:', e);
             alert(T('deleteRevisionErr'));
         }
-    }
-
-    if (typeof window.guardUpload === 'function') {
-        try {
-            window.guardUpload(doDelete);
-        } catch (e) {
-            console.error('guardUpload failed:', e);
-        }
-    } else {
-        doDelete();
-    }
+    });
 }
 
 // بيحسب ويحدّث عدادات التاسكات (الكل / مفتوح / مغلق / متأخر) للموظف المختار حاليًا
@@ -2107,6 +2618,17 @@ function render() {
     let cardIndex = 0;
 
     orderedTasks.forEach(t => {
+        // ريكوستات المقاولين ليها شكل كارت مختلف تمامًا (كود A/B/C + تعليق +
+        // مراجعة/توقيع)، فبتتبني بدالة منفصلة بدل منطق تاسكات الموظفين تحت
+        if (t.type === 'contractor') {
+            let searchText = ((t.title || "") + " " + (t.submittal_no || "") + " " + (t.discipline || "") + " " + (t.activity || "") + " " + (t.contractor_username || "")).toLowerCase();
+            if (keyword && !searchText.includes(keyword)) return;
+            let animDelay = Math.min(cardIndex, 12) * 0.05;
+            cardIndex++;
+            html += buildContractorCard(t, animDelay);
+            return;
+        }
+
         let revHTML = "";
         let activeRevisions = [];
 
@@ -2176,6 +2698,736 @@ function render() {
 
     tasksContainer.innerHTML = html || `<div style="text-align:center; color:var(--text-muted); margin-top:20px;">${T('noSubmittals')}</div>`;
 }
+
+// ============================================================
+// مراجعة ريكوستات المقاولين (سابقًا engineer-review.html) — دلوقتي
+// جوه نفس صفحة المهام، كارتاتها بتظهر في نفس القائمة وبتتفتح للتعديل
+// جوه الكارت نفسه من غير ما نودّي المستخدم لصفحة تانية.
+//
+// بتتحط جوه التاب بتاع المهندس نفسه (نفس مفتاح data اللي تاسكاته العادية
+// من submittals متخزنة عليه) - مش جوه تاب "مراجعة المقاولين" منفصل، عشان
+// المهندس ميحتاجش ينتقل بين تابات؛ بتظهر في التاب المفتوح أصلاً عنده،
+// وكأنها تاسك عادي جاي من جدول submittals.
+// ============================================================
+
+// نفس منطق المطابقة اللي build() بيستخدمه: بيدور على مفتاح موظف في data
+// بيطابق اسم المستخدم الحالي (case-insensitive)، ولو مفيش، بيرجع اسم
+// المستخدم نفسه كمفتاح جديد (يتعمله لازم لو المهندس مالوش تاسكات عادية لسه)
+function myTaskBucketKey() {
+    let myName = (window.currentUsername || '').trim().toLowerCase();
+    if (!myName) return null;
+    let matchedKey = Object.keys(data).find(emp => emp !== CONTRACTOR_BUCKET_KEY && emp.trim().toLowerCase() === myName);
+    return matchedKey || window.currentUsername;
+}
+
+// جلب الريكوستات المعلّقة اللي محتاجة موافقة المهندس الحالي بالظبط
+async function loadContractorRequests() {
+    try {
+        let session = window.__guardSession || (await supabaseClient.auth.getSession()).data.session;
+        if (!session || !session.user) { contractorRequests = []; renderSidebar(); return; }
+
+        const { data: rows, error } = await supabaseClient
+            .from('contractor_requests')
+            .select('*')
+            .eq('engineer_id', session.user.id)
+            .eq('status', 'pending_engineer')
+            .order('requested_at', { ascending: true });
+        if (error) throw error;
+
+        contractorRequests = (rows || []).map(r => Object.assign({ type: 'contractor' }, r));
+
+        let key = myTaskBucketKey();
+        if (key) {
+            let myOtherTasks = (data[key] || []).filter(t => t.type !== 'contractor');
+            data[key] = myOtherTasks.concat(contractorRequests);
+            if (currentEmployee === key) selected = data[key];
+            else if (!currentEmployee) selectEmployee(key);
+        }
+
+        renderIfNoActiveSelections();
+        renderSidebar();
+    } catch (err) {
+        console.error("Error loading contractor requests:", err);
+    }
+}
+
+function pickContractorCode(id, code) {
+    selectedContractorCode[id] = code;
+    render();
+}
+
+function toggleContractorCard(id, event) {
+    if (event) event.stopPropagation();
+    expandedContractorCards[id] = !expandedContractorCards[id];
+    render();
+}
+
+function getFileExtensionRev(filename) {
+    let parts = (filename || "").toString().trim().split(".");
+    return parts.length > 1 ? parts.pop().toLowerCase() : "";
+}
+
+async function resolveFileLinkForDisplay(fileLink) {
+    if (!fileLink || fileLink.indexOf('drive.google.com') !== -1) return fileLink;
+    return await window.getAttachmentSignedUrl(fileLink, ATTACHMENTS_BUCKET, 3600);
+}
+
+// نفس فكرة openReviewModal بتاعة تاسكات الموظفين، بس بتحل رابط الملف الأول
+// (ممكن يكون على Supabase Storage محتاج signed URL بدل ما يكون رابط عام)
+async function openContractorReviewFile(id) {
+    let req = contractorRequests.find(r => r.id === id);
+    if (!req) return;
+
+    document.getElementById('reviewModalTitle').textContent = `${T('contractorReviewFile')}: ${req.file_name || ''}`;
+
+    let displayLink = await resolveFileLinkForDisplay(req.file_link);
+    let ext = getFileExtensionRev(req.file_name);
+    let bodyEl = document.getElementById('reviewModalBody');
+
+    if (ext === 'pdf') {
+        bodyEl.innerHTML = `<iframe src="${escapeHtml(displayLink)}"></iframe>`;
+    } else {
+        bodyEl.innerHTML = `
+            <div class="review-fallback">
+                <div style="font-size:40px; margin-bottom:10px;">📄</div>
+                <div>${T('reviewNoPreview')}</div>
+            </div>
+        `;
+    }
+
+    document.getElementById('reviewModalFooter').innerHTML = `
+        <a class="link-btn view-btn" href="${escapeHtml(displayLink)}" target="_blank">🔗 ${T('reviewOpenInNewTab')}</a>
+        <button class="link-btn" style="background:#e2e8f0; color:var(--text-main);" onclick="closeReviewModal()">${T('reviewClose')}</button>
+    `;
+
+    document.getElementById('reviewOverlay').classList.add('active');
+}
+
+function openLock(msg) {
+    document.getElementById('lockMsg').textContent = msg;
+    document.getElementById('lockOverlay').classList.add('active');
+}
+function closeLock() {
+    document.getElementById('lockOverlay').classList.remove('active');
+}
+
+function extractStoragePath(publicUrl) {
+    let marker = `/storage/v1/object/public/${ATTACHMENTS_BUCKET}/`;
+    let idx = (publicUrl || "").indexOf(marker);
+    if (idx === -1) return publicUrl; // already a bare storage path
+    return decodeURIComponent(publicUrl.substring(idx + marker.length));
+}
+
+function dataUrlToUint8Array(dataUrl) {
+    let base64 = dataUrl.split(',')[1];
+    let binary = atob(base64);
+    let bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return bytes;
+}
+
+// بيبني كارت ريكوست مقاول واحد بنفس شكل كارت التاسك (.task)، فيه ملخص
+// دايمًا ظاهر + جزء تعديل/مراجعة بيتفتح لما تدوس على الكارت (accordion)
+function buildContractorCard(r, animDelay) {
+    let isExpanded = !!expandedContractorCards[r.id];
+    let currentLang = (typeof window.getCurrentLang === 'function') ? window.getCurrentLang() : 'ar';
+    let submittedAtStr = r.requested_at ? new Date(r.requested_at).toLocaleString(currentLang === 'ar' ? 'ar-EG' : 'en-US') : '-';
+
+    let notesHtml = r.notes
+        ? `<div class="contractor-notes-box"><b>${T('contractorNotesLabel')}:</b> ${escapeHtml(r.notes)}</div>`
+        : "";
+    let adminNoteHtml = r.admin_final_note
+        ? `<div class="contractor-notes-box admin-note"><b>${T('contractorAdminNote')}:</b> ${escapeHtml(r.admin_final_note)}</div>`
+        : "";
+
+    let codes = ['A', 'B', 'C', 'D'];
+    let codeButtonsHtml = codes.map(c => `
+        <div class="contractor-code-wrap">
+            <button type="button" class="contractor-code-btn ${selectedContractorCode[r.id] === c ? 'selected' : ''}"
+                onclick="event.stopPropagation(); pickContractorCode(${r.id}, '${c}')">${c}</button>
+            <div class="contractor-code-hint">${T('contractor' + c + 'Hint')}</div>
+        </div>
+    `).join('');
+
+    let expandedBodyHtml = isExpanded ? `
+        <div class="contractor-body" onclick="event.stopPropagation();">
+            <textarea class="contractor-comment-box" id="contractor-comment-${r.id}" placeholder="${T('contractorCommentPlaceholder')}"></textarea>
+            <div class="contractor-code-row">${codeButtonsHtml}</div>
+            <div class="contractor-actions-row">
+                <button class="link-btn view-btn" onclick="event.stopPropagation(); openContractorReviewFile(${r.id})">🔗 ${T('contractorReviewFile')}</button>
+                <button class="link-btn" style="background:var(--success); color:#fff;" onclick="event.stopPropagation(); openAnnotationModal(${r.id})">✅ ${T('contractorSubmitBtn')}</button>
+            </div>
+        </div>
+    ` : "";
+
+    return `
+    <div class="task contractor-task" style="animation-delay:${animDelay}s;" id="contractor-task-${r.id}" onclick="toggleContractorCard(${r.id}, event)">
+        <div class="contractor-summary">
+            <div class="task-header-row">
+                <div class="task-activity">${T('contractorChipLabel')}</div>
+            </div>
+            <div class="title">${escapeHtml(r.title || '')}${r.submittal_no ? ' - ' + escapeHtml(r.submittal_no) : ''}</div>
+            <div class="meta-tags">
+                <span class="tag">${T('discipline')}: ${escapeHtml(r.discipline || '-')}</span>
+                ${r.activity ? `<span class="tag">${T('contractorActivityLabel')}: ${escapeHtml(r.activity)}</span>` : ""}
+                <span class="tag">${T('contractorContractor')}: ${escapeHtml(r.contractor_username || '-')}</span>
+                <span class="tag">${T('contractorSubmittedAt')}: ${escapeHtml(submittedAtStr)}</span>
+            </div>
+            ${notesHtml}
+            ${adminNoteHtml}
+            <div class="contractor-expand-hint"><i class="fa-solid fa-${isExpanded ? 'chevron-up' : 'chevron-down'}"></i> ${T('contractorExpandHint')}</div>
+        </div>
+        ${expandedBodyHtml}
+    </div>
+    `;
+}
+
+// ============================================
+// مربع رسم التوقيع الصغير (Canvas)
+// ============================================
+function initSignaturePad() {
+    let canvas = document.getElementById('sigCanvas');
+    let ratio = Math.max(window.devicePixelRatio || 1, 1);
+    canvas.width = canvas.offsetWidth * ratio;
+    canvas.height = canvas.offsetHeight * ratio;
+    canvas.getContext('2d').scale(ratio, ratio);
+    sigPad = new SignaturePad(canvas, { backgroundColor: 'rgba(255,255,255,0)', penColor: '#0f172a' });
+    sigPad.addEventListener('beginStroke', () => {
+        document.getElementById('sigHint').style.display = 'none';
+    });
+}
+
+function clearSignaturePad() {
+    if (sigPad) sigPad.clear();
+    document.getElementById('sigHint').style.display = 'block';
+}
+
+function openSigDrawModal() {
+    document.getElementById('sigOverlay').classList.add('active');
+    setTimeout(() => { if (!sigPad) initSignaturePad(); else clearSignaturePad(); }, 30);
+}
+
+function closeSigDrawModal() {
+    document.getElementById('sigOverlay').classList.remove('active');
+    pendingSigPos = null;
+}
+
+function confirmSigDraw() {
+    if (!sigPad || sigPad.isEmpty()) {
+        alert('من فضلك ارسم التوقيع الأول.');
+        return;
+    }
+    let dataUrl = sigPad.toDataURL('image/png');
+    document.getElementById('sigOverlay').classList.remove('active');
+    if (pendingSigPos) {
+        placeSignatureAt(pendingSigPos.x, pendingSigPos.y, dataUrl);
+        pendingSigPos = null;
+    }
+}
+
+// المهندس بيرفع صورة توقيع جاهزة من جهازه بدل ما يرسم - بتتحط في نفس
+// المكان اللي كان دوس عليه بالظبط، زي التوقيع المرسوم بالظبط.
+function handleSigImageUpload(input) {
+    let file = input.files && input.files[0];
+    if (!file) return;
+    let reader = new FileReader();
+    reader.onload = function () {
+        document.getElementById('sigOverlay').classList.remove('active');
+        if (pendingSigPos) {
+            placeSignatureAt(pendingSigPos.x, pendingSigPos.y, reader.result);
+            pendingSigPos = null;
+        }
+        input.value = '';
+    };
+    reader.onerror = function () {
+        alert('تعذر قراءة الصورة، جرّب صورة تانية.');
+        input.value = '';
+    };
+    reader.readAsDataURL(file);
+}
+
+// ============================================
+// محرر الكتابة الحرة على الملف: المهندس يدوس "نص" أو "توقيع"، وبعدين يدوس
+// في أي مكان في الصفحة يحبه - النص/التوقيع يتحط هناك بالظبط، وممكن يسحبه
+// لمكان تاني أو يمسحه. لما يخلص ويدوس "إرسال"، كل ده بيتحط فعليًا جوه ملف
+// الـ PDF الحقيقي (باستخدام pdf-lib) قبل ما يترفع.
+// ============================================
+function populateFontFamilySelect() {
+    let sel = document.getElementById('fontFamilySelect');
+    sel.innerHTML = FONT_OPTIONS.map(f => `<option value="${f.key}">${f.label}</option>`).join('');
+}
+
+function fontOptionByKey(key) {
+    return FONT_OPTIONS.find(f => f.key === key) || FONT_OPTIONS[0];
+}
+
+function applyTextItemStyle(el, fontSize, fontFamilyKey) {
+    let opt = fontOptionByKey(fontFamilyKey);
+    let scale = (annotState && annotState.renderScale) ? annotState.renderScale : 1;
+    el.style.fontSize = (fontSize * scale) + 'px';
+    el.style.fontFamily = opt.css;
+    el.style.fontWeight = opt.weight;
+}
+
+function updateFontControlsUI() {
+    let fontSize = selectedAnnotItem ? selectedAnnotItem.fontSize : (annotState ? annotState.fontSize : 15);
+    let fontFamily = selectedAnnotItem ? selectedAnnotItem.fontFamily : (annotState ? annotState.fontFamily : 'HelveticaBold');
+    document.getElementById('fontSizeVal').textContent = fontSize;
+    document.getElementById('fontFamilySelect').value = fontFamily;
+}
+
+function selectAnnotItem(item, el) {
+    if (selectedAnnotEl) selectedAnnotEl.classList.remove('annot-selected');
+    if (!item || item.type !== 'text') {
+        selectedAnnotItem = null;
+        selectedAnnotEl = null;
+    } else {
+        selectedAnnotItem = item;
+        selectedAnnotEl = el;
+        el.classList.add('annot-selected');
+    }
+    updateFontControlsUI();
+}
+
+function changeFontSize(delta) {
+    if (!annotState) return;
+    if (selectedAnnotItem) {
+        selectedAnnotItem.fontSize = Math.max(8, Math.min(60, (selectedAnnotItem.fontSize || 15) + delta));
+        applyTextItemStyle(selectedAnnotEl, selectedAnnotItem.fontSize, selectedAnnotItem.fontFamily);
+    } else {
+        annotState.fontSize = Math.max(8, Math.min(60, (annotState.fontSize || 15) + delta));
+    }
+    updateFontControlsUI();
+}
+
+function changeFontFamily(key) {
+    if (!annotState) return;
+    if (selectedAnnotItem) {
+        selectedAnnotItem.fontFamily = key;
+        applyTextItemStyle(selectedAnnotEl, selectedAnnotItem.fontSize, key);
+    } else {
+        annotState.fontFamily = key;
+    }
+    updateFontControlsUI();
+}
+
+function makeItemDraggable(el) {
+    function startDrag(e) {
+        if (e.target.classList.contains('del-btn')) return;
+        draggingEl = el;
+        let point = e.touches ? e.touches[0] : e;
+        dragStartX = point.clientX; dragStartY = point.clientY;
+        dragOrigLeft = parseFloat(el.style.left); dragOrigTop = parseFloat(el.style.top);
+        if (e.cancelable) e.preventDefault();
+    }
+    el.addEventListener('mousedown', startDrag);
+    el.addEventListener('touchstart', startDrag, { passive: true });
+}
+document.addEventListener('mousemove', onAnnotDragMove);
+document.addEventListener('touchmove', onAnnotDragMove, { passive: false });
+document.addEventListener('mouseup', endAnnotDrag);
+document.addEventListener('touchend', endAnnotDrag);
+function onAnnotDragMove(e) {
+    if (!draggingEl) return;
+    let point = e.touches ? e.touches[0] : e;
+    let dx = point.clientX - dragStartX, dy = point.clientY - dragStartY;
+    let newLeft = dragOrigLeft + dx, newTop = dragOrigTop + dy;
+    draggingEl.style.left = newLeft + 'px';
+    draggingEl.style.top = newTop + 'px';
+    if (draggingEl._item) { draggingEl._item.x = newLeft; draggingEl._item.y = newTop; }
+}
+function endAnnotDrag() { draggingEl = null; }
+
+function addFinalizedTextItem(x, y, text, fontSize, fontFamily) {
+    let layer = document.getElementById('annotLayer');
+    let id = 'ai_' + Date.now() + Math.random().toString(36).slice(2, 6);
+    let div = document.createElement('div');
+    div.className = 'annot-item text-item';
+    div.style.left = x + 'px';
+    div.style.top = y + 'px';
+    div.textContent = text;
+    let delBtn = document.createElement('div');
+    delBtn.className = 'del-btn';
+    delBtn.textContent = '×';
+    let item = { id, type: 'text', text, x, y, fontSize: fontSize || 15, fontFamily: fontFamily || 'HelveticaBold' };
+    delBtn.onclick = function (e) {
+        e.stopPropagation();
+        div.remove();
+        annotState.items = annotState.items.filter(it => it.id !== id);
+        if (selectedAnnotItem === item) selectAnnotItem(null, null);
+    };
+    div.appendChild(delBtn);
+    div._item = item;
+    applyTextItemStyle(div, item.fontSize, item.fontFamily);
+    div.addEventListener('click', function (e) {
+        e.stopPropagation();
+        selectAnnotItem(item, div);
+    });
+    makeItemDraggable(div);
+    layer.appendChild(div);
+    annotState.items.push(item);
+    selectAnnotItem(item, div);
+}
+
+function createTextItemAt(x, y) {
+    let layer = document.getElementById('annotLayer');
+    let fontSize = annotState.fontSize || 15;
+    let fontFamily = annotState.fontFamily || 'HelveticaBold';
+    let opt = fontOptionByKey(fontFamily);
+    let scale = annotState.renderScale || 1;
+    let input = document.createElement('input');
+    input.type = 'text';
+    input.placeholder = 'اكتب هنا...';
+    input.style.cssText = `position:absolute; left:${x}px; top:${y}px; font-size:${fontSize * scale}px;
+        font-family:${opt.css}; font-weight:${opt.weight}; color:#c0202b; border:1px dashed #c0202b;
+        background:rgba(255,255,255,0.9); padding:2px 5px; border-radius:3px; min-width:80px; z-index:5;`;
+    layer.appendChild(input);
+    input.focus();
+    let committed = false;
+    function commit() {
+        if (committed) return;
+        committed = true;
+        let val = input.value.trim();
+        input.remove();
+        if (val) addFinalizedTextItem(x, y, val, fontSize, fontFamily);
+    }
+    input.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') { e.preventDefault(); commit(); }
+        if (e.key === 'Escape') { committed = true; input.remove(); }
+    });
+    input.addEventListener('blur', commit);
+}
+
+function placeSignatureAt(x, y, dataUrl) {
+    let layer = document.getElementById('annotLayer');
+    let id = 'ai_' + Date.now() + Math.random().toString(36).slice(2, 6);
+    let div = document.createElement('div');
+    div.className = 'annot-item sig-item';
+    div.style.left = x + 'px';
+    div.style.top = y + 'px';
+    let img = document.createElement('img');
+    img.src = dataUrl;
+    div.appendChild(img);
+    let delBtn = document.createElement('div');
+    delBtn.className = 'del-btn';
+    delBtn.textContent = '×';
+    let item = { id, type: 'sig', dataUrl, x, y };
+    delBtn.onclick = function (e) {
+        e.stopPropagation();
+        div.remove();
+        annotState.items = annotState.items.filter(it => it.id !== id);
+    };
+    div.appendChild(delBtn);
+    div._item = item;
+    div.addEventListener('click', function (e) {
+        e.stopPropagation();
+        selectAnnotItem(null, null); // التوقيع مالوش خط، يشيل أي تحديد نص حالي
+    });
+    makeItemDraggable(div);
+    layer.appendChild(div);
+    annotState.items.push(item);
+}
+
+function handleAnnotLayerClick(e) {
+    if (!annotState) return;
+    if (e.target.closest && e.target.closest('.annot-item')) return; // العنصر نفسه بيتعامل مع تحديده
+    selectAnnotItem(null, null);
+    if (!annotState.tool) return;
+    let layer = document.getElementById('annotLayer');
+    let rect = layer.getBoundingClientRect();
+    let x = e.clientX - rect.left;
+    let y = e.clientY - rect.top;
+    if (annotState.tool === 'text') {
+        createTextItemAt(x, y);
+    } else if (annotState.tool === 'sig') {
+        pendingSigPos = { x, y };
+        openSigDrawModal();
+    }
+}
+
+function setAnnotTool(tool) {
+    if (!annotState) return;
+    annotState.tool = (annotState.tool === tool) ? null : tool;
+    document.getElementById('toolTextBtn').classList.toggle('active-tool', annotState.tool === 'text');
+    document.getElementById('toolSigBtn').classList.toggle('active-tool', annotState.tool === 'sig');
+    document.getElementById('annotLayer').classList.toggle('tool-none', !annotState.tool);
+    document.getElementById('annotHint').textContent = annotState.tool === 'text'
+        ? 'دوس في أي مكان في الصفحة عشان تكتب هناك.'
+        : annotState.tool === 'sig'
+            ? 'دوس في المكان اللي عايز تحط فيه التوقيع.'
+            : 'دوس "نص" أو "توقيع" فوق، وبعدين دوس في أي مكان في الصفحة عشان تضيف هناك.';
+}
+
+function clearAllAnnotations() {
+    if (!annotState || annotState.items.length === 0) return;
+    if (!confirm('تمسح كل النصوص والتوقيعات اللي حطيتها؟')) return;
+    document.getElementById('annotLayer').innerHTML = '';
+    annotState.items = [];
+}
+
+async function openAnnotationModal(id) {
+    let code = selectedContractorCode[id];
+    if (!code) { alert(T('contractorErrNoCode')); return; }
+    if (!validateCommentForCode(id, code)) return;
+    let req = contractorRequests.find(r => r.id === id);
+    if (!req) return;
+
+    let isPdf = /\.pdf($|\?)/i.test(req.file_name || '');
+    if (!isPdf) {
+        if (!confirm('الملف ده مش PDF، فمش هينفع نكتب عليه مباشرة. تحب تبعت الريكوست للأدمن للموافقة زي ما هو (من غير كتابة على الملف)؟')) return;
+        submitForFinalApproval(id, null);
+        return;
+    }
+
+    openLock('جاري تجهيز الملف...');
+    try {
+        let fetchLink = await resolveFileLinkForDisplay(req.file_link);
+        let response = await fetch(fetchLink);
+        if (!response.ok) throw new Error('تعذر تحميل الملف.');
+        let arrayBuffer = await response.arrayBuffer();
+
+        pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js";
+        let pdf = await pdfjsLib.getDocument({ data: arrayBuffer.slice(0) }).promise;
+        let page = await pdf.getPage(1);
+        let viewport1 = page.getViewport({ scale: 1 });
+
+        // المودال لازم يبقى ظاهر (active) الأول قبل ما نقيس مساحة العرض
+        // المتاحة، وإلا clientWidth/clientHeight بترجع صفر (لسه مخفي) وده
+        // كان بيخلي الصفحة تتحسب بأصغر سكيل ممكن دايمًا مهما كان حجم الشاشة
+        document.getElementById('annotOverlay').classList.add('active');
+
+        let containerWidth = document.getElementById('annotCanvasArea').clientWidth - 28;
+        let containerHeight = document.getElementById('annotCanvasArea').clientHeight - 28;
+        let scaleByWidth = containerWidth / viewport1.width;
+        let scaleByHeight = containerHeight / viewport1.height;
+        let scale = Math.min(4, Math.max(0.5, Math.min(scaleByWidth, scaleByHeight)));
+        let viewport = page.getViewport({ scale });
+
+        let canvas = document.getElementById('pdfRenderCanvas');
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+
+        let layer = document.getElementById('annotLayer');
+        layer.innerHTML = '';
+        layer.style.width = viewport.width + 'px';
+        layer.style.height = viewport.height + 'px';
+        let pageWrap = document.getElementById('annotPageWrap');
+        pageWrap.style.width = viewport.width + 'px';
+        pageWrap.style.height = viewport.height + 'px';
+
+        annotState = {
+            requestId: id, req, code,
+            pdfBytes: arrayBuffer,
+            pageWidthPt: viewport1.width,
+            pageHeightPt: viewport1.height,
+            renderScale: scale,
+            items: [],
+            tool: null,
+            fontSize: 15,
+            fontFamily: 'HelveticaBold'
+        };
+        selectedAnnotItem = null;
+        selectedAnnotEl = null;
+        populateFontFamilySelect();
+        updateFontControlsUI();
+        setAnnotTool(null);
+    } catch (err) {
+        console.error('openAnnotationModal error:', err);
+        document.getElementById('annotOverlay').classList.remove('active');
+        alert('حصل خطأ أثناء تجهيز الملف للكتابة عليه: ' + (err.message || ''));
+    } finally {
+        closeLock();
+    }
+}
+
+function closeAnnotationModal() {
+    if (annotState && annotState.items.length > 0) {
+        if (!confirm('هتقفل من غير ما تبعت - أي حاجة كتبتها هتضيع. متأكد؟')) return;
+    }
+    document.getElementById('annotOverlay').classList.remove('active');
+    document.getElementById('annotLayer').innerHTML = '';
+    annotState = null;
+    selectedAnnotItem = null;
+    selectedAnnotEl = null;
+}
+
+// بيرسم أي نص (عربي أو إنجليزي) على canvas مخفي واخد باله من اتجاه الكتابة
+// (RTL للعربي) ولاصق الحروف صح زي ما المتصفح نفسه بيعرضها، وبعدين بيرجعه
+// كصورة PNG - عشان نحطه جوه الـ PDF كصورة بدل نص حقيقي. ده بيتفادى تمامًا
+// مشكلة إن خطوط PDF القياسية (Helvetica/Times/Courier) معندهاش حروف عربي
+// أصلًا (كانت بتدي خطأ "WinAnsi cannot encode").
+function renderTextItemToImage(text, fontSizePt, fontOpt) {
+    let isRtl = /[\u0600-\u06FF]/.test(text);
+    let dpr = 6; // دقة عالية جدًا عشان النص يطلع واضح تمامًا حتى لو الملف اتكبر أو اتطبع
+
+    let measureCanvas = document.createElement('canvas');
+    let mctx = measureCanvas.getContext('2d');
+    let weightPrefix = (parseInt(fontOpt.weight, 10) >= 700) ? 'bold ' : '';
+    let fontCss = `${weightPrefix}${fontSizePt}px ${fontOpt.css}`;
+    mctx.font = fontCss;
+    let metrics = mctx.measureText(text);
+    let textWidth = Math.max(metrics.width, 2);
+    let ascent = metrics.actualBoundingBoxAscent || fontSizePt * 0.8;
+    let descent = metrics.actualBoundingBoxDescent || fontSizePt * 0.25;
+    let textHeight = Math.max(ascent + descent, fontSizePt);
+    let pad = 2;
+
+    let canvas = document.createElement('canvas');
+    canvas.width = Math.ceil((textWidth + pad * 2) * dpr);
+    canvas.height = Math.ceil((textHeight + pad * 2) * dpr);
+    let ctx = canvas.getContext('2d');
+    ctx.scale(dpr, dpr);
+    ctx.font = fontCss;
+    ctx.fillStyle = 'rgb(192,32,43)'; // نفس لون التعليقات #c0202b في محرر الكتابة
+    ctx.textBaseline = 'alphabetic';
+    ctx.direction = isRtl ? 'rtl' : 'ltr';
+    ctx.textAlign = isRtl ? 'right' : 'left';
+    let drawX = isRtl ? (textWidth + pad) : pad;
+    ctx.fillText(text, drawX, pad + ascent);
+
+    return {
+        dataUrl: canvas.toDataURL('image/png'),
+        widthPt: textWidth + pad * 2,
+        heightPt: textHeight + pad * 2
+    };
+}
+
+async function bakeAnnotationsIntoPdf(state) {
+    let pdfDoc = await PDFLib.PDFDocument.load(state.pdfBytes.slice(0));
+    let page = pdfDoc.getPages()[0];
+
+    for (let item of state.items) {
+        // تحويل إحداثيات المحرر (بكسل، من فوق-يسار) لنقاط PDF (من تحت-يسار)
+        let pdfX = item.x / state.renderScale;
+        let pdfYFromTop = item.y / state.renderScale;
+
+        if (item.type === 'text') {
+            let fontSize = item.fontSize || 13;
+            let fontOpt = fontOptionByKey(item.fontFamily || 'HelveticaBold');
+            let rendered = renderTextItemToImage(item.text, fontSize, fontOpt);
+            let textBytes = dataUrlToUint8Array(rendered.dataUrl);
+            let textImage = await pdfDoc.embedPng(textBytes);
+            let pdfY = state.pageHeightPt - pdfYFromTop - rendered.heightPt;
+            page.drawImage(textImage, { x: pdfX, y: pdfY, width: rendered.widthPt, height: rendered.heightPt });
+        } else if (item.type === 'sig') {
+            let sigBytes = dataUrlToUint8Array(item.dataUrl);
+            let sigImage = await pdfDoc.embedPng(sigBytes);
+            let displayWidthPx = 130; // نفس عرض .annot-item.sig-item في الـ CSS
+            let sigWidthPt = displayWidthPx / state.renderScale;
+            let sigHeightPt = sigWidthPt * (sigImage.height / sigImage.width);
+            let pdfY = state.pageHeightPt - pdfYFromTop - sigHeightPt;
+            page.drawImage(sigImage, { x: pdfX, y: pdfY, width: sigWidthPt, height: sigHeightPt });
+        }
+    }
+
+    let bytes = await pdfDoc.save();
+    return new Blob([bytes], { type: 'application/pdf' });
+}
+
+function commentRequiredForCode(code) {
+    return code === 'B' || code === 'C' || code === 'D'; // A = موافقة من غير تعليق، B/C/D لازم تعليق
+}
+
+function validateCommentForCode(id, code) {
+    if (!commentRequiredForCode(code)) return true;
+    let el = document.getElementById(`contractor-comment-${id}`);
+    let comment = (el && el.value ? el.value : '').trim();
+    if (!comment) {
+        alert(T('contractorErrCommentRequired'));
+        return false;
+    }
+    return true;
+}
+
+async function submitAnnotatedRequest() {
+    if (!annotState) return;
+    let id = annotState.requestId;
+    let req = annotState.req;
+    let code = annotState.code;
+
+    if (!validateCommentForCode(id, code)) return;
+
+    document.getElementById('annotSubmitBtn').disabled = true;
+    openLock('جاري إنشاء النسخة النهائية...');
+
+    try {
+        let stampedBlob = (annotState.items.length > 0)
+            ? await bakeAnnotationsIntoPdf(annotState)
+            : new Blob([annotState.pdfBytes], { type: 'application/pdf' });
+
+        let safeName = (req.file_name || 'file.pdf').replace(/[^a-zA-Z0-9._-]/g, '_');
+        let path = `contractor-requests/${Date.now()}_final_${safeName}`;
+        const { error: uploadError } = await supabaseClient.storage
+            .from(ATTACHMENTS_BUCKET)
+            .upload(path, stampedBlob, { upsert: false, contentType: 'application/pdf' });
+        if (uploadError) throw uploadError;
+
+        await finishSubmitForFinalApproval(id, code, path);
+        document.getElementById('annotOverlay').classList.remove('active');
+        document.getElementById('annotLayer').innerHTML = '';
+        annotState = null;
+        selectedAnnotItem = null;
+        selectedAnnotEl = null;
+        alert('تم إرسال الريكوست للأدمن للموافقة النهائية.');
+    } catch (err) {
+        console.error('submitAnnotatedRequest error:', err);
+        alert(err.message || 'حصل خطأ أثناء الإرسال.');
+    } finally {
+        document.getElementById('annotSubmitBtn').disabled = false;
+        closeLock();
+    }
+}
+
+// المسار البديل للملفات اللي مش PDF - بيتبعت للأدمن من غير كتابة على الملف
+async function submitForFinalApproval(id, finalFileLink) {
+    let code = selectedContractorCode[id];
+    if (!code) { alert(T('contractorErrNoCode')); return; }
+    if (!validateCommentForCode(id, code)) return;
+    openLock(T('contractorWorking'));
+    try {
+        await finishSubmitForFinalApproval(id, code, finalFileLink);
+        alert('تم إرسال الريكوست للأدمن للموافقة النهائية.');
+    } catch (err) {
+        console.error('submitForFinalApproval error:', err);
+        alert(err.message || T('contractorErrSubmit'));
+    } finally {
+        closeLock();
+    }
+}
+
+async function finishSubmitForFinalApproval(id, code, finalFileLink) {
+    let commentEl = document.getElementById(`contractor-comment-${id}`);
+    let comment = (commentEl && commentEl.value ? commentEl.value : '').trim();
+    let sentAt = new Date().toISOString();
+
+    const { error: updateError } = await supabaseClient
+        .from('contractor_requests')
+        .update({
+            status: 'pending_final_admin',
+            code: code,
+            engineer_comment: comment || null,
+            engineer_reviewed_at: sentAt,
+            final_file_link: finalFileLink
+        })
+        .eq('id', id);
+    if (updateError) throw updateError;
+
+    contractorRequests = contractorRequests.filter(r => r.id !== id);
+    let key = myTaskBucketKey();
+    if (key && data[key]) {
+        data[key] = data[key].filter(t => !(t.type === 'contractor' && t.id === id));
+        if (currentEmployee === key) selected = data[key];
+    }
+    delete selectedContractorCode[id];
+    delete expandedContractorCards[id];
+    renderSidebar();
+    render();
+}
+
+document.addEventListener('authguard:ready', function () {
+    loadContractorRequests();
+});
 </script>
 </body>
 </html>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>نظرة عامة على الموظفين - MDECO</title>
+    <title>نظرة عامة على الموظفين - MDCEO</title>
     <!-- منع أي كاش للصفحة نفسها (Browser cache) -->
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
@@ -15,6 +15,9 @@
       document.write('<script src="./cache-buster.js?v=' + Date.now() + '"><' + '/script>');
     </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;800;900&family=Tajawal:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
       // تحميل الملفات المهمة (auth-guard.js / lang.js) برقم إصدار مختلف
@@ -294,11 +297,63 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
+    
+        /* ============================================
+           MDCEO Professional Header/Nav — تحديث موحّد
+           ============================================ */
+        .header {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            gap: 14px !important;
+            position: relative !important;
+        }
+        .mdceo-mark {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 900;
+            letter-spacing: 1.2px;
+            padding-inline-end: 14px;
+            margin-inline-end: 4px;
+            border-inline-end: 1px solid rgba(255,255,255,0.32);
+            white-space: nowrap;
+        }
+        .mdceo-mark i {
+            color: #93c5fd;
+            font-size: 0.95em;
+            animation: mdceo-icon-pulse 3s ease-in-out infinite;
+        }
+        @keyframes mdceo-icon-pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.15) rotate(-4deg); }
+        }
+        .nav-container {
+            display: flex !important;
+            justify-content: center !important;
+            flex-wrap: wrap !important;
+            gap: 8px !important;
+        }
+        .nav-btn {
+            border-radius: 999px !important;
+            font-weight: 600 !important;
+            transition: background 0.18s ease, color 0.18s ease, transform 0.12s ease, box-shadow 0.18s ease !important;
+            border: 1px solid transparent !important;
+        }
+        .nav-btn:hover { transform: translateY(-1px); }
+        .nav-btn:active { transform: scale(0.96); }
+        .nav-btn.active {
+            box-shadow: 0 4px 12px -3px rgba(30,64,175,0.5) !important;
+        }
+
     </style>
+    <link rel="stylesheet" href="./design-system.css?v=3">
+    <script src="./nav-toggle.js?v=1" defer></script>
 </head>
 <body>
 
 <div class="header">
+    <span class="mdceo-mark"><i class="fa-solid fa-drafting-compass"></i>MDCEO</span>
     <i class="fa-solid fa-users"></i> <span data-i18n="pageTitle">نظرة عامة على الموظفين</span>
 </div>
 

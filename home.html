@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MDECO Submittals Dashboard</title>
+    <title>MDCEO Submittals Dashboard</title>
     <!-- منع أي كاش للصفحة نفسها (Browser cache) -->
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
@@ -651,12 +651,64 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
+    
+        /* ============================================
+           MDCEO Professional Header/Nav — تحديث موحّد
+           ============================================ */
+        .header {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            gap: 14px !important;
+            position: relative !important;
+        }
+        .mdceo-mark {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 900;
+            letter-spacing: 1.2px;
+            padding-inline-end: 14px;
+            margin-inline-end: 4px;
+            border-inline-end: 1px solid rgba(255,255,255,0.32);
+            white-space: nowrap;
+        }
+        .mdceo-mark i {
+            color: #93c5fd;
+            font-size: 0.95em;
+            animation: mdceo-icon-pulse 3s ease-in-out infinite;
+        }
+        @keyframes mdceo-icon-pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.15) rotate(-4deg); }
+        }
+        .nav-container {
+            display: flex !important;
+            justify-content: center !important;
+            flex-wrap: wrap !important;
+            gap: 8px !important;
+        }
+        .nav-btn {
+            border-radius: 999px !important;
+            font-weight: 600 !important;
+            transition: background 0.18s ease, color 0.18s ease, transform 0.12s ease, box-shadow 0.18s ease !important;
+            border: 1px solid transparent !important;
+        }
+        .nav-btn:hover { transform: translateY(-1px); }
+        .nav-btn:active { transform: scale(0.96); }
+        .nav-btn.active {
+            box-shadow: 0 4px 12px -3px rgba(30,64,175,0.5) !important;
+        }
+
     </style>
+    <link rel="stylesheet" href="./design-system.css?v=3">
+    <script src="./nav-toggle.js?v=1" defer></script>
 </head>
 <body>
 
 <div class="header">
-    <i class="fa-solid fa-folder-open"></i> <span data-i18n="pageTitle">MDECO SUBMITTALS DASHBOARD</span>
+    <span class="mdceo-mark"><i class="fa-solid fa-drafting-compass"></i>MDCEO</span>
+    <i class="fa-solid fa-folder-open"></i> <span data-i18n="pageTitle">MDCEO SUBMITTALS DASHBOARD</span>
 </div>
 
 <div class="nav-container">
@@ -675,10 +727,7 @@
     <a href="approvals.html" class="nav-btn">
         <i class="fa-solid fa-clipboard-check"></i> <span data-i18n="navApprovals">طلبات الموافقة</span>
         <span id="pendingNavBadge" class="nav-badge">0</span>
-    </a>
-    <a href="final-approval.html" class="nav-btn">
-        <i class="fa-solid fa-stamp"></i> <span data-i18n="navFinalApproval">الموافقة النهائية</span>
-        <span id="finalNavBadge" class="nav-badge">0</span>
+        <span id="finalNavBadge" class="nav-badge" style="top:auto; bottom:-6px;">0</span>
     </a>
     <a href="team_overview.html" class="nav-btn">
         <i class="fa-solid fa-users"></i> <span data-i18n="navTeam">نظرة عامة على الموظفين</span>
@@ -712,7 +761,7 @@
     </div>
     <div class="office-info">
         <p class="office-name">شركة التصاميم الحديثة للاستشارات الهندسية </p>
-        <p class="office-tag">MDECO Consulting Company</p>
+        <p class="office-tag">MDCEO Consulting Company</p>
     </div>
 </div>
 

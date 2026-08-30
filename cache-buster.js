@@ -1,5 +1,5 @@
 /*
-  MDECO Portal - Force-Fresh-Version Script
+  MDCEO Portal - Force-Fresh-Version Script
   ------------------------------------------
   Include this as the VERY FIRST thing inside <head>, before any other
   <script> or <link> tag, on EVERY page of the portal:

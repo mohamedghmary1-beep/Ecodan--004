@@ -1,5 +1,5 @@
 /*
-  MDECO Portal - Shared Language Persistence & Translation Script
+  MDCEO Portal - Shared Language Persistence & Translation Script
   ------------------------------------------------------------------
   Include this on EVERY page, right after the Supabase script tag:
 

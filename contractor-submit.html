@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>رفع ريكوست جديد - MDECO</title>
+    <title>رفع ريكوست جديد - MDCEO</title>
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
@@ -11,6 +11,9 @@
       document.write('<script src="./cache-buster.js?v=' + Date.now() + '"><' + '/script>');
     </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;800;900&family=Tajawal:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
       document.write('<script src="./auth-guard.js?v=' + Date.now() + '"><' + '/script>');
@@ -121,6 +124,11 @@
             font-family: inherit;
         }
         .form-group textarea { resize: vertical; min-height: 80px; }
+        .field-hint { font-size: 12px; margin-top: 5px; min-height: 16px; }
+        .field-hint.checking { color: var(--text-muted); }
+        .field-hint.success { color: var(--success); font-weight: 600; }
+        .field-hint.error { color: var(--danger); font-weight: 600; }
+        .field-hint.info { color: #b45309; font-weight: 600; }
         .form-group input:focus,
         .form-group select:focus,
         .form-group textarea:focus {
@@ -169,6 +177,40 @@
         .msg-box.error { display: block; background: #fee2e2; color: var(--danger); border: 1px solid #fca5a5; }
         .msg-box.success { display: block; background: #d1fae5; color: var(--success); border: 1px solid #6ee7b7; }
 
+        .company-welcome {
+            background: linear-gradient(135deg, var(--primary), var(--primary-hover));
+            color: #fff;
+            border-radius: 12px;
+            padding: 16px 20px;
+            margin-bottom: 18px;
+            font-size: 15px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: var(--shadow-md);
+        }
+        .company-welcome i { font-size: 18px; }
+        .company-field {
+            margin-bottom: 16px;
+        }
+        .company-field label {
+            display: block;
+            font-weight: 700;
+            font-size: 13px;
+            margin-bottom: 6px;
+            color: var(--text-main);
+        }
+        .company-field-value {
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 14px;
+            background: #f1f5f9;
+            color: var(--text-main);
+            font-weight: 700;
+        }
+
         .req-list { display: flex; flex-direction: column; gap: 12px; }
         .req-card {
             border: 1px solid var(--border);
@@ -209,11 +251,63 @@
             margin: 0 auto 14px; animation: spin 0.8s linear infinite;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
+    
+        /* ============================================
+           MDCEO Professional Header/Nav — تحديث موحّد
+           ============================================ */
+        .header {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            gap: 14px !important;
+            position: relative !important;
+        }
+        .mdceo-mark {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 900;
+            letter-spacing: 1.2px;
+            padding-inline-end: 14px;
+            margin-inline-end: 4px;
+            border-inline-end: 1px solid rgba(255,255,255,0.32);
+            white-space: nowrap;
+        }
+        .mdceo-mark i {
+            color: #93c5fd;
+            font-size: 0.95em;
+            animation: mdceo-icon-pulse 3s ease-in-out infinite;
+        }
+        @keyframes mdceo-icon-pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.15) rotate(-4deg); }
+        }
+        .nav-container {
+            display: flex !important;
+            justify-content: center !important;
+            flex-wrap: wrap !important;
+            gap: 8px !important;
+        }
+        .nav-btn {
+            border-radius: 999px !important;
+            font-weight: 600 !important;
+            transition: background 0.18s ease, color 0.18s ease, transform 0.12s ease, box-shadow 0.18s ease !important;
+            border: 1px solid transparent !important;
+        }
+        .nav-btn:hover { transform: translateY(-1px); }
+        .nav-btn:active { transform: scale(0.96); }
+        .nav-btn.active {
+            box-shadow: 0 4px 12px -3px rgba(30,64,175,0.5) !important;
+        }
+
     </style>
+    <link rel="stylesheet" href="./design-system.css?v=3">
+    <script src="./nav-toggle.js?v=1" defer></script>
 </head>
 <body>
 
 <div class="header">
+    <span class="mdceo-mark"><i class="fa-solid fa-drafting-compass"></i>MDCEO</span>
     <i class="fa-solid fa-file-circle-plus"></i>
     <span data-i18n="pageTitle">رفع ريكوست جديد</span>
 </div>
@@ -232,17 +326,26 @@
 
 <div class="container">
 
+    <div class="company-welcome" id="companyWelcome" style="display:none;"></div>
+
     <div class="card">
         <h2><i class="fa-solid fa-paper-plane" style="color:var(--primary);"></i> <span data-i18n="formTitle">بيانات الريكوست الجديد</span></h2>
         <div class="sub" data-i18n="formSub">املأ البيانات، اختار القسم والمهندس المختص، وارفع الملف - هيتراجع من الأدمن الأول قبل ما يوصل للمهندس.</div>
 
         <div id="msgBox" class="msg-box"></div>
 
+        <div class="company-field" id="companyFieldWrap" style="display:none;">
+            <label data-i18n="lblCompany">اسم الشركة</label>
+            <div class="company-field-value" id="companyFieldValue"></div>
+        </div>
+        <div class="msg-box error" id="companyMissingMsg" style="display:none;" data-i18n="errNoCompanyOnAccount">حسابك لسه ملوش اسم شركة مسجل - كلم الأدمن يضيفه من صفحة الصلاحيات الأول عشان تقدر تبعت ريكوستات.</div>
+
         <form id="reqForm" onsubmit="handleSubmit(event)">
             <div class="form-row">
                 <div class="form-group">
-                    <label data-i18n="lblNo">رقم الريكوست (Submittal No.)</label>
-                    <input type="text" id="f-no" placeholder="اختياري">
+                    <label data-i18n="lblNo">رقم الريكوست (Submittal No.) <span class="req">*</span></label>
+                    <input type="text" id="f-no" required onblur="liveCheckSubmittalNo()">
+                    <div id="no-live-hint" class="field-hint"></div>
                 </div>
                 <div class="form-group">
                     <label data-i18n="lblTitle">العنوان <span class="req">*</span></label>
@@ -267,15 +370,17 @@
 
             <div class="form-row">
                 <div class="form-group">
-                    <label data-i18n="lblActivity">النشاط (Activity)</label>
-                    <input type="text" id="f-activity" placeholder="اختياري">
+                    <label data-i18n="lblActivity">النشاط (Activity) <span class="req">*</span></label>
+                    <select id="f-activity" required>
+                        <option value="" data-i18n="loadingOption">جاري التحميل...</option>
+                    </select>
                 </div>
             </div>
 
             <div class="form-row">
                 <div class="form-group" style="flex-basis:100%;">
                     <label data-i18n="lblNotes">ملاحظات / وصف الريكوست</label>
-                    <textarea id="f-notes" placeholder=""></textarea>
+                    <textarea id="f-notes"></textarea>
                 </div>
             </div>
 
@@ -330,20 +435,34 @@ const dictionary = {
         lblDiscipline: "القسم",
         lblEngineer: "المهندس المختص",
         lblActivity: "النشاط (Activity)",
+        lblCompany: "اسم الشركة",
+        welcomeMsg: "أهلاً بيك، {company} 👋",
+        errNoCompanyOnAccount: "حسابك لسه ملوش اسم شركة مسجل - كلم الأدمن يضيفه من صفحة الصلاحيات الأول عشان تقدر تبعت ريكوستات.",
         lblNotes: "ملاحظات / وصف الريكوست",
         lblFile: "الملف",
         dropHint: "اضغط لاختيار الملف (PDF / Word / Excel / CAD)",
         loadingOption: "جاري التحميل...",
+        chooseOption: "اختار...",
         btnSubmit: "إرسال الريكوست",
         myReqTitle: "ريكوستاتي المرسلة",
         myReqSub: "متابعة حالة كل الريكوستات اللي رفعتها.",
         loading: "جاري التحميل...",
         uploading: "جاري رفع الريكوست...",
+        checkingDuplicate: "جاري التحقق من رقم الريكوست...",
+        errDuplicateActive: "رقم الريكوست ده لسه قيد المراجعة (متبعتوش تاني لحد ما يتحسم).",
+        errDuplicateApproved: "رقم الريكوست ده معتمد بالفعل - مينفعش يتبعت تاني بنفس الرقم.",
+        errNoRevisionSlots: "رقم الريكوست ده وصل لأقصى عدد مراجعات مسموح (4). كلم الأدمن.",
+        hintIsRevision: "الرقم ده اترفض قبل كده - هيتسجل كمراجعة جديدة (Revision) لو بعتّه.",
+        hintNewNo: "رقم جديد ✓",
         noRequests: "مفيش ريكوستات اتبعتت لسه.",
         errFile: "من فضلك اختار ملف.",
         errBadExt: "مسموح برفع ملفات PDF / Excel / Word / CAD بس.",
         errNoDiscipline: "من فضلك اختار القسم.",
         errNoEngineer: "من فضلك اختار المهندس المختص.",
+        errNoTitle: "من فضلك اكتب العنوان.",
+        errNoSubmittalNo: "من فضلك اكتب رقم الريكوست (Submittal No.).",
+        errNoActivity: "من فضلك اكتب النشاط (Activity).",
+        errNoNotes: "من فضلك اكتب ملاحظات / وصف الريكوست.",
         errUpload: "حصل خطأ أثناء رفع الملف، حاول تاني.",
         errSave: "حصل خطأ أثناء حفظ الريكوست، حاول تاني.",
         successMsg: "تم إرسال الريكوست بنجاح، هيتراجع من الأدمن.",
@@ -368,20 +487,34 @@ const dictionary = {
         lblDiscipline: "Discipline",
         lblEngineer: "Responsible Engineer",
         lblActivity: "Activity",
+        lblCompany: "Company Name",
+        welcomeMsg: "Welcome, {company} 👋",
+        errNoCompanyOnAccount: "Your account doesn't have a company name set yet - ask the admin to add it from the Permissions page before you can submit requests.",
         lblNotes: "Notes / Request Description",
         lblFile: "File",
         dropHint: "Click to choose file (PDF / Word / Excel / CAD)",
         loadingOption: "Loading...",
+        chooseOption: "Choose...",
         btnSubmit: "Submit Request",
         myReqTitle: "My Submitted Requests",
         myReqSub: "Track the status of every request you've submitted.",
         loading: "Loading...",
         uploading: "Uploading request...",
+        checkingDuplicate: "Checking the Submittal No...",
+        errDuplicateActive: "This Submittal No. is still under review (please wait until it's resolved).",
+        errDuplicateApproved: "This Submittal No. has already been approved - it can't be submitted again with the same number.",
+        errNoRevisionSlots: "This Submittal No. has reached the maximum number of revisions (4). Please contact the admin.",
+        hintIsRevision: "This number was rejected before - submitting will register it as a new Revision.",
+        hintNewNo: "New number ✓",
         noRequests: "No requests submitted yet.",
         errFile: "Please choose a file.",
         errBadExt: "Only PDF / Excel / Word / CAD files are allowed.",
         errNoDiscipline: "Please choose a discipline.",
         errNoEngineer: "Please choose the responsible engineer.",
+        errNoTitle: "Please enter the title.",
+        errNoSubmittalNo: "Please enter the Submittal No.",
+        errNoActivity: "Please enter the Activity.",
+        errNoNotes: "Please enter notes / a description of the request.",
         errUpload: "An error occurred while uploading the file, please try again.",
         errSave: "An error occurred while saving the request, please try again.",
         successMsg: "Request submitted successfully - it will be reviewed by the admin.",
@@ -435,8 +568,9 @@ function showMsg(text, type) {
 // ============================================
 async function loadDropdowns() {
     try {
-        const { data: rows, error } = await supabaseClient.from('submittals').select('discipline');
+        const { data: rows, error } = await supabaseClient.from('submittals').select('discipline, activity');
         if (error) throw error;
+
         let disciplines = Array.from(new Set((rows || [])
             .map(r => (r.discipline || '').toString().trim())
             .filter(d => d)))
@@ -445,6 +579,18 @@ async function loadDropdowns() {
         let dSel = document.getElementById('f-discipline');
         dSel.innerHTML = '<option value="">-- ' + T('lblDiscipline') + ' --</option>' +
             disciplines.map(d => `<option value="${d}">${d}</option>`).join('');
+
+        // النشاط (Activity) بردو ليستة مقفولة، مسحوبة من نفس جدول
+        // submittals - مش نص حر، عشان المقاول ميكتبش حاجة برا الليستة
+        // المعروفة عندك.
+        let activities = Array.from(new Set((rows || [])
+            .map(r => (r.activity || '').toString().trim())
+            .filter(a => a)))
+            .sort((a, b) => a.localeCompare(b));
+
+        let aSel = document.getElementById('f-activity');
+        aSel.innerHTML = '<option value="">-- ' + T('lblActivity') + ' --</option>' +
+            activities.map(a => `<option value="${a}">${a}</option>`).join('');
     } catch (err) {
         console.error('Error loading disciplines:', err);
     }
@@ -474,11 +620,102 @@ function closeLock() {
     document.getElementById('lockOverlay').classList.remove('active');
 }
 
+// ============================================
+// فحص رقم الريكوست (Submittal No.) مقابل الوضع الحالي في contractor_requests
+// و submittals - نفس الفحص ده بيستخدم في مكانين: فحص فوري (live) لحظة ما
+// المقاول يسيب الخانة، وفحص نهائي إجباري وقت الإرسال الفعلي.
+// يرجع: { ok: true }                              -> مسموح يكمل عادي
+//        { ok: false, key: 'errXxx' }              -> ممنوع، ويوضح السبب
+//        { ok: true, isRevision: true }            -> مسموح، وده Revision جديدة
+// ============================================
+async function checkSubmittalNoStatus(no) {
+    if (!no) return { ok: true };
+
+    // مقارنة الرقم بتتعمل من غير حساسية لحالة الحروف (case-insensitive)
+    // ومن غير فراغات زيادة، عشان "IT-MD-CIV-IR-038" و"it-md-civ-ir-038"
+    // يتحسبوا نفس الرقم بالظبط. بنعمل escape لأي حرف % أو _ موجود فعلاً
+    // في الرقم نفسه، عشان مايتفسرش كـ wildcard في المقارنة.
+    let noPattern = no.replace(/[%_]/g, '\\$&');
+
+    const { data: activeReqs, error: activeErr } = await supabaseClient
+        .from('contractor_requests')
+        .select('id')
+        .ilike('submittal_no', noPattern)
+        .in('status', ['pending_admin', 'pending_engineer', 'pending_final_admin'])
+        .limit(1);
+    if (activeErr) throw activeErr;
+    if (activeReqs && activeReqs.length > 0) {
+        return { ok: false, key: 'errDuplicateActive' };
+    }
+
+    const { data: submittalRows, error: subErr } = await supabaseClient
+        .from('submittals')
+        .select('submitted_on, code, submitted_on_1, code_1, submitted_on_2, code_2, submitted_on_3, code_3')
+        .ilike('no', noPattern)
+        .limit(1);
+    if (subErr) throw subErr;
+
+    if (submittalRows && submittalRows.length > 0) {
+        let row = submittalRows[0];
+        let slots = ['', '_1', '_2', '_3'];
+        let lastFilled = null;
+        slots.forEach(s => { if (row['submitted_on' + s]) lastFilled = s; });
+
+        if (lastFilled !== null) {
+            let lastCode = row['code' + lastFilled];
+            if (lastCode && lastCode !== 'C') {
+                return { ok: false, key: 'errDuplicateApproved' };
+            }
+            if (lastFilled === '_3') {
+                return { ok: false, key: 'errNoRevisionSlots' };
+            }
+            return { ok: true, isRevision: true };
+        }
+    }
+
+    return { ok: true };
+}
+
+// فحص فوري: بيحصل لحظة ما المقاول يسيب خانة "رقم الريكوست" (blur)، عشان
+// يعرف على طول لو في مشكلة قبل ما يكمل باقي الفورم أو يرفع ملف من غير فايدة.
+let liveCheckToken = 0;
+async function liveCheckSubmittalNo() {
+    let no = document.getElementById('f-no').value.trim();
+    let hintEl = document.getElementById('no-live-hint');
+    if (!no) { hintEl.className = 'field-hint'; hintEl.textContent = ''; return; }
+
+    let myToken = ++liveCheckToken; // عشان لو المقاول غيّر الرقم بسرعة، النتيجة القديمة تتجاهل
+    hintEl.className = 'field-hint checking';
+    hintEl.textContent = T('checkingDuplicate');
+
+    try {
+        let result = await checkSubmittalNoStatus(no);
+        if (myToken !== liveCheckToken) return; // النتيجة دي بقت قديمة
+
+        if (!result.ok) {
+            hintEl.className = 'field-hint error';
+            hintEl.textContent = T(result.key);
+        } else if (result.isRevision) {
+            hintEl.className = 'field-hint info';
+            hintEl.textContent = T('hintIsRevision');
+        } else {
+            hintEl.className = 'field-hint success';
+            hintEl.textContent = T('hintNewNo');
+        }
+    } catch (err) {
+        if (myToken !== liveCheckToken) return;
+        console.error('Live submittal-no check failed:', err);
+        hintEl.className = 'field-hint';
+        hintEl.textContent = '';
+    }
+}
+
 async function handleSubmit(event) {
     event.preventDefault();
     showMsg('', '');
 
     if (!selectedFile) { showMsg(T('errFile'), 'error'); return; }
+    if (!window.currentCompanyName) { showMsg(T('errNoCompanyOnAccount'), 'error'); return; }
 
     let discipline = document.getElementById('f-discipline').value;
     let engineerId = document.getElementById('f-engineer').value;
@@ -491,11 +728,30 @@ async function handleSubmit(event) {
     let activity = document.getElementById('f-activity').value.trim();
     let notes = document.getElementById('f-notes').value.trim();
 
+    // كل الحقول بقت إجبارية - حتى لو الـ HTML "required" اتخطى لأي سبب
+    // (مثلاً حد استخدم الكيبورد بشكل غريب)، نتأكد تاني هنا قبل ما نبعت
+    // أي حاجة لقاعدة البيانات.
+    if (!title) { showMsg(T('errNoTitle'), 'error'); return; }
+    if (!no) { showMsg(T('errNoSubmittalNo'), 'error'); return; }
+    if (!activity) { showMsg(T('errNoActivity'), 'error'); return; }
+
     let submitBtn = document.getElementById('submitBtn');
     submitBtn.disabled = true;
-    openLock(T('uploading'));
+    openLock(T('checkingDuplicate'));
 
     try {
+        // نفس فحص رقم الريكوست اللي بيحصل فوري (live) وقت ما يسيب الخانة -
+        // بنعيده هنا كضمانة أخيرة قبل ما نبعت أي حاجة فعليًا لقاعدة البيانات.
+        let statusCheck = await checkSubmittalNoStatus(no);
+        if (!statusCheck.ok) {
+            showMsg(T(statusCheck.key), 'error');
+            submitBtn.disabled = false;
+            closeLock();
+            return;
+        }
+
+        openLock(T('uploading'));
+
         let session = window.__guardSession;
         let userId = session ? session.user.id : (await supabaseClient.auth.getSession()).data.session.user.id;
 
@@ -517,6 +773,7 @@ async function handleSubmit(event) {
                 notes: notes || null,
                 contractor_id: userId,
                 contractor_username: window.currentUsername || null,
+                company_name: window.currentCompanyName || null,
                 engineer_id: engineerId,
                 engineer_username: engineerObj ? engineerObj.username : null,
                 file_name: selectedFile.name,
@@ -597,7 +854,42 @@ function renderMyRequests() {
     `).join('');
 }
 
+// ============================================
+// اسم الشركة بيتجاب من حساب المقاول نفسه (profiles.company_name عن
+// طريق auth-guard.js) - مش بيتكتب يدوي هنا. بيظهر كترحيب فوق، وبيتحط
+// تلقائيًا مع كل ريكوست بيتبعت عشان الأدمن يقدر يفلتر بيه بعدين.
+// ============================================
+function applyCompanyInfo() {
+    let welcomeEl = document.getElementById('companyWelcome');
+    let fieldWrap = document.getElementById('companyFieldWrap');
+    let fieldValue = document.getElementById('companyFieldValue');
+    let missingMsg = document.getElementById('companyMissingMsg');
+    let submitBtn = document.getElementById('submitBtn');
+    let company = window.currentCompanyName;
+
+    if (company) {
+        welcomeEl.innerHTML = `<i class="fa-solid fa-building-user"></i> ${T('welcomeMsg').replace('{company}', company)}`;
+        welcomeEl.style.display = 'flex';
+        fieldValue.textContent = company;
+        fieldWrap.style.display = 'block';
+        missingMsg.style.display = 'none';
+        submitBtn.disabled = false;
+    } else {
+        welcomeEl.style.display = 'none';
+        fieldWrap.style.display = 'none';
+        missingMsg.style.display = 'block';
+        submitBtn.disabled = true;
+    }
+}
+window.onLanguageChanged = (function (orig) {
+    return function () {
+        if (typeof orig === 'function') orig();
+        applyCompanyInfo();
+    };
+})(window.onLanguageChanged);
+
 document.addEventListener('authguard:ready', function () {
+    applyCompanyInfo();
     loadDropdowns();
     loadMyRequests();
 });

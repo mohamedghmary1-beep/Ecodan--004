@@ -1,5 +1,5 @@
 /*
-  MDECO Portal - Shared Access Control Script (v2 - hardened)
+  MDCEO Portal - Shared Access Control Script (v2 - hardened)
   -------------------------------------------------------------
   SECURITY REWRITE (Aug 2026): this file used to trust whatever was sitting
   in localStorage ("userSession": { permissions, page_xxx: 'yes'/'no', ... }).
@@ -44,11 +44,15 @@
     const guardClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     window.__guardClient = guardClient; // reused by pages that need the same authed client
 
-    // Pages that ONLY the "administrator" (super-admin) role can open,
-    // regardless of any page_* column (team_overview and final-approval
-    // stay super_admin-only; approvals.html now follows page_approvals
-    // instead - see PAGE_COLUMNS below).
+    // Pages that ONLY the "administrator" (super-admin) role can open.
     const ADMIN_ONLY_PAGES = ['team_overview.html', 'final-approval.html', 'permissions.html'];
+
+    // approvals.html: open to any admin-permission role (admin AND super_admin -
+    // matches public.is_portal_admin() on the database side, which already
+    // treats them the same for RLS). This is also where the full engineer
+    // directory is loaded (for the "المهندس المختص" override dropdown), so
+    // any admin can see all engineers from here, not just the super-admin.
+    const ADMIN_AND_SUPER_ADMIN_PAGES = ['approvals.html'];
 
     // Pages every logged-in user can always reach, no matter what.
     const ALWAYS_ALLOWED_PAGES = ['index.html'];
@@ -70,8 +74,7 @@
         'home.html': 'page_home',
         'weekly_report.html': 'page_weekly_report',
         'weekly_report_view.html': 'page_weekly_report',
-        'general_by_activity.html': 'page_general_by_activity',
-        'approvals.html': 'page_approvals'
+        'general_by_activity.html': 'page_general_by_activity'
     };
 
     function currentPage() {
@@ -91,7 +94,29 @@
         if (el) el.remove();
     }
 
+    // Figures out where "the page he came from" actually is, so the
+    // access-denied screen can send the user back there instead of to a
+    // hardcoded page. Falls back to performance.html only if we have no
+    // usable referrer (e.g. page opened directly / bookmark / new tab).
+    function previousPageUrl() {
+        const ref = document.referrer;
+        if (ref) {
+            try {
+                const refUrl = new URL(ref);
+                const here = window.location.pathname.split('/').pop();
+                const refPage = refUrl.pathname.split('/').pop();
+                // Don't send them right back to the very page that just
+                // denied them (can happen on a hard refresh).
+                if (refUrl.origin === window.location.origin && refPage && refPage !== here) {
+                    return ref;
+                }
+            } catch (e) { /* malformed/opaque referrer - ignore, use fallback */ }
+        }
+        return 'performance.html';
+    }
+
     function showAccessDenied() {
+        const backUrl = previousPageUrl();
         document.body.innerHTML = `
             <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;
                         font-family:'Segoe UI',system-ui,-apple-system,sans-serif;flex-direction:column;
@@ -99,11 +124,21 @@
                 <div style="font-size:52px;">&#128683;</div>
                 <div style="font-size:20px;font-weight:800;color:#0f172a;">ماعندكش صلاحية تدخل الصفحة دي</div>
                 <div style="font-size:14px;color:#64748b;">You don't have permission to view this page.</div>
-                <a href="performance.html" style="margin-top:8px;color:#2563eb;font-weight:700;text-decoration:none;
-                   background:#eff6ff;padding:10px 20px;border-radius:8px;">الرجوع للداشبورد</a>
+                <div style="font-size:13px;color:#94a3b8;">هيتم رجوعك تلقائيًا...</div>
+                <a id="authguard-back-link" href="${backUrl}" style="margin-top:8px;color:#2563eb;font-weight:700;text-decoration:none;
+                   background:#eff6ff;padding:10px 20px;border-radius:8px;">الرجوع للصفحة السابقة</a>
             </div>
         `;
         reveal();
+        // Auto-return after a couple of seconds so the user isn't stuck -
+        // give them just enough time to read the message first.
+        setTimeout(function () {
+            if (window.history.length > 1) {
+                window.history.back();
+            } else {
+                window.location.href = backUrl;
+            }
+        }, 2500);
     }
 
     function pageIsAllowed(profile, role, pageName) {
@@ -118,11 +153,91 @@
         // so it layers on top of whatever normal role the engineer already has.
         if (ENGINEER_ONLY_PAGES.includes(pageName)) return !!profile.is_engineer;
 
+        if (ADMIN_AND_SUPER_ADMIN_PAGES.includes(pageName)) return role === 'admin' || role === 'super_admin';
         if (ADMIN_ONLY_PAGES.includes(pageName)) return false;
         const col = PAGE_COLUMNS[pageName];
         if (!col) return false;
         const val = (profile[col] || '').toString().trim().toLowerCase();
         return val === 'yes';
+    }
+
+    // Small circular avatar (first letter of the username) injected into the
+    // top header of every protected page, with a dropdown holding "change
+    // password" and "logout" - replaces the separate buttons that used to
+    // sit in the nav bar on each page individually.
+    function injectAccountMenu(username, email) {
+        const headerEl = document.querySelector('.header');
+        if (!headerEl || document.getElementById('mdceoAccountMenu')) return;
+
+        const lang = (typeof window.getCurrentLang === 'function') ? window.getCurrentLang() : 'ar';
+        const t = (lang === 'en')
+            ? { changePass: 'Change Password', logout: 'Logout' }
+            : { changePass: 'تغيير كلمة المرور', logout: 'تسجيل الخروج' };
+
+        const menuStyle = document.createElement('style');
+        menuStyle.textContent = `
+            .mdceo-account-menu { position:absolute; inset-inline-end:16px; top:50%; transform:translateY(-50%); z-index:60; }
+            .mdceo-account-avatar {
+                width:38px; height:38px; border-radius:50%;
+                background:rgba(255,255,255,0.18); color:#fff;
+                display:flex; align-items:center; justify-content:center;
+                font-weight:800; font-size:16px; cursor:pointer;
+                border:1.5px solid rgba(255,255,255,0.4); user-select:none;
+            }
+            .mdceo-account-avatar:hover { background:rgba(255,255,255,0.3); }
+            .mdceo-account-dropdown {
+                display:none; position:absolute; top:46px; inset-inline-end:0;
+                background:#fff; color:#1e293b; border-radius:10px;
+                box-shadow:0 10px 24px rgba(0,0,0,0.18); min-width:190px;
+                overflow:hidden; border:1px solid #e2e8f0; text-align:right;
+            }
+            .mdceo-account-dropdown.open { display:block; }
+            .mdceo-account-name {
+                padding:12px 14px; font-weight:700; font-size:13px;
+                border-bottom:1px solid #e2e8f0; background:#f8fafc;
+                white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+            }
+            .mdceo-account-item {
+                display:flex; align-items:center; gap:8px; padding:11px 14px;
+                font-size:13.5px; font-weight:600; cursor:pointer; color:#1e293b;
+            }
+            .mdceo-account-item:hover { background:#eff6ff; color:#1e40af; }
+            .mdceo-account-item.danger:hover { background:#fef2f2; color:#dc2626; }
+            [onclick="logout()"], [onclick="openChangePasswordModal()"] { display:none !important; }
+        `;
+        document.head.appendChild(menuStyle);
+
+        const label = (username || email || '?').trim();
+        const initial = (label.charAt(0) || '?').toUpperCase();
+
+        const wrap = document.createElement('div');
+        wrap.className = 'mdceo-account-menu';
+        wrap.id = 'mdceoAccountMenu';
+        wrap.innerHTML = `
+            <div class="mdceo-account-avatar" id="mdceoAccountAvatar">${initial}</div>
+            <div class="mdceo-account-dropdown" id="mdceoAccountDropdown">
+                <div class="mdceo-account-name">${label}</div>
+                <div class="mdceo-account-item" id="mdceoChangePass"><i class="fa-solid fa-key"></i> ${t.changePass}</div>
+                <div class="mdceo-account-item danger" id="mdceoLogout"><i class="fa-solid fa-right-from-bracket"></i> ${t.logout}</div>
+            </div>
+        `;
+        headerEl.appendChild(wrap);
+
+        const avatar = wrap.querySelector('#mdceoAccountAvatar');
+        const dropdown = wrap.querySelector('#mdceoAccountDropdown');
+        avatar.addEventListener('click', function (e) {
+            e.stopPropagation();
+            dropdown.classList.toggle('open');
+        });
+        document.addEventListener('click', function () { dropdown.classList.remove('open'); });
+        wrap.querySelector('#mdceoChangePass').addEventListener('click', function () {
+            dropdown.classList.remove('open');
+            if (typeof window.openChangePasswordModal === 'function') window.openChangePasswordModal();
+        });
+        wrap.querySelector('#mdceoLogout').addEventListener('click', function () {
+            dropdown.classList.remove('open');
+            window.logoutUser();
+        });
     }
 
     async function init() {
@@ -144,7 +259,7 @@
         //    `profiles` table), never from anything cached client-side.
         const { data: profile, error } = await guardClient
             .from('profiles')
-            .select('permissions, page_performance, page_summary, page_task, page_home, page_weekly_report, page_general_by_activity, page_approvals, username, is_engineer')
+            .select('permissions, page_performance, page_summary, page_task, page_home, page_weekly_report, page_general_by_activity, username, is_engineer, company_name')
             .eq('id', session.user.id)
             .single();
 
@@ -172,6 +287,7 @@
         window.currentUsername = profile.username;
         window.currentUserEmail = session.user.email;
         window.currentUserIsEngineer = !!profile.is_engineer;
+        window.currentCompanyName = (profile.company_name || '').trim() || null;
         window.canAccessFiles = (role === 'admin' || role === 'super_admin');
         window.canEditDashboard = (role === 'admin' || role === 'super_admin');
 
@@ -181,13 +297,12 @@
             if (!pageIsAllowed(profile, role, page)) { showAccessDenied(); return; }
         }
 
-        // ملحوظة: الكود ده async وبينتظر رد Supabase الأول، فبحلول ما نوصل هنا
-        // الصفحة تكون خلصت تحميلها بالفعل - يعني DOMContentLoaded يكون
-        // اتطلق من زمان ولو سجّلنا عليه listener هنا مش هيتنفذ خالص (وده كان
-        // سبب إن زراير الناف بار بتاعة الصفحات الممنوعة كانت فاضلة ظاهرة).
-        // بدل كده بنستخدم الدالة دي على طول، وبنتأكد الـ DOM جاهز لو حصل
-        // ونادر إن الصفحة لسه بتتحمل.
-        function hideDisallowedElements() {
+        reveal();
+        injectAccountMenu(profile.username, session.user.email);
+
+        document.dispatchEvent(new CustomEvent('authguard:ready', { detail: { role, profile } }));
+
+        document.addEventListener('DOMContentLoaded', function () {
             if (!window.canAccessFiles) {
                 document.querySelectorAll('.file-protected, [data-file-link]').forEach(function (el) {
                     el.style.display = 'none';
@@ -205,21 +320,7 @@
                     a.style.display = 'none';
                 }
             });
-        }
-
-        // بنخفي القوائم الممنوعة الأول، وبعدين نكشف الصفحة - عشان محدش
-        // يشوف حتى وميض بسيط لزرار صفحة مش مسموحله يدخلها.
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', function () {
-                hideDisallowedElements();
-                reveal();
-            });
-        } else {
-            hideDisallowedElements();
-            reveal();
-        }
-
-        document.dispatchEvent(new CustomEvent('authguard:ready', { detail: { role, profile } }));
+        });
     }
 
     window.logoutUser = function () {

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>إدارة الصلاحيات - MDECO</title>
+    <title>إدارة الصلاحيات - MDCEO</title>
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
@@ -11,6 +11,9 @@
       document.write('<script src="./cache-buster.js?v=' + Date.now() + '"><' + '/script>');
     </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;800;900&family=Tajawal:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
       document.write('<script src="./auth-guard.js?v=' + Date.now() + '"><' + '/script>');
@@ -56,11 +59,78 @@
 
         .empty-state { text-align:center; color:var(--text-muted); padding:40px 0; }
         .table-wrap { overflow-x:auto; }
+
+        .add-user-card { background:var(--bg-card); border-radius:12px; box-shadow:0 1px 3px rgba(0,0,0,0.05); padding:18px 20px; margin-bottom:20px; }
+        .add-user-card h3 { margin:0 0 14px 0; font-size:16px; font-weight:700; display:flex; align-items:center; gap:8px; }
+        .add-user-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap:12px; align-items:end; }
+        .add-user-grid .field { display:flex; flex-direction:column; gap:5px; }
+        .add-user-grid label { font-size:12.5px; font-weight:600; color:var(--text-muted); }
+        .add-user-grid input, .add-user-grid select { padding:9px 10px; border-radius:8px; border:1px solid var(--border); font-size:13.5px; font-family:inherit; }
+        .add-user-grid input:focus, .add-user-grid select:focus { outline:none; border-color:var(--primary); box-shadow:0 0 0 3px rgba(37,99,235,0.1); }
+        .btn-add-user { padding:10px 20px; border-radius:8px; border:none; background:var(--primary); color:#fff; font-weight:700; cursor:pointer; font-size:13.5px; white-space:nowrap; }
+        .btn-add-user:hover { background:var(--primary-hover); }
+        .btn-add-user:disabled { background:#94a3b8; cursor:not-allowed; }
+        .field-inline-check { display:flex; align-items:center; gap:8px; flex-direction:row-reverse; justify-content:flex-end; padding-bottom:9px; }
+        .add-user-msg { margin-top:12px; padding:10px 14px; border-radius:8px; font-size:13px; display:none; }
+        .add-user-msg.success { display:block; background:#ecfdf5; color:#047857; border:1px solid #d1fae5; }
+        .add-user-msg.error { display:block; background:#fef2f2; color:#dc2626; border:1px solid #fecaca; }
+    
+        /* ============================================
+           MDCEO Professional Header/Nav — تحديث موحّد
+           ============================================ */
+        .header {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            gap: 14px !important;
+            position: relative !important;
+        }
+        .mdceo-mark {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 900;
+            letter-spacing: 1.2px;
+            padding-inline-end: 14px;
+            margin-inline-end: 4px;
+            border-inline-end: 1px solid rgba(255,255,255,0.32);
+            white-space: nowrap;
+        }
+        .mdceo-mark i {
+            color: #93c5fd;
+            font-size: 0.95em;
+            animation: mdceo-icon-pulse 3s ease-in-out infinite;
+        }
+        @keyframes mdceo-icon-pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.15) rotate(-4deg); }
+        }
+        .nav-container {
+            display: flex !important;
+            justify-content: center !important;
+            flex-wrap: wrap !important;
+            gap: 8px !important;
+        }
+        .nav-btn {
+            border-radius: 999px !important;
+            font-weight: 600 !important;
+            transition: background 0.18s ease, color 0.18s ease, transform 0.12s ease, box-shadow 0.18s ease !important;
+            border: 1px solid transparent !important;
+        }
+        .nav-btn:hover { transform: translateY(-1px); }
+        .nav-btn:active { transform: scale(0.96); }
+        .nav-btn.active {
+            box-shadow: 0 4px 12px -3px rgba(30,64,175,0.5) !important;
+        }
+
     </style>
+    <link rel="stylesheet" href="./design-system.css?v=3">
+    <script src="./nav-toggle.js?v=1" defer></script>
 </head>
 <body>
 
 <div class="header">
+    <span class="mdceo-mark"><i class="fa-solid fa-drafting-compass"></i>MDCEO</span>
     <i class="fa-solid fa-user-shield"></i> <span data-i18n="pageTitle">إدارة صلاحيات المستخدمين</span>
 </div>
 
@@ -81,6 +151,43 @@
     <div class="top-note" data-i18n="topNote">
         غيّر دور أي مستخدم أو أي صفحة يشوفها من هنا مباشرة، بدل ما تدخل Supabase وتعدّل كل خانة يدويًا. الحفظ لكل صف على حدة - دوس "حفظ" جنب المستخدم بعد ما تغيّر حاجة له.
     </div>
+
+    <div class="add-user-card">
+        <h3><i class="fa-solid fa-user-plus"></i> <span data-i18n="addUserTitle">إضافة مستخدم جديد (مهندس / مقاول / موظف)</span></h3>
+        <form id="addUserForm" onsubmit="handleAddUser(event)">
+            <div class="add-user-grid">
+                <div class="field">
+                    <label data-i18n="fUsername">الاسم</label>
+                    <input type="text" id="new-username" required>
+                </div>
+                <div class="field">
+                    <label data-i18n="fEmail">الإيميل الحقيقي</label>
+                    <input type="email" id="new-email" required>
+                </div>
+                <div class="field">
+                    <label data-i18n="fPassword">كلمة المرور المبدئية</label>
+                    <input type="text" id="new-password" required minlength="6">
+                </div>
+                <div class="field">
+                    <label data-i18n="fRole">الدور</label>
+                    <select id="new-role" onchange="toggleCompanyField()"></select>
+                </div>
+                <div class="field" id="new-company-field" style="display:none;">
+                    <label data-i18n="fCompanyName">اسم الشركة</label>
+                    <input type="text" id="new-company-name">
+                </div>
+                <div class="field-inline-check">
+                    <input type="checkbox" id="new-is-engineer">
+                    <label data-i18n="fIsEngineer">مهندس؟</label>
+                </div>
+                <button type="submit" class="btn-add-user" id="addUserBtn">
+                    <i class="fa-solid fa-plus"></i> <span data-i18n="btnAddUser">إضافة</span>
+                </button>
+            </div>
+            <div class="add-user-msg" id="addUserMsg"></div>
+        </form>
+    </div>
+
     <div id="tableWrap" class="table-wrap">
         <div class="empty-state" data-i18n="loading">جاري التحميل...</div>
     </div>
@@ -90,6 +197,7 @@
 const SUPABASE_URL = "https://uhhtvpxtpayovbtmnstz.supabase.co";
 const SUPABASE_KEY = "sb_publishable_QsS0UhLBORy6mOaBDgW62g_9OacC3oO";
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const CREATE_USER_FUNCTION_URL = `${SUPABASE_URL}/functions/v1/create-user`;
 
 const ROLE_OPTIONS = [
     { value: 'administrator', ar: 'أدمن أعلى (كل الصلاحيات)', en: 'Super Admin (everything)' },
@@ -122,7 +230,18 @@ const dictionary = {
         colSave: "",
         btnSave: "حفظ",
         saved: "تم الحفظ ✓",
-        errSave: "حصل خطأ أثناء الحفظ، حاول تاني."
+        errSave: "حصل خطأ أثناء الحفظ، حاول تاني.",
+        addUserTitle: "إضافة مستخدم جديد (مهندس / مقاول / موظف)",
+        fUsername: "الاسم",
+        fEmail: "الإيميل الحقيقي",
+        fPassword: "كلمة المرور المبدئية",
+        fRole: "الدور",
+        fCompanyName: "اسم الشركة",
+        fIsEngineer: "مهندس؟",
+        btnAddUser: "إضافة",
+        addingUser: "جاري الإضافة...",
+        addUserSuccess: "تم إنشاء الحساب بنجاح ✓",
+        addUserError: "حصل خطأ أثناء إنشاء الحساب."
     },
     en: {
         pageTitle: "User Permissions Management",
@@ -136,14 +255,95 @@ const dictionary = {
         colSave: "",
         btnSave: "Save",
         saved: "Saved ✓",
-        errSave: "An error occurred while saving, please try again."
+        errSave: "An error occurred while saving, please try again.",
+        addUserTitle: "Add New User (Engineer / Contractor / Staff)",
+        fUsername: "Name",
+        fEmail: "Real Email",
+        fPassword: "Initial Password",
+        fRole: "Role",
+        fCompanyName: "Company Name",
+        fIsEngineer: "Engineer?",
+        btnAddUser: "Add",
+        addingUser: "Adding...",
+        addUserSuccess: "Account created successfully ✓",
+        addUserError: "An error occurred while creating the account."
     }
 };
 window.registerDictionary(dictionary);
-window.onLanguageChanged = function () { render(); };
+window.onLanguageChanged = function () { render(); populateNewRoleSelect(); };
 
 let currentLang = (typeof window.getCurrentLang === 'function') ? window.getCurrentLang() : 'ar';
 let users = [];
+
+function populateNewRoleSelect() {
+    let sel = document.getElementById('new-role');
+    if (!sel) return;
+    let prev = sel.value;
+    sel.innerHTML = ROLE_OPTIONS.map(r => `<option value="${r.value}">${r[currentLang]}</option>`).join('');
+    if (prev) sel.value = prev;
+    toggleCompanyField();
+}
+
+function toggleCompanyField() {
+    let role = document.getElementById('new-role').value;
+    document.getElementById('new-company-field').style.display = (role === 'contractor') ? 'flex' : 'none';
+}
+
+async function handleAddUser(event) {
+    event.preventDefault();
+    let t = dictionary[currentLang];
+    let msgEl = document.getElementById('addUserMsg');
+    let btn = document.getElementById('addUserBtn');
+    msgEl.className = 'add-user-msg';
+
+    let username = document.getElementById('new-username').value.trim();
+    let email = document.getElementById('new-email').value.trim();
+    let password = document.getElementById('new-password').value;
+    let role = document.getElementById('new-role').value;
+    let isEngineer = document.getElementById('new-is-engineer').checked;
+    let companyName = document.getElementById('new-company-name').value.trim();
+
+    if (!username || !email || !password) return;
+
+    btn.disabled = true;
+    let originalBtnHtml = btn.innerHTML;
+    btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> ${t.addingUser}`;
+
+    try {
+        let session = window.__guardSession || (await supabaseClient.auth.getSession()).data.session;
+        if (!session) throw new Error('No active session');
+
+        let response = await fetch(CREATE_USER_FUNCTION_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${session.access_token}`,
+                'apikey': SUPABASE_KEY
+            },
+            body: JSON.stringify({
+                username, email, password,
+                permissions: role,
+                is_engineer: isEngineer,
+                company_name: role === 'contractor' ? (companyName || null) : null
+            })
+        });
+        let result = await response.json();
+        if (!response.ok || result.error) throw new Error(result.error || 'Unknown error');
+
+        msgEl.textContent = t.addUserSuccess;
+        msgEl.className = 'add-user-msg success';
+        document.getElementById('addUserForm').reset();
+        populateNewRoleSelect();
+        loadUsers();
+    } catch (err) {
+        console.error('Add user error:', err);
+        msgEl.textContent = (t.addUserError) + (err.message ? ' (' + err.message + ')' : '');
+        msgEl.className = 'add-user-msg error';
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalBtnHtml;
+    }
+}
 
 async function loadUsers() {
     document.getElementById('tableWrap').innerHTML = `<div class="empty-state">${T('loading')}</div>`;
@@ -242,6 +442,7 @@ function saveUser(userId) {
 }
 
 document.addEventListener('authguard:ready', function () {
+    populateNewRoleSelect();
     loadUsers();
 });
 </script>

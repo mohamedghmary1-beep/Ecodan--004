@@ -1,0 +1,261 @@
+/* =====================================================================
+   MDCEO — Shared Design System (Slate Blue / Bento Grid)
+   Loaded on every page AFTER the page's own inline <style>, so these
+   custom-property values win the cascade and re-skin the whole app
+   without touching any page's markup or JavaScript logic.
+   ===================================================================== */
+
+:root {
+    /* ---- Brand / primary ---- */
+    --primary: #5E72E4;
+    --primary-hover: #4C5FD5;
+    --primary-light: #EEF1FE;
+    --primary-dark: #3B4BB8;
+
+    /* ---- Surfaces ---- */
+    --bg-main: #F6F9FC;
+    --bg-card: #FFFFFF;
+    --text-main: #1E2A4A;
+    --text-muted: #6B7A99;
+    --border: #E6EBF5;
+
+    /* ---- Semantic status colors (blueprint Code A/B/C/D) ---- */
+    --code-a: #A3E4B0;      /* Approved — pastel green   */
+    --code-a-text: #1E7B3A;
+    --code-b: #B0D4F1;      /* Approved w/ notes — pastel blue */
+    --code-b-text: #1B5FA8;
+    --code-c: #F7C5A0;      /* Revise & resubmit — pastel orange */
+    --code-c-text: #B75C12;
+    --code-d: #D9B8F1;      /* Rejected / archived — pastel purple */
+    --code-d-text: #6B2FA0;
+
+    --success: #2DCEB9;
+    --danger: #FB6340;
+    --danger-soft: #FDE3DA;
+    --danger-soft-text: #C2410C;
+
+    /* ---- Geometry ---- */
+    --radius-lg: 16px;
+    --radius-md: 12px;
+    --radius-sm: 8px;
+    --radius-pill: 999px;
+
+    /* ---- Shadow ---- */
+    --shadow-sm: 0 1px 3px rgba(30, 42, 74, 0.06);
+    --shadow-md: 0 6px 16px -6px rgba(30, 42, 74, 0.12);
+    --shadow-lg: 0 16px 32px -10px rgba(30, 42, 74, 0.18);
+}
+
+/* ---- Typography ---- */
+body {
+    font-family: 'Tajawal', 'Cairo', 'Segoe UI', system-ui, -apple-system, sans-serif !important;
+    background: var(--bg-main) !important;
+    color: var(--text-main) !important;
+}
+
+h1, h2, h3, .project-name, .office-name,
+.header, [data-i18n="pageTitle"] {
+    font-family: 'Cairo', 'Tajawal', sans-serif !important;
+    font-weight: 800 !important;
+}
+
+/* Monospace treatment for reference codes / IDs, matching the blueprint's
+   bilingual numeral spec (e.g. IT-MD-ELE-MAR-002) */
+code, .ref-no, .task-ref, .code-mono {
+    font-family: 'IBM Plex Mono', monospace !important;
+}
+
+/* ---- Header / top bar ---- */
+.header {
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark)) !important;
+    box-shadow: var(--shadow-md) !important;
+}
+
+/* ---- Sidebar nav (global — same shape on every page) ---- */
+body {
+    padding-inline-start: 108px;
+    transition: padding-inline-start 0.25s ease;
+}
+.header {
+    margin-inline-start: -108px;
+    width: 100vw;
+    padding-inline-start: 108px;
+    box-sizing: border-box;
+}
+
+body .nav-container {
+    position: fixed !important;
+    top: 0;
+    inset-inline-start: 0;
+    width: 108px;
+    height: 100vh;
+    background: linear-gradient(180deg, var(--primary-dark), var(--primary)) !important;
+    border-bottom: none !important;
+    flex-direction: column !important;
+    flex-wrap: nowrap !important;
+    justify-content: flex-start !important;
+    align-items: stretch !important;
+    gap: 6px !important;
+    padding: 64px 10px 16px !important;
+    box-shadow: var(--shadow-lg) !important;
+    overflow-y: auto;
+    z-index: 90;
+    transition: transform 0.25s ease;
+}
+.nav-container .nav-btn,
+.nav-container a.nav-btn,
+.nav-container button.nav-btn {
+    flex-direction: column !important;
+    justify-content: center;
+    gap: 4px !important;
+    padding: 10px 4px !important;
+    font-size: 11px !important;
+    text-align: center;
+    line-height: 1.25;
+    color: rgba(255,255,255,0.78) !important;
+    white-space: normal;
+    margin-inline-start: 0 !important;
+}
+.nav-container .nav-btn i { font-size: 17px; }
+.nav-container .nav-btn:hover { background: rgba(255,255,255,0.14) !important; color: #fff !important; }
+.nav-container .nav-btn.active {
+    background: rgba(255,255,255,0.2) !important;
+    color: #fff !important;
+    box-shadow: none !important;
+}
+.nav-container .nav-badge { top: -4px; inset-inline-end: 14px; }
+.nav-container .translate-btn {
+    background: rgba(255,255,255,0.12) !important;
+    color: #fff !important;
+    border-color: transparent !important;
+}
+.nav-container .logout-btn {
+    margin-top: 10px;
+    color: #ffd7cc !important;
+}
+.nav-container .logout-btn:hover { background: rgba(251,99,64,0.25) !important; }
+
+/* Collapse / expand toggle button (injected by nav-toggle.js) */
+#navToggleBtn {
+    position: fixed;
+    top: 14px;
+    inset-inline-start: 122px;
+    z-index: 200;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: var(--radius-pill);
+    background: var(--primary);
+    color: #fff;
+    box-shadow: var(--shadow-md);
+    cursor: pointer;
+    font-size: 16px;
+    transition: inset-inline-start 0.25s ease, background 0.15s ease;
+}
+#navToggleBtn:hover { background: var(--primary-hover); }
+
+body.nav-collapsed { padding-inline-start: 0 !important; }
+body.nav-collapsed .header { margin-inline-start: 0 !important; padding-inline-start: 0 !important; }
+body.nav-collapsed .nav-container { transform: translateX(-130%); }
+body.nav-collapsed #navToggleBtn { inset-inline-start: 14px; }
+
+@media (max-width: 780px) {
+    body, body.nav-collapsed { padding-inline-start: 0 !important; }
+    .header, body.nav-collapsed .header { margin-inline-start: 0 !important; padding-inline-start: 0 !important; }
+    body .nav-container {
+        position: static !important;
+        width: 100%;
+        height: auto;
+        flex-direction: row !important;
+        overflow-x: auto;
+        padding: 12px !important;
+        transform: none !important;
+    }
+    .nav-container .nav-btn { flex-direction: row !important; font-size: 13px !important; }
+    #navToggleBtn { display: none; }
+}
+
+/* ---- Bento cards: every card-like container gets soft corners + spacing ---- */
+.request-card, .task-card, .kpi-card, .stat-card, .summary-card,
+.card, .panel, .box, .project-card, .employee-card {
+    border-radius: var(--radius-lg) !important;
+    border: 1px solid var(--border) !important;
+    box-shadow: var(--shadow-sm) !important;
+    background: var(--bg-card) !important;
+}
+
+/* ---- Buttons ---- */
+button, .btn, input[type="submit"] {
+    border-radius: var(--radius-pill);
+}
+.btn-primary, button.primary, .view-file-btn, [class*="btn-approve"] {
+    background: var(--primary) !important;
+    border-color: var(--primary) !important;
+}
+.btn-primary:hover, .view-file-btn:hover { background: var(--primary-hover) !important; }
+
+/* Soft, non-alarming destructive actions per blueprint ("Delete task permanently") */
+.btn-danger, .delete-btn, [class*="btn-delete"], [class*="btn-reject"] {
+    background: var(--danger-soft) !important;
+    color: var(--danger-soft-text) !important;
+    border: 1px solid var(--danger-soft) !important;
+}
+.btn-danger:hover, .delete-btn:hover { filter: brightness(0.96); }
+
+/* ---- Status / code badges — Code A/B/C/D semantic palette ---- */
+[class*="code-A"], [class*="code-a"], .status-badge.approved, .status-pill.approved,
+.status-pill.closed, .status-badge.closed {
+    background: var(--code-a) !important;
+    color: var(--code-a-text) !important;
+    border-color: transparent !important;
+}
+[class*="code-B"], [class*="code-b"] {
+    background: var(--code-b) !important;
+    color: var(--code-b-text) !important;
+    border-color: transparent !important;
+}
+[class*="code-C"], [class*="code-c"] {
+    background: var(--code-c) !important;
+    color: var(--code-c-text) !important;
+    border-color: transparent !important;
+}
+[class*="code-D"], [class*="code-d"] {
+    background: var(--code-d) !important;
+    color: var(--code-d-text) !important;
+    border-color: transparent !important;
+}
+.status-pill.open, .status-badge.open, .status-pill.pending, .status-badge.pending {
+    background: var(--code-b) !important;
+    color: var(--code-b-text) !important;
+}
+.status-pill.rejected, .status-badge.rejected {
+    background: var(--code-d) !important;
+    color: var(--code-d-text) !important;
+}
+
+/* Badge circular counters */
+.badge-count, .task-icon-badge, .emp-open-badge {
+    background: var(--primary) !important;
+    color: #fff !important;
+    border-radius: var(--radius-pill) !important;
+}
+
+/* ---- Bento grid helper (opt-in on any container) ---- */
+.bento-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+    padding: 24px;
+}
+
+/* ---- Scrollbar ---- */
+::-webkit-scrollbar-thumb { background: #C7D2E8 !important; }
+::-webkit-scrollbar-thumb:hover { background: var(--primary) !important; }
+* { scrollbar-color: #C7D2E8 var(--bg-main) !important; }
+
+/* ---- Office / brand bar accents ---- */
+.office-bar { background: var(--bg-card) !important; }
+.office-tag { color: var(--primary) !important; }

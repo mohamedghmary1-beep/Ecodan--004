@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>طلبات الموافقة - MDECO</title>
+    <title>طلبات الموافقة - MDCEO</title>
     <!-- منع أي كاش للصفحة نفسها (Browser cache) -->
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
@@ -15,6 +15,9 @@
       document.write('<script src="./cache-buster.js?v=' + Date.now() + '"><' + '/script>');
     </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;800;900&family=Tajawal:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
       // تحميل الملفات المهمة (auth-guard.js / lang.js) برقم إصدار مختلف
@@ -347,6 +350,40 @@
         }
 
         /* =========================================================
+           تاب "الموافقة النهائية" — مدموج هنا من final-approval.html
+           (كانت صفحة منفصلة، بقت تاب جوه نفس صفحة الموافقات)
+           ========================================================= */
+        .req-card {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 18px 20px;
+            margin-bottom: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            border-right: 5px solid var(--warning);
+        }
+        .req-top { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 8px; }
+        .req-title { font-weight: 700; font-size: 16px; }
+        .req-meta { font-size: 13px; color: var(--text-muted); margin-top: 4px; line-height: 1.9; }
+        .code-pill {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 26px; height: 26px; border-radius: 6px;
+            background: var(--primary); color: #fff; font-weight: 800; font-size: 13px;
+        }
+        .actions-row { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+
+        .lock-overlay {
+            display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.55);
+            align-items: center; justify-content: center; z-index: 9999;
+        }
+        .lock-overlay.active { display: flex; }
+        .lock-modal { background: #fff; padding: 26px; border-radius: 14px; max-width: 340px; width: 90%; text-align: center; }
+        .spinner {
+            width: 34px; height: 34px; border: 4px solid #eff6ff; border-top-color: var(--primary);
+            border-radius: 50%; margin: 0 auto 14px; animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* =========================================================
            لمسات احترافية عامة — سكرول بار مخصص + دخول ناعم للهيدر
            ========================================================= */
         ::-webkit-scrollbar { width: 10px; height: 10px; }
@@ -370,11 +407,63 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
+    
+        /* ============================================
+           MDCEO Professional Header/Nav — تحديث موحّد
+           ============================================ */
+        .header {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            gap: 14px !important;
+            position: relative !important;
+        }
+        .mdceo-mark {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 900;
+            letter-spacing: 1.2px;
+            padding-inline-end: 14px;
+            margin-inline-end: 4px;
+            border-inline-end: 1px solid rgba(255,255,255,0.32);
+            white-space: nowrap;
+        }
+        .mdceo-mark i {
+            color: #93c5fd;
+            font-size: 0.95em;
+            animation: mdceo-icon-pulse 3s ease-in-out infinite;
+        }
+        @keyframes mdceo-icon-pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.15) rotate(-4deg); }
+        }
+        .nav-container {
+            display: flex !important;
+            justify-content: center !important;
+            flex-wrap: wrap !important;
+            gap: 8px !important;
+        }
+        .nav-btn {
+            border-radius: 999px !important;
+            font-weight: 600 !important;
+            transition: background 0.18s ease, color 0.18s ease, transform 0.12s ease, box-shadow 0.18s ease !important;
+            border: 1px solid transparent !important;
+        }
+        .nav-btn:hover { transform: translateY(-1px); }
+        .nav-btn:active { transform: scale(0.96); }
+        .nav-btn.active {
+            box-shadow: 0 4px 12px -3px rgba(30,64,175,0.5) !important;
+        }
+
     </style>
+    <link rel="stylesheet" href="./design-system.css?v=3">
+    <script src="./nav-toggle.js?v=1" defer></script>
 </head>
 <body>
 
 <div class="header">
+    <span class="mdceo-mark"><i class="fa-solid fa-drafting-compass"></i>MDCEO</span>
     <i class="fa-solid fa-clipboard-check"></i> <span data-i18n="pageTitle">طلبات الموافقة على الملفات المرفوعة</span>
 </div>
 
@@ -394,10 +483,6 @@
     <a href="approvals.html" class="nav-btn active">
         <i class="fa-solid fa-clipboard-check"></i> <span data-i18n="navApprovals">طلبات الموافقة</span>
         <span id="pendingNavBadge" class="nav-badge">0</span>
-    </a>
-    <a href="final-approval.html" class="nav-btn">
-        <i class="fa-solid fa-stamp"></i> <span data-i18n="navFinalApproval">الموافقة النهائية</span>
-        <span id="finalNavBadge" class="nav-badge">0</span>
     </a>
     <a href="team_overview.html" class="nav-btn">
         <i class="fa-solid fa-users"></i> <span data-i18n="navTeam">نظرة عامة على الموظفين</span>
@@ -439,9 +524,21 @@
             طلبات المقاولين
             <span id="contractorNavBadge" class="nav-badge" style="position:static; display:inline-flex; margin-inline-start:6px;">0</span>
         </button>
+        <button class="tab-btn" id="tab-final" onclick="setTab('final')" data-i18n="tabFinal" style="display:none;">
+            <i class="fa-solid fa-stamp"></i> الموافقة النهائية
+            <span id="finalNavBadge" class="nav-badge" style="position:static; display:inline-flex; margin-inline-start:6px;">0</span>
+        </button>
     </div>
 
     <div id="list"></div>
+</div>
+
+<!-- مودال "جاري التنفيذ" لتاب الموافقة النهائية -->
+<div class="lock-overlay" id="lockOverlay">
+    <div class="lock-modal">
+        <div class="spinner"></div>
+        <div id="lockMsg" style="font-weight:700;"></div>
+    </div>
 </div>
 
 <script>
@@ -467,6 +564,7 @@ const dictionary = {
         contractorNo: "رقم الريكوست",
         contractorTitle: "العنوان",
         contractorName: "المقاول",
+        companyLabel: "الشركة",
         engineerAssigned: "المهندس المختص",
         engineerOverride: "تغيير المهندس (اختياري)",
         notesLabel: "ملاحظات المقاول",
@@ -527,6 +625,7 @@ const dictionary = {
         contractorNo: "Submittal No.",
         contractorTitle: "Title",
         contractorName: "Contractor",
+        companyLabel: "Company",
         engineerAssigned: "Responsible Engineer",
         engineerOverride: "Change engineer (optional)",
         notesLabel: "Contractor notes",
@@ -605,11 +704,20 @@ async function loadRequests() {
 
 function setTab(tab) {
     currentTab = tab;
-    ['pending', 'approved', 'rejected', 'contractor'].forEach(t => {
+    ['pending', 'approved', 'rejected', 'contractor', 'final'].forEach(t => {
         document.getElementById(`tab-${t}`).classList.toggle('active', t === tab);
     });
     render();
 }
+
+// تاب "الموافقة النهائية" كان صفحة منفصلة (final-approval.html) - ظاهر
+// بس لل super_admin، زي ما كان مقفول قبل كده على مستوى الصفحة.
+document.addEventListener('authguard:ready', function () {
+    if (window.currentUserRole === 'super_admin') {
+        document.getElementById('tab-final').style.display = '';
+        finalLoadRequests();
+    }
+});
 
 // تصنيف ناقص = مفيش discipline أو activity متسجلين للطلب ده
 function isClassificationMissing(r) {
@@ -618,6 +726,7 @@ function isClassificationMissing(r) {
 
 function render() {
     if (currentTab === 'contractor') { renderContractorTab(); return; }
+    if (currentTab === 'final') { renderFinalTab(); return; }
     let filtered = requests.filter(r => r.status === currentTab);
     let listEl = document.getElementById('list');
     let t = dictionary[currentLang];
@@ -751,7 +860,7 @@ function extractStoragePath(publicUrl) {
     // شكل الرابط العام: {SUPABASE_URL}/storage/v1/object/public/{bucket}/{path}
     let marker = `/storage/v1/object/public/${ATTACHMENTS_BUCKET}/`;
     let idx = (publicUrl || "").indexOf(marker);
-    if (idx === -1) return null;
+    if (idx === -1) return publicUrl || null; // already a bare storage path (or empty)
     return decodeURIComponent(publicUrl.substring(idx + marker.length));
 }
 
@@ -913,6 +1022,297 @@ async function rejectRequest(id) {
 }
 
 // ============================================
+// تاب "الموافقة النهائية" (كانت final-approval.html) - ريكوستات المقاولين
+// اللي المهندس خلص مراجعتها وبتستنى توقيع/اعتماد الأدمن الأخير قبل ما
+// تتبعت لجوجل درايف. بيستخدم نفس الدوال المشتركة فوق (resolveFileLinkForDisplay/
+// blobToBase64/deleteFromAttachmentsStorage) بدل ما يكرر نسخة تانية منها.
+// ============================================
+const FINAL_CODE_LABELS = { A: 'Approved', B: 'Approved as Noted', C: 'Rejected' };
+const FINAL_REVISION_SLOTS = ['', '_1', '_2', '_3'];
+
+let finalRequests = [];
+
+function finalOpenLock(msg) {
+    document.getElementById('lockMsg').textContent = msg;
+    document.getElementById('lockOverlay').classList.add('active');
+}
+function finalCloseLock() {
+    document.getElementById('lockOverlay').classList.remove('active');
+}
+
+function finalSlotLabel(slot) {
+    return 'R0' + (slot === '' ? '0' : slot.replace('_', ''));
+}
+
+async function finalLoadRequests() {
+    const { data, error } = await supabaseClient
+        .from('contractor_requests')
+        .select('*')
+        .eq('status', 'pending_final_admin')
+        .order('engineer_reviewed_at', { ascending: true });
+
+    if (error) {
+        console.error('finalLoadRequests error:', error);
+        finalRequests = [];
+    } else {
+        finalRequests = data || [];
+    }
+
+    let badge = document.getElementById('finalNavBadge');
+    if (badge) {
+        badge.textContent = finalRequests.length;
+        badge.style.display = finalRequests.length > 0 ? 'inline-flex' : 'none';
+    }
+    if (currentTab === 'final') render();
+}
+
+function renderFinalTab() {
+    let listEl = document.getElementById('list');
+
+    if (finalRequests.length === 0) {
+        listEl.innerHTML = `<div class="empty-state">مفيش ريكوستات محتاجة موافقتك النهائية دلوقتي.</div>`;
+        return;
+    }
+
+    listEl.innerHTML = finalRequests.map(r => `
+        <div class="req-card">
+            <div class="req-top">
+                <div>
+                    <div class="req-title">${r.title}${r.submittal_no ? ' - ' + r.submittal_no : ''}</div>
+                    <div class="req-meta">
+                        القسم: ${r.discipline} &nbsp;|&nbsp; المهندس: ${r.engineer_username || '-'} &nbsp;|&nbsp; المقاول: ${r.contractor_name || r.contractor_username || '-'}<br>
+                        تاريخ إرسال المهندس: ${r.engineer_reviewed_at ? new Date(r.engineer_reviewed_at).toLocaleString() : '-'}<br>
+                        الكود: <span class="code-pill">${r.code || '-'}</span> ${FINAL_CODE_LABELS[r.code] || ''}
+                        ${r.engineer_comment ? `<br>تعليق المهندس: ${r.engineer_comment}` : ''}
+                    </div>
+                </div>
+            </div>
+            <div class="actions-row">
+                <button class="btn btn-view" onclick="finalReviewRequest(${r.id})">
+                    <i class="fa-solid fa-eye"></i> معاينة الملف
+                </button>
+                <button class="btn btn-reject" onclick="finalRejectRequest(${r.id})">
+                    <i class="fa-solid fa-xmark"></i> رفض ورجّعه للمهندس
+                </button>
+                <button class="btn btn-approve" onclick="finalApproveRequest(${r.id})">
+                    <i class="fa-solid fa-check-double"></i> اعتماد نهائي وإرسال لجوجل درايف
+                </button>
+            </div>
+        </div>
+    `).join('');
+}
+
+async function finalReviewRequest(id) {
+    let req = finalRequests.find(r => r.id === id);
+    if (!req) return;
+
+    let fileLink = req.final_file_link || req.file_link;
+    document.getElementById('reviewModalTitle').textContent = `معاينة: ${req.title || ''}`;
+    let displayLink = await resolveFileLinkForDisplay(fileLink);
+    let bodyEl = document.getElementById('reviewModalBody');
+
+    if (displayLink) {
+        bodyEl.innerHTML = `<iframe src="${displayLink}"></iframe>`;
+    } else {
+        bodyEl.innerHTML = `<div class="review-fallback">مفيش نسخة متاحة للمعاينة.</div>`;
+    }
+
+    document.getElementById('reviewModalFooter').innerHTML = `
+        <a class="btn btn-view" href="${displayLink}" target="_blank"><i class="fa-solid fa-up-right-from-square"></i> فتح في تاب جديد</a>
+        <button class="btn" style="background:#e2e8f0; color:var(--text-main);" onclick="closeReviewModal()">إغلاق</button>
+    `;
+
+    document.getElementById('reviewOverlay').classList.add('active');
+}
+
+// ============================================
+// اعتماد نهائي: جدول submittals عندك "عريض" - مش صف لكل مراجعة، لكل صف
+// submittal فيه أعمدة المراجعة الأساسية (submitted_on/received_on/code/
+// duration/link) وبعدين _1/_2/_3 لكل مراجعة تالية بنفس رقم الـ "no". فلو
+// رقم السبمتال ده موجود بالفعل، بنملى أول عمود مراجعة فاضي بدل ما نعمل
+// صف مكرر؛ ولو مش موجود، بنعمل صف جديد بالمراجعة الأساسية.
+// ============================================
+async function finalApproveRequest(id) {
+    let req = finalRequests.find(r => r.id === id);
+    if (!req) return;
+    if (!confirm('تأكيد الاعتماد النهائي وإرسال الملف على جوجل درايف؟')) return;
+
+    finalOpenLock('جاري الاعتماد...');
+    try {
+        let today = new Date().toISOString().slice(0, 10);
+        let newSubmittalId, linkColumn;
+
+        let existing = null;
+        if (req.submittal_no) {
+            const { data: existingRows, error: findError } = await supabaseClient
+                .from('submittals')
+                .select('*')
+                .eq('no', req.submittal_no)
+                .limit(1);
+            if (findError) throw findError;
+            existing = (existingRows && existingRows[0]) ? existingRows[0] : null;
+        }
+
+        if (existing) {
+            let freeSlot = FINAL_REVISION_SLOTS.find(slot => !existing['submitted_on' + slot]);
+            if (freeSlot === undefined) {
+                // كل مراجعات الصف ده (R00 لـ R03) اتملوا بالفعل - نعمل صف
+                // جديد منفصل بدل ما نضيع بيانات المراجعة الجديدة دي.
+                const { data: inserted, error: insErr } = await supabaseClient
+                    .from('submittals')
+                    .insert({
+                        no: req.submittal_no, title: req.title, discipline: req.discipline,
+                        activity: req.activity || null, rev: 'R00',
+                        action_by: req.engineer_username || null,
+                        submitted_on: today, received_on: today, code: req.code
+                    }).select();
+                if (insErr) throw insErr;
+                newSubmittalId = inserted[0].id;
+                linkColumn = 'link';
+            } else {
+                let payload = { rev: finalSlotLabel(freeSlot) };
+                payload['submitted_on' + freeSlot] = today;
+                payload['received_on' + freeSlot] = today;
+                payload['code' + freeSlot] = req.code;
+                const { error: updErr } = await supabaseClient
+                    .from('submittals')
+                    .update(payload)
+                    .eq('id', existing.id);
+                if (updErr) throw updErr;
+                newSubmittalId = existing.id;
+                linkColumn = 'link' + freeSlot;
+            }
+        } else {
+            const { data: inserted, error: insErr } = await supabaseClient
+                .from('submittals')
+                .insert({
+                    no: req.submittal_no || null, title: req.title, discipline: req.discipline,
+                    activity: req.activity || null, rev: 'R00',
+                    action_by: req.engineer_username || null,
+                    submitted_on: today, received_on: today, code: req.code
+                }).select();
+            if (insErr) throw insErr;
+            newSubmittalId = inserted[0].id;
+            linkColumn = 'link';
+        }
+
+        const { error: updateError } = await supabaseClient
+            .from('contractor_requests')
+            .update({
+                status: 'completed',
+                created_submittal_id: newSubmittalId,
+                drive_status: 'pending',
+                admin_final_reviewed_by: window.currentUsername || null,
+                admin_final_reviewed_at: new Date().toISOString()
+            })
+            .eq('id', id);
+        if (updateError) throw updateError;
+
+        finalRequests = finalRequests.filter(r => r.id !== id);
+        renderFinalTab();
+        finalCloseLock();
+
+        finalPushFileToDriveInBackground(req, newSubmittalId, linkColumn, id);
+    } catch (err) {
+        console.error('finalApproveRequest error:', err);
+        alert(err.message || 'حصل خطأ أثناء الاعتماد.');
+        finalCloseLock();
+    }
+}
+
+async function finalPushFileToDriveInBackground(req, newSubmittalId, linkColumn, requestId) {
+    try {
+        let fileLinkToUpload = req.final_file_link || req.file_link;
+        let fetchLink = await resolveFileLinkForDisplay(fileLinkToUpload);
+        let response = await fetch(fetchLink);
+        if (!response.ok) throw new Error('تعذر تحميل الملف النهائي من التخزين المؤقت.');
+        let blob = await response.blob();
+        let base64 = await blobToBase64(blob);
+
+        let uploadResponse = await fetch(GOOGLE_SCRIPT_UPLOAD_URL, {
+            method: "POST",
+            headers: { "Content-Type": "text/plain" },
+            body: JSON.stringify({
+                filename: req.file_name,
+                mimeType: blob.type || "application/pdf",
+                data: base64,
+                taskNo: req.submittal_no || req.title,
+                revName: "Original",
+                notify: false,
+                taskTitle: req.title,
+                employee: req.engineer_username,
+                discipline: req.discipline,
+                activity: req.activity
+            })
+        });
+        let result = await uploadResponse.json();
+        if (!result.url) throw new Error(result.error || 'فشل رفع الملف على جوجل درايف.');
+        let driveUrl = result.url;
+
+        const { error: submittalUpdateError } = await supabaseClient
+            .from('submittals')
+            .update({ [linkColumn]: driveUrl })
+            .eq('id', newSubmittalId);
+        if (submittalUpdateError) console.error('Could not update submittals link column:', submittalUpdateError);
+
+        const { error: reqUpdateError } = await supabaseClient
+            .from('contractor_requests')
+            .update({ file_link: driveUrl, drive_status: 'done' })
+            .eq('id', requestId);
+        if (reqUpdateError) console.error('Could not update contractor_requests.file_link:', reqUpdateError);
+
+        // تنظيف النسخ المؤقتة (الأصلية + النسخة اللي كتب عليها المهندس)
+        // بعد ما اتأكدنا إن النسخة النهائية وصلت درايف بنجاح.
+        deleteFromAttachmentsStorage(req.file_link);
+        if (req.final_file_link) deleteFromAttachmentsStorage(req.final_file_link);
+    } catch (err) {
+        console.error('Background Drive upload failed:', err);
+        await supabaseClient
+            .from('contractor_requests')
+            .update({ drive_status: 'failed' })
+            .eq('id', requestId);
+    }
+}
+
+async function finalRejectRequest(id) {
+    let req = finalRequests.find(r => r.id === id);
+    if (!req) return;
+
+    let note = prompt('اكتب سبب الرفض عشان يوصل للمهندس:');
+    if (note === null) return; // اتلغى
+    note = note.trim();
+    if (!note) { alert('لازم تكتب سبب الرفض.'); return; }
+
+    finalOpenLock('جاري الإرسال للمهندس...');
+    try {
+        const { error } = await supabaseClient
+            .from('contractor_requests')
+            .update({
+                status: 'pending_engineer',
+                admin_final_note: note,
+                final_file_link: null,
+                admin_final_reviewed_by: window.currentUsername || null,
+                admin_final_reviewed_at: new Date().toISOString()
+            })
+            .eq('id', id);
+        if (error) throw error;
+
+        finalRequests = finalRequests.filter(r => r.id !== id);
+        renderFinalTab();
+    } catch (err) {
+        console.error('finalRejectRequest error:', err);
+        alert(err.message || 'حصل خطأ أثناء الرفض.');
+    } finally {
+        finalCloseLock();
+    }
+}
+
+// lang.js بيشغّل نسخته المشتركة من عداد "finalNavBadge" بس لو الصفحة دي
+// مالهاش نسختها الغنية بتاعتها - وهي هنا موجودة، فبنستخدم نفس الاسم
+// اللي final-approval.html كانت بتستخدمه عشان lang.js يعرف يستنى.
+window.loadFinalApprovalRequests = finalLoadRequests;
+
+// ============================================
 // تبويب "طلبات المقاولين" - ريكوستات جديدة (مش ريفيجن) رفعها مقاول،
 // بننتظر الأدمن يراجعها ويحدد/يأكد المهندس، وبعدين تروح تلقائيًا للمهندس.
 // ============================================
@@ -991,6 +1391,7 @@ function renderContractorTab() {
                     <span class="classification-line">${t.discipline}: ${r.discipline}${r.activity ? ` &nbsp;›&nbsp; ${t.activity}: ${r.activity}` : ''}</span>
                     <div class="request-meta">
                         ${t.contractorName}: ${r.contractor_username || '-'} &nbsp;|&nbsp;
+                        ${t.companyLabel}: ${r.company_name || '-'} &nbsp;|&nbsp;
                         ${t.fileLabel}: ${r.file_name || '-'} &nbsp;|&nbsp;
                         ${t.requestedAt}: ${new Date(r.requested_at).toLocaleString(currentLang === 'ar' ? 'ar-EG' : 'en-US')}
                     </div>
