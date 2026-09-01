@@ -828,6 +828,19 @@ function statusLabel(status) {
     }
 }
 
+// SECURITY FIX (Aug 2026): engineer_comment/code/engineer_username are set
+// by a different account (the reviewing engineer/admin) and shown here to
+// the contractor - escape everything before it goes into innerHTML so a
+// malicious comment can't run script in the contractor's session.
+function escapeHtml(str) {
+    return String(str == null ? "" : str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+}
+
 function renderMyRequests() {
     let listEl = document.getElementById('myReqList');
     if (myRequests.length === 0) {
@@ -838,12 +851,12 @@ function renderMyRequests() {
         <div class="req-card">
             <div class="req-top">
                 <div>
-                    <div class="req-title">${r.title}${r.submittal_no ? ' - ' + r.submittal_no : ''}</div>
+                    <div class="req-title">${escapeHtml(r.title)}${r.submittal_no ? ' - ' + escapeHtml(r.submittal_no) : ''}</div>
                     <div class="req-meta">
-                        ${T('lblDiscipline')}: ${r.discipline} &nbsp;|&nbsp; ${T('engineerLabel')}: ${r.engineer_username || '-'}<br>
+                        ${T('lblDiscipline')}: ${escapeHtml(r.discipline)} &nbsp;|&nbsp; ${T('engineerLabel')}: ${escapeHtml(r.engineer_username || '-')}<br>
                         ${new Date(r.requested_at).toLocaleString()}
-                        ${r.code ? `<br>${T('codeLabel')}: <b>${r.code}</b>` : ''}
-                        ${r.engineer_comment ? `<br>${T('commentLabel')}: ${r.engineer_comment}` : ''}
+                        ${r.code ? `<br>${T('codeLabel')}: <b>${escapeHtml(r.code)}</b>` : ''}
+                        ${r.engineer_comment ? `<br>${T('commentLabel')}: ${escapeHtml(r.engineer_comment)}` : ''}
                         ${r.status === 'completed' && r.drive_status === 'pending' ? `<br><span style="color:var(--warning);">${T('driveUploading')}</span>` : ''}
                         ${r.status === 'completed' && r.drive_status === 'failed' ? `<br><span style="color:var(--danger);">${T('driveFailed')}</span>` : ''}
                     </div>

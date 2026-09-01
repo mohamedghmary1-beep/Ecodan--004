@@ -377,6 +377,12 @@
     <a href="team_overview.html" class="nav-btn active">
         <i class="fa-solid fa-users"></i> <span data-i18n="navTeam">نظرة عامة على الموظفين</span>
     </a>
+    <a href="engineer-review.html" class="nav-btn">
+        <i class="fa-solid fa-user-check"></i> <span data-i18n="navEngineerReview">مراجعة المهندس</span>
+    </a>
+    <a href="contractor-submit.html" class="nav-btn">
+        <i class="fa-solid fa-file-arrow-up"></i> <span data-i18n="navContractorSubmit">رفع طلب مقاول</span>
+    </a>
     <a href="performance.html" class="nav-btn">
         <i class="fa-solid fa-chart-column"></i> <span data-i18n="navDashboard">لوحة التحكم</span>
     </a>
@@ -463,6 +469,18 @@ window.onLanguageChanged = function () {
 let employeeStats = [];
 let sortKey = "open";
 let sortDir = "desc";
+
+// SECURITY FIX (Aug 2026): employee names are rendered via innerHTML below -
+// escape them so a name containing HTML/script can't execute in this
+// admin-only page.
+function escapeHtml(str) {
+    return String(str == null ? "" : str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+}
 
 function generateTaskKey(row) {
     let no = (row.no || "").trim();
@@ -579,7 +597,7 @@ function renderTable() {
         let delayPct = e.total > 0 ? (e.delay / e.total * 100) : 0;
         return `
         <tr>
-            <td class="emp-name">${e.name}</td>
+            <td class="emp-name">${escapeHtml(e.name)}</td>
             <td>${e.total}</td>
             <td><span class="count-pill pill-open">${e.open}</span></td>
             <td><span class="count-pill pill-closed">${e.closed}</span></td>

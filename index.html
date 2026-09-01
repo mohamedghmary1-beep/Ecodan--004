@@ -543,6 +543,71 @@
     const SUPABASE_KEY = "sb_publishable_QsS0UhLBORy6mOaBDgW62g_9OacC3oO";
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+    // ============================================================
+    // نفس قاعدة "أول صفحة يقدر المستخدم يشوفها فعلاً" الموجودة في
+    // auth-guard.js (PAGE_COLUMNS / REDIRECT_PRIORITY_PAGES / pageIsAllowed /
+    // firstAccessiblePage) - مكرّرة هنا لأن index.html عمدًا مش بيحمّل
+    // auth-guard.js (اللي بيخفي الصفحة كلها لحد ما يتأكد من السيشن - مش
+    // مطلوب في صفحة تسجيل الدخول نفسها). لو أي صفحة جديدة اتضافت أو
+    // عمود صلاحية جديد اتضاف في auth-guard.js، حدّث نفس الحاجة هنا كمان
+    // عشان التوجيه بعد الدخول يفضل متطابق مع باقي البوابة.
+    // ============================================================
+    const ADMIN_ONLY_PAGES = ['team_overview.html', 'final-approval.html', 'permissions.html'];
+    const ADMIN_AND_SUPER_ADMIN_PAGES = ['approvals.html'];
+    const CONTRACTOR_ONLY_PAGES = ['contractor-submit.html'];
+    const ENGINEER_ONLY_PAGES = ['engineer-review.html'];
+    const PAGE_COLUMNS = {
+        'performance.html': 'page_performance',
+        'summary.html': 'page_summary',
+        'task-list.html': 'page_task',
+        'home.html': 'page_home',
+        'weekly_report.html': 'page_weekly_report',
+        'weekly_report_view.html': 'page_weekly_report',
+        'general_by_activity.html': 'page_general_by_activity'
+    };
+    const REDIRECT_PRIORITY_PAGES = [
+        'home.html', 'task-list.html', 'summary.html', 'performance.html',
+        'general_by_activity.html', 'weekly_report.html', 'weekly_report_view.html',
+        'approvals.html', 'team_overview.html', 'engineer-review.html',
+        'contractor-submit.html', 'permissions.html'
+    ];
+
+    function computeUserRole(profile) {
+        if (!profile || profile.is_blocked) return 'blocked';
+        const rawPerm = (profile.permissions || '').trim().toLowerCase();
+        if (rawPerm === 'administrator') return 'super_admin';
+        if (rawPerm === 'admin' || rawPerm === '') return 'admin';
+        if (rawPerm === 'no_files') return 'no_files';
+        if (rawPerm === 'limited') return 'limited';
+        if (rawPerm === 'contractor') return 'contractor';
+        return 'blocked';
+    }
+
+    function pageIsAllowed(profile, role, pageName) {
+        if (role === 'super_admin') return true;
+        if (pageName === 'index.html') return true;
+        if (CONTRACTOR_ONLY_PAGES.includes(pageName)) {
+            if (role === 'contractor') return true;
+            return (profile.page_contractor_submit || '').toString().trim().toLowerCase() === 'yes';
+        }
+        if (role === 'contractor') return false;
+        if (ENGINEER_ONLY_PAGES.includes(pageName)) return !!profile.is_engineer;
+        if (ADMIN_AND_SUPER_ADMIN_PAGES.includes(pageName)) return role === 'admin' || role === 'super_admin';
+        if (ADMIN_ONLY_PAGES.includes(pageName)) return false;
+        const col = PAGE_COLUMNS[pageName];
+        if (!col) return false;
+        return (profile[col] || '').toString().trim().toLowerCase() === 'yes';
+    }
+
+    function firstAccessiblePage(profile, role) {
+        if (!profile || !role || role === 'blocked') return null;
+        for (const page of REDIRECT_PRIORITY_PAGES) {
+            if (role !== 'super_admin' && ADMIN_ONLY_PAGES.includes(page)) continue;
+            if (pageIsAllowed(profile, role, page)) return page;
+        }
+        return null;
+    }
+
     const translations = {
         en: {
             dir: "ltr",
@@ -562,6 +627,7 @@
             errFail: "Invalid email or password.",
             errConn: "Connection error. Please try again later.",
             errCompanyMismatch: "This company name doesn't match this account.",
+            errBlocked: "This account has been blocked. Contact your administrator.",
             succOk: "Login successful! Redirecting...",
             footerProj: "Administrative Offices Project in Aspark"
         },
@@ -583,6 +649,7 @@
             errFail: "البريد الإلكتروني أو كلمة المرور غير صحيحة.",
             errConn: "خطأ في الاتصال بالنظام. حاول مرة أخرى لاحقاً.",
             errCompanyMismatch: "اسم الشركة اللي كتبته مش متطابق مع هذا الحساب.",
+            errBlocked: "الحساب ده محظور. تواصل مع الأدمن.",
             succOk: "تم تسجيل الدخول بنجاح! جاري التوجيه...",
             footerProj: "مشروع المكاتب الإدارية في أسبارك"
         }
@@ -655,7 +722,7 @@
             // ملف الصلاحيات (profiles) بيتحمي بـ RLS: كل مستخدم يقدر يقرا صفّه بس.
             const { data: profile, error: profileError } = await supabaseClient
                 .from('profiles')
-                .select('username, permissions, company_name')
+                .select('username, permissions, company_name, is_blocked, is_engineer, page_performance, page_summary, page_task, page_home, page_weekly_report, page_general_by_activity, page_contractor_submit')
                 .eq('id', authData.user.id)
                 .single();
 
@@ -684,15 +751,28 @@
                 }
             }
 
+            // حساب دوره (وده كمان بيرفض حساب محظور - is_blocked - بدل ما نديله
+            // توجيه أصلاً وهو مالوش صلاحية حتى يوصل لصفحة "ماعندكش صلاحية").
+            const role = computeUserRole(profile);
+            if (role === 'blocked') {
+                msgBox.innerText = t.errBlocked;
+                msgBox.className = "message-box error";
+                btnInner.innerText = t.btnInner;
+                btnSubmit.disabled = false;
+                await supabaseClient.auth.signOut();
+                return;
+            }
+
             msgBox.innerText = t.succOk;
             msgBox.className = "message-box success";
             // ملحوظة أمنية: مفيش حاجة بتتخزن يدويًا في localStorage تاني -
             // Supabase Auth بيحتفظ بجلسة موقّعة (JWT) بنفسه، وباقي الصفحات
             // بتعيد التحقق من الصلاحيات من السيرفر في كل مرة (auth-guard.js).
-            // حساب الشركة/المقاول ليه صفحة واحدة بس (رفع الريكوستات ومتابعتها)،
-            // فيروح عليها على طول بدل صفحة الداشبورد العادية.
-            const rawPerm = (profile.permissions || '').trim().toLowerCase();
-            const landingPage = (rawPerm === 'contractor') ? 'contractor-submit.html' : 'home.html';
+            // التوجيه بقى فعليًا حسب صلاحيات المستخدم الحقيقية (نفس منطق
+            // auth-guard.js) بدل ما يروح على home.html ثابتة حتى لو مالوش
+            // صلاحية عليها - ده كان بيوديه على طول لرسالة "ماعندكش صلاحية"
+            // أول ما يسجل دخول، لو دوره ماكانش شامل صلاحية صفحة الرئيسية.
+            const landingPage = firstAccessiblePage(profile, role) || 'index.html';
             setTimeout(() => { window.location.href = landingPage; }, 1000);
         } catch (err) {
             console.error("Login Error:", err);

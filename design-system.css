@@ -72,13 +72,27 @@ code, .ref-no, .task-ref, .code-mono {
 }
 
 /* ---- Sidebar nav (global — same shape on every page) ---- */
+/* SAFETY NET (Aug 2026): the nav is fixed-width/fixed-position, and every
+   page's own content flow is nudged over by body's padding-inline-start
+   below so nothing sits underneath it. `width:100vw` on .header used to
+   be the one exception - in most browsers 100vw includes the vertical
+   scrollbar's width, which is a few px MORE than the page's real usable
+   width, so the header quietly overflowed the document to one side and
+   dragged the whole page into horizontal-scroll territory. Once that
+   happens, the fixed (viewport-anchored) sidebar visually "eats into"
+   whatever content the page happened to be scrolled past - which is
+   exactly the overlap you saw in the screenshot. overflow-x:hidden below
+   is a blanket safety net so this class of bug can never re-appear even
+   if some page's own inline CSS does something similarly oversized. */
+html, body { overflow-x: hidden; }
 body {
     padding-inline-start: 108px;
     transition: padding-inline-start 0.25s ease;
 }
 .header {
+    /* was: margin-inline-start:-108px; width:100vw; - see note above */
     margin-inline-start: -108px;
-    width: 100vw;
+    width: calc(100% + 108px);
     padding-inline-start: 108px;
     box-sizing: border-box;
 }

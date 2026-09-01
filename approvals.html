@@ -490,6 +490,9 @@
     <a href="engineer-review.html" class="nav-btn">
         <i class="fa-solid fa-user-check"></i> <span data-i18n="navEngineerReview">مراجعة المهندس</span>
     </a>
+    <a href="contractor-submit.html" class="nav-btn">
+        <i class="fa-solid fa-file-arrow-up"></i> <span data-i18n="navContractorSubmit">رفع طلب مقاول</span>
+    </a>
     <a href="performance.html" class="nav-btn">
         <i class="fa-solid fa-chart-column"></i> <span data-i18n="navDashboard">لوحة التحكم</span>
     </a>
@@ -544,7 +547,15 @@
 <script>
 const SUPABASE_URL = "https://uhhtvpxtpayovbtmnstz.supabase.co";
 const SUPABASE_KEY = "sb_publishable_QsS0UhLBORy6mOaBDgW62g_9OacC3oO";
-const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+// بنستخدم نفس عميل Supabase اللي عمله auth-guard.js (window.__guardClient)
+// بدل ما نعمل عميل جديد منفصل. الاتنين كانوا بيتصلوا بنفس المشروع بنفس
+// الـ URL/KEY، يعني بيتشاركوا نفس مفتاح تخزين الجلسة في المتصفح - وده كان
+// بيسبب تحذير "Multiple GoTrueClient instances detected" وبيخلي طلبات
+// زي توليد رابط موقّت (getAttachmentSignedUrl، اللي بيستخدم guardClient
+// أصلاً) تفشل بصمت لحظة ما أي حد من العميلين يعمل refresh للتوكن. auth-guard.js
+// نفسه بيعرّض window.__guardClient لنفس السبب ده تحديدًا. الـ fallback هنا
+// (لو لأي سبب auth-guard.js لسه ماحملش) بيمنع الصفحة من الكسر بالكامل.
+const supabaseClient = window.__guardClient || supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const GOOGLE_SCRIPT_UPLOAD_URL = "https://script.google.com/macros/s/AKfycbxP9S7qbgK888SHhCejIGZUx-wXN7pFtJ0OHbFvAUV9ARbtfxtI1_KwUNaU3c-LTubKnw/exec";
 
 // نفس اسم الـ Bucket المستخدم في task-list.html لرفع المرفقات المؤقتة
@@ -720,6 +731,37 @@ document.addEventListener('authguard:ready', function () {
 });
 
 // تصنيف ناقص = مفيش discipline أو activity متسجلين للطلب ده
+// SECURITY FIX (Aug 2026): every field rendered below can originate from a
+// LOWER-privilege role than the person viewing this page - a contractor's
+// free-text title/notes, or an engineer's review comment - and this page is
+// viewed by admins/super_admins. Without escaping, a contractor or engineer
+// could store an HTML/script payload (e.g. in "notes" or "engineer_comment")
+// that executes in the admin's browser session as soon as they open this
+// page, and could exfiltrate the admin's Supabase auth token. Every
+// untrusted value MUST go through escapeHtml() before being placed in
+// innerHTML, and through escapeForJsAttr() if placed inside an inline
+// onclick="...('...')" string.
+function escapeHtml(str) {
+    return String(str == null ? "" : str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+}
+
+function escapeForJsAttr(str) {
+    return String(str == null ? "" : str)
+        .replace(/\\/g, "\\\\")
+        .replace(/\r\n/g, " ")
+        .replace(/[\r\n]/g, " ")
+        .replace(/\t/g, " ")
+        .replace(/'/g, "\\'")
+        .replace(/"/g, "&quot;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+}
+
 function isClassificationMissing(r) {
     return !r.discipline || !r.discipline.toString().trim() || !r.activity || !r.activity.toString().trim();
 }
@@ -741,7 +783,7 @@ function render() {
         let missing = isClassificationMissing(r);
         let classificationHtml = missing
             ? `<span class="classification-line missing">${t.missingClassification}</span>`
-            : `<span class="classification-line">${t.discipline}: ${r.discipline} &nbsp;›&nbsp; ${t.activity}: ${r.activity}</span>`;
+            : `<span class="classification-line">${t.discipline}: ${escapeHtml(r.discipline)} &nbsp;›&nbsp; ${t.activity}: ${escapeHtml(r.activity)}</span>`;
         let isAttachment = !r.column_target;
         let attachmentHtml = isAttachment
             ? `<span class="classification-line" style="background:#f1f5f9; color:var(--text-muted); margin-inline-start:6px;">${t.attachmentTag}</span>`
@@ -755,13 +797,13 @@ function render() {
         <div class="request-card ${r.status}">
             <div class="request-top">
                 <div>
-                    <div class="request-title">${r.task_title || r.task_key}</div>
+                    <div class="request-title">${escapeHtml(r.task_title || r.task_key)}</div>
                     <div>${classificationHtml}${attachmentHtml}</div>
                     <div class="request-meta">
-                        ${t.taskNo}: ${r.raw_no || '-'} &nbsp;|&nbsp;
-                        ${t.employee}: ${r.employee || '-'} &nbsp;|&nbsp;
-                        ${t.revision}: ${r.revision_name}<br>
-                        ${t.fileLabel}: ${r.file_name || '-'} &nbsp;|&nbsp;
+                        ${t.taskNo}: ${escapeHtml(r.raw_no || '-')} &nbsp;|&nbsp;
+                        ${t.employee}: ${escapeHtml(r.employee || '-')} &nbsp;|&nbsp;
+                        ${t.revision}: ${escapeHtml(r.revision_name)}<br>
+                        ${t.fileLabel}: ${escapeHtml(r.file_name || '-')} &nbsp;|&nbsp;
                         ${t.requestedAt}: ${new Date(r.requested_at).toLocaleString(currentLang === 'ar' ? 'ar-EG' : 'en-US')}
                         ${r.reviewed_at ? `<br>${t.reviewedAt}: ${new Date(r.reviewed_at).toLocaleString(currentLang === 'ar' ? 'ar-EG' : 'en-US')}` : ''}
                     </div>
@@ -1078,12 +1120,12 @@ function renderFinalTab() {
         <div class="req-card">
             <div class="req-top">
                 <div>
-                    <div class="req-title">${r.title}${r.submittal_no ? ' - ' + r.submittal_no : ''}</div>
+                    <div class="req-title">${escapeHtml(r.title)}${r.submittal_no ? ' - ' + escapeHtml(r.submittal_no) : ''}</div>
                     <div class="req-meta">
-                        القسم: ${r.discipline} &nbsp;|&nbsp; المهندس: ${r.engineer_username || '-'} &nbsp;|&nbsp; المقاول: ${r.contractor_name || r.contractor_username || '-'}<br>
+                        القسم: ${escapeHtml(r.discipline)} &nbsp;|&nbsp; المهندس: ${escapeHtml(r.engineer_username || '-')} &nbsp;|&nbsp; المقاول: ${escapeHtml(r.contractor_name || r.contractor_username || '-')}<br>
                         تاريخ إرسال المهندس: ${r.engineer_reviewed_at ? new Date(r.engineer_reviewed_at).toLocaleString() : '-'}<br>
-                        الكود: <span class="code-pill">${r.code || '-'}</span> ${FINAL_CODE_LABELS[r.code] || ''}
-                        ${r.engineer_comment ? `<br>تعليق المهندس: ${r.engineer_comment}` : ''}
+                        الكود: <span class="code-pill">${escapeHtml(r.code || '-')}</span> ${escapeHtml(FINAL_CODE_LABELS[r.code] || '')}
+                        ${r.engineer_comment ? `<br>تعليق المهندس: ${escapeHtml(r.engineer_comment)}` : ''}
                     </div>
                 </div>
             </div>
@@ -1377,7 +1419,7 @@ function renderContractorTab() {
 
     listEl.innerHTML = contractorRequests.map(r => {
         let engineerOptions = contractorEngineers.map(e =>
-            `<option value="${e.id}" ${e.id === r.engineer_id ? 'selected' : ''}>${e.username}</option>`
+            `<option value="${escapeHtml(e.id)}" ${e.id === r.engineer_id ? 'selected' : ''}>${escapeHtml(e.username)}</option>`
         ).join('');
 
         let isPending = r.status === 'pending_admin';
@@ -1387,15 +1429,15 @@ function renderContractorTab() {
         <div class="request-card ${statusClass}">
             <div class="request-top">
                 <div>
-                    <div class="request-title">${r.title}${r.submittal_no ? ' - ' + r.submittal_no : ''}</div>
-                    <span class="classification-line">${t.discipline}: ${r.discipline}${r.activity ? ` &nbsp;›&nbsp; ${t.activity}: ${r.activity}` : ''}</span>
+                    <div class="request-title">${escapeHtml(r.title)}${r.submittal_no ? ' - ' + escapeHtml(r.submittal_no) : ''}</div>
+                    <span class="classification-line">${t.discipline}: ${escapeHtml(r.discipline)}${r.activity ? ` &nbsp;›&nbsp; ${t.activity}: ${escapeHtml(r.activity)}` : ''}</span>
                     <div class="request-meta">
-                        ${t.contractorName}: ${r.contractor_username || '-'} &nbsp;|&nbsp;
-                        ${t.companyLabel}: ${r.company_name || '-'} &nbsp;|&nbsp;
-                        ${t.fileLabel}: ${r.file_name || '-'} &nbsp;|&nbsp;
+                        ${t.contractorName}: ${escapeHtml(r.contractor_username || '-')} &nbsp;|&nbsp;
+                        ${t.companyLabel}: ${escapeHtml(r.company_name || '-')} &nbsp;|&nbsp;
+                        ${t.fileLabel}: ${escapeHtml(r.file_name || '-')} &nbsp;|&nbsp;
                         ${t.requestedAt}: ${new Date(r.requested_at).toLocaleString(currentLang === 'ar' ? 'ar-EG' : 'en-US')}
                     </div>
-                    ${r.notes ? `<div class="request-meta"><b>${t.notesLabel}:</b> ${r.notes}</div>` : ''}
+                    ${r.notes ? `<div class="request-meta"><b>${t.notesLabel}:</b> ${escapeHtml(r.notes)}</div>` : ''}
                     <div class="request-meta" style="margin-top:8px;">
                         <b>${t.engineerOverride}:</b>
                         <select id="eng-override-${r.id}" ${isPending ? '' : 'disabled'} style="padding:4px 8px; border-radius:6px; border:1px solid var(--border);">

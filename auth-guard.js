@@ -57,8 +57,11 @@
     // Pages every logged-in user can always reach, no matter what.
     const ALWAYS_ALLOWED_PAGES = ['index.html'];
 
-    // Contractor accounts only ever see this one page (their new-submittal
-    // request form) - everything else in the portal is off-limits to them.
+    // Contractor accounts always see this page (their core page). Any OTHER
+    // role can also be granted it explicitly via the page_contractor_submit
+    // checkbox in permissions.html - e.g. an admin who wants to preview the
+    // contractor's submission form, or an employee who occasionally submits
+    // on a contractor's behalf.
     const CONTRACTOR_ONLY_PAGES = ['contractor-submit.html'];
 
     // Engineer review page - open to whichever profiles have is_engineer = true
@@ -76,6 +79,47 @@
         'weekly_report_view.html': 'page_weekly_report',
         'general_by_activity.html': 'page_general_by_activity'
     };
+
+    // SECURITY FIX (Aug 2026): username/email بييجوا من الـ DB (أو من
+    // document.referrer اللي في نظرية بيكون قابل للتلاعب) وبيتحطوا جوه
+    // innerHTML - escapeHtml() بيمنع أي HTML/سكريبت فيهم من إنه يتنفّذ.
+    function escapeHtml(str) {
+        return String(str == null ? "" : str)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#39;");
+    }
+
+    // ---------------------------------------------------------------------
+    // "أي صفحة يقدر يشوفها فعلاً" - مش صفحة واحدة متحددة مسبقًا. مستخدمة في
+    // حالتين: (1) بعد تسجيل الدخول مباشرة (index.html) - عشان ميدخلش على
+    // صفحة افتراضية زي home.html وهو أصلاً مالوش صلاحية عليها فيتفاجئ
+    // برسالة "ماعندكش صلاحية" أول ما يدخل. (2) كـ fallback لما نرفض دخوله
+    // لصفحة ومفيش referrer نرجعه له - بدل ما نرمي "performance.html" ثابتة
+    // (اللي هو أصلاً ممكن يكون مالوش صلاحية عليها برضه ويدخل في حلقة رفض).
+    //
+    // الترتيب هنا بيمثل أولوية منطقية بس (مين الأنسب كصفحة هبوط)، مش قايمة
+    // صلاحيات - كل صفحة لسه بتتفحص بـ pageIsAllowed() الحقيقية قبل ما تترشح.
+    const REDIRECT_PRIORITY_PAGES = [
+        'home.html', 'task-list.html', 'summary.html', 'performance.html',
+        'general_by_activity.html', 'weekly_report.html', 'weekly_report_view.html',
+        'approvals.html', 'team_overview.html', 'engineer-review.html',
+        'contractor-submit.html', 'permissions.html'
+    ];
+
+    function firstAccessiblePage(profile, role) {
+        if (!profile || !role || role === 'blocked') return null;
+        for (const page of REDIRECT_PRIORITY_PAGES) {
+            if (role !== 'super_admin' && ADMIN_ONLY_PAGES.includes(page)) continue;
+            if (pageIsAllowed(profile, role, page)) return page;
+        }
+        return null; // literally لا صفحة متاحة له - المتصل لازم يتعامل مع الحالة دي
+    }
+    // متاحة لأي صفحة تانية (زي index.html بعد نجاح تسجيل الدخول) عن طريق
+    // window.getFirstAccessiblePage(profile, role)
+    window.getFirstAccessiblePage = firstAccessiblePage;
 
     function currentPage() {
         let path = window.location.pathname.split('/').pop();
@@ -96,10 +140,14 @@
 
     // Figures out where "the page he came from" actually is, so the
     // access-denied screen can send the user back there instead of to a
-    // hardcoded page. Falls back to performance.html only if we have no
-    // usable referrer (e.g. page opened directly / bookmark / new tab).
+    // hardcoded page. A referrer alone isn't proof he can actually see that
+    // page (permissions can change between tabs/sessions), so we still run
+    // it through pageIsAllowed(). Falls back to the first page he's
+    // genuinely allowed to see if we have no usable/allowed referrer.
     function previousPageUrl() {
         const ref = document.referrer;
+        const profile = window.__currentProfile;
+        const role = window.currentUserRole;
         if (ref) {
             try {
                 const refUrl = new URL(ref);
@@ -108,11 +156,14 @@
                 // Don't send them right back to the very page that just
                 // denied them (can happen on a hard refresh).
                 if (refUrl.origin === window.location.origin && refPage && refPage !== here) {
-                    return ref;
+                    if (!profile || !role || pageIsAllowed(profile, role, refPage)) {
+                        return ref;
+                    }
                 }
             } catch (e) { /* malformed/opaque referrer - ignore, use fallback */ }
         }
-        return 'performance.html';
+        const fallbackPage = firstAccessiblePage(profile, role);
+        return fallbackPage || 'index.html';
     }
 
     function showAccessDenied() {
@@ -125,7 +176,7 @@
                 <div style="font-size:20px;font-weight:800;color:#0f172a;">ماعندكش صلاحية تدخل الصفحة دي</div>
                 <div style="font-size:14px;color:#64748b;">You don't have permission to view this page.</div>
                 <div style="font-size:13px;color:#94a3b8;">هيتم رجوعك تلقائيًا...</div>
-                <a id="authguard-back-link" href="${backUrl}" style="margin-top:8px;color:#2563eb;font-weight:700;text-decoration:none;
+                <a id="authguard-back-link" href="${escapeHtml(backUrl)}" style="margin-top:8px;color:#2563eb;font-weight:700;text-decoration:none;
                    background:#eff6ff;padding:10px 20px;border-radius:8px;">الرجوع للصفحة السابقة</a>
             </div>
         `;
@@ -145,8 +196,15 @@
         if (role === 'super_admin') return true;
         if (ALWAYS_ALLOWED_PAGES.includes(pageName)) return true;
 
-        // Contractor accounts: ONLY the request-submission page, nothing else.
-        if (CONTRACTOR_ONLY_PAGES.includes(pageName)) return role === 'contractor';
+        // Contractor accounts: always allowed (their core page). Everyone
+        // else needs the explicit page_contractor_submit = 'yes' flag - if
+        // it's not checked in permissions.html, this link/page is fully
+        // off-limits, same as any other page_* flag.
+        if (CONTRACTOR_ONLY_PAGES.includes(pageName)) {
+            if (role === 'contractor') return true;
+            const contractorFlag = (profile.page_contractor_submit || '').toString().trim().toLowerCase();
+            return contractorFlag === 'yes';
+        }
         if (role === 'contractor') return false;
 
         // Engineer review page: gated on the is_engineer flag, not on role,
@@ -214,9 +272,9 @@
         wrap.className = 'mdceo-account-menu';
         wrap.id = 'mdceoAccountMenu';
         wrap.innerHTML = `
-            <div class="mdceo-account-avatar" id="mdceoAccountAvatar">${initial}</div>
+            <div class="mdceo-account-avatar" id="mdceoAccountAvatar">${escapeHtml(initial)}</div>
             <div class="mdceo-account-dropdown" id="mdceoAccountDropdown">
-                <div class="mdceo-account-name">${label}</div>
+                <div class="mdceo-account-name">${escapeHtml(label)}</div>
                 <div class="mdceo-account-item" id="mdceoChangePass"><i class="fa-solid fa-key"></i> ${t.changePass}</div>
                 <div class="mdceo-account-item danger" id="mdceoLogout"><i class="fa-solid fa-right-from-bracket"></i> ${t.logout}</div>
             </div>
@@ -259,7 +317,7 @@
         //    `profiles` table), never from anything cached client-side.
         const { data: profile, error } = await guardClient
             .from('profiles')
-            .select('permissions, page_performance, page_summary, page_task, page_home, page_weekly_report, page_general_by_activity, username, is_engineer, company_name')
+            .select('permissions, page_performance, page_summary, page_task, page_home, page_weekly_report, page_general_by_activity, page_contractor_submit, username, is_engineer, company_name, is_blocked')
             .eq('id', session.user.id)
             .single();
 
@@ -276,7 +334,11 @@
 
         const rawPerm = (profile.permissions || '').trim().toLowerCase();
         let role;
-        if (rawPerm === 'administrator') role = 'super_admin';
+        // is_blocked overrides whatever the stored role is - this way blocking
+        // someone never destroys/overwrites their real `permissions` value,
+        // so unblocking them later restores their exact previous role.
+        if (profile.is_blocked) role = 'blocked';
+        else if (rawPerm === 'administrator') role = 'super_admin';
         else if (rawPerm === 'admin' || rawPerm === '') role = 'admin';
         else if (rawPerm === 'no_files') role = 'no_files';
         else if (rawPerm === 'limited') role = 'limited';
@@ -284,6 +346,7 @@
         else role = 'blocked';
 
         window.currentUserRole = role;
+        window.__currentProfile = profile;
         window.currentUsername = profile.username;
         window.currentUserEmail = session.user.email;
         window.currentUserIsEngineer = !!profile.is_engineer;
@@ -302,7 +365,7 @@
 
         document.dispatchEvent(new CustomEvent('authguard:ready', { detail: { role, profile } }));
 
-        document.addEventListener('DOMContentLoaded', function () {
+        function applyElementGuards() {
             if (!window.canAccessFiles) {
                 document.querySelectorAll('.file-protected, [data-file-link]').forEach(function (el) {
                     el.style.display = 'none';
@@ -320,7 +383,23 @@
                     a.style.display = 'none';
                 }
             });
-        });
+        }
+
+        // BUGFIX (Aug 2026): this used to only run inside a
+        // document.addEventListener('DOMContentLoaded', ...) handler. Because
+        // init() is async and awaits two network round-trips (getSession,
+        // then the profiles select) before reaching this point, the DOM has
+        // almost always already finished loading by the time we get here -
+        // so that listener was registered AFTER the event had already fired
+        // and never actually ran. Nav links were never being hidden. Now we
+        // just check document.readyState: if the DOM is already parsed, run
+        // immediately; only attach the listener if we somehow got here
+        // before DOMContentLoaded (e.g. a very fast/cached profile fetch).
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', applyElementGuards);
+        } else {
+            applyElementGuards();
+        }
     }
 
     window.logoutUser = function () {
