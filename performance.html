@@ -81,6 +81,7 @@
   // تحميل auth-guard.js برقم إصدار مختلف في كل مرة، عشان أي تحديث
   // يترفع على GitHub يوصل فورًا للمستخدمين من غير ما يتحبس في الكاش.
   document.write('<script src="./auth-guard.js?v=' + Date.now() + '"><' + '/script>');
+  document.write('<script src="./notify.js?v=' + Date.now() + '"><' + '/script>');
 </script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -390,7 +391,7 @@
     <button onclick="toggleLanguage()" class="nav-btn translate-btn">
         <i class="fa-solid fa-language"></i> <span id="lang-btn-text">English</span>
     </button>
-    <button onclick="logout()" class="nav-btn logout-btn" title="Logout">
+    <button onclick="logoutUser()" class="nav-btn logout-btn" title="Logout">
         <i class="fa-solid fa-right-from-bracket"></i> <span data-i18n="navLogout">تسجيل الخروج</span>
     </button>
   </nav>
@@ -784,13 +785,8 @@ function toggleLanguage() {
   if (btn) btn.textContent = currentNavLang === 'ar' ? 'English' : 'العربية';
 }
 
-// تسجيل الخروج: مسح الجلسة المحفوظة والرجوع لصفحة الدخول
-function logout() {
-  const msg = currentNavLang === 'en' ? 'Are you sure you want to log out?' : 'هل أنت متأكد من تسجيل الخروج؟';
-  if (!confirm(msg)) return;
-  localStorage.removeItem('userSession');
-  window.location.href = 'index.html';
-}
+// تسجيل الخروج: يُعالَج بالكامل عبر window.logoutUser() في auth-guard.js
+// (تُنهي الجلسة فعليًا عبر Supabase). لا تُعرَّف هنا نسخة محلية بديلة.
 
 let currentData = null;
 

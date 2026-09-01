@@ -17,6 +17,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
       document.write('<script src="./auth-guard.js?v=' + Date.now() + '"><' + '/script>');
+      document.write('<script src="./notify.js?v=' + Date.now() + '"><' + '/script>');
       document.write('<script src="./lang.js?v=' + Date.now() + '"><' + '/script>');
     </script>
     <style>
@@ -319,7 +320,7 @@
     <button onclick="openChangePasswordModal()" class="top-btn">
         <i class="fa-solid fa-key"></i> <span data-i18n="navChangePassword">تغيير كلمة المرور</span>
     </button>
-    <button onclick="logout()" class="top-btn">
+    <button onclick="logoutUser()" class="top-btn">
         <i class="fa-solid fa-right-from-bracket"></i> <span data-i18n="navLogout">تسجيل الخروج</span>
     </button>
 </div>
@@ -546,7 +547,7 @@ function onFileChosen(input) {
     if (input.files.length === 0) { selectedFile = null; return; }
     let file = input.files[0];
     if (!ALLOWED_UPLOAD_EXTENSIONS.includes(getFileExtension(file.name))) {
-        alert(T('errBadExt'));
+        notify.error(T('errBadExt'));
         input.value = "";
         selectedFile = null;
         document.getElementById('chosenFileName').textContent = '';

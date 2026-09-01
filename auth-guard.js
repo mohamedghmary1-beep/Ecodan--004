@@ -173,9 +173,9 @@
                         font-family:'Segoe UI',system-ui,-apple-system,sans-serif;flex-direction:column;
                         gap:14px;background:#f8fafc;text-align:center;padding:24px;">
                 <div style="font-size:52px;">&#128683;</div>
-                <div style="font-size:20px;font-weight:800;color:#0f172a;">ماعندكش صلاحية تدخل الصفحة دي</div>
+                <div style="font-size:20px;font-weight:800;color:#0f172a;">ليست لديك صلاحية للدخول إلى هذه الصفحة</div>
                 <div style="font-size:14px;color:#64748b;">You don't have permission to view this page.</div>
-                <div style="font-size:13px;color:#94a3b8;">هيتم رجوعك تلقائيًا...</div>
+                <div style="font-size:13px;color:#94a3b8;">سيتم إعادتك تلقائيًا...</div>
                 <a id="authguard-back-link" href="${escapeHtml(backUrl)}" style="margin-top:8px;color:#2563eb;font-weight:700;text-decoration:none;
                    background:#eff6ff;padding:10px 20px;border-radius:8px;">الرجوع للصفحة السابقة</a>
             </div>
@@ -224,8 +224,16 @@
     // password" and "logout" - replaces the separate buttons that used to
     // sit in the nav bar on each page individually.
     function injectAccountMenu(username, email) {
-        const headerEl = document.querySelector('.header');
+        // Some pages (performance.html, weekly_report.html,
+        // weekly_report_view.html) use a differently-named top bar
+        // (".topbar") instead of ".header" - fall back to that so the
+        // account menu (and with it, the real sign-out) still gets
+        // attached everywhere instead of silently no-op'ing.
+        const headerEl = document.querySelector('.header') || document.querySelector('.topbar');
         if (!headerEl || document.getElementById('mdceoAccountMenu')) return;
+        if (getComputedStyle(headerEl).position === 'static') {
+            headerEl.style.position = 'relative';
+        }
 
         const lang = (typeof window.getCurrentLang === 'function') ? window.getCurrentLang() : 'ar';
         const t = (lang === 'en')
@@ -261,7 +269,7 @@
             }
             .mdceo-account-item:hover { background:#eff6ff; color:#1e40af; }
             .mdceo-account-item.danger:hover { background:#fef2f2; color:#dc2626; }
-            [onclick="logout()"], [onclick="openChangePasswordModal()"] { display:none !important; }
+            [onclick="logoutUser()"], [onclick="openChangePasswordModal()"] { display:none !important; }
         `;
         document.head.appendChild(menuStyle);
 
@@ -421,7 +429,7 @@
     // re-entry modal and only runs onConfirmed() if the password matches.
     window.guardUpload = function (onConfirmed) {
         if (window.canEditDashboard === false) {
-            alert('ماعندكش صلاحية تحفظ أو تعدّل البيانات دي.');
+            notify.error('ليست لديك صلاحية لحفظ أو تعديل هذه البيانات.');
             return;
         }
 
@@ -455,7 +463,7 @@
         modal.querySelector('#guard-pass-confirm').onclick = async function () {
             const typed = input.value.trim();
             errBox.innerText = '';
-            if (!typed) { errBox.innerText = 'اكتب كلمة المرور'; return; }
+            if (!typed) { errBox.innerText = 'يرجى إدخال كلمة المرور'; return; }
             try {
                 const ok = await window.reauthPassword(typed);
                 if (ok) {
@@ -465,7 +473,7 @@
                     errBox.innerText = 'كلمة المرور غير صحيحة';
                 }
             } catch (e) {
-                errBox.innerText = 'خطأ في الاتصال، حاول تاني';
+                errBox.innerText = 'حدث خطأ في الاتصال، يرجى المحاولة مرة أخرى';
             }
         };
 
@@ -522,9 +530,9 @@
             const next2 = new2Input.value;
             errBox.innerText = '';
 
-            if (!current) { errBox.innerText = 'اكتب كلمة المرور الحالية'; return; }
-            if (!next || next.length < 6) { errBox.innerText = 'كلمة المرور الجديدة لازم تكون 6 أحرف على الأقل'; return; }
-            if (next !== next2) { errBox.innerText = 'كلمة المرور الجديدة غير متطابقة في الخانتين'; return; }
+            if (!current) { errBox.innerText = 'يرجى إدخال كلمة المرور الحالية'; return; }
+            if (!next || next.length < 6) { errBox.innerText = 'يجب أن تتكون كلمة المرور الجديدة من 6 أحرف على الأقل'; return; }
+            if (next !== next2) { errBox.innerText = 'كلمتا المرور الجديدتان غير متطابقتين'; return; }
 
             const confirmBtn = modal.querySelector('#cp-confirm');
             confirmBtn.disabled = true;
@@ -540,15 +548,15 @@
                 }
                 const { error: updateError } = await guardClient.auth.updateUser({ password: next });
                 if (updateError) {
-                    errBox.innerText = 'حصل خطأ أثناء تحديث كلمة المرور، حاول تاني';
+                    errBox.innerText = 'حدث خطأ أثناء تحديث كلمة المرور، يرجى المحاولة مرة أخرى';
                     confirmBtn.disabled = false;
                     confirmBtn.innerText = 'تأكيد';
                     return;
                 }
                 modal.remove();
-                alert('تم تغيير كلمة المرور بنجاح.');
+                notify.success('تم تغيير كلمة المرور بنجاح.');
             } catch (e) {
-                errBox.innerText = 'خطأ في الاتصال، حاول تاني';
+                errBox.innerText = 'حدث خطأ في الاتصال، يرجى المحاولة مرة أخرى';
                 confirmBtn.disabled = false;
                 confirmBtn.innerText = 'تأكيد';
             }

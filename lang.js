@@ -173,22 +173,14 @@
         applyOnLoad();
     }
 
-    // Shared logout button handler, available to every page that includes
-    // this script. Clears the saved session and returns to the login page.
-    // Pages that need custom logout behavior (e.g. their own confirmation
-    // wording tied to a page-specific dictionary) can still define their
-    // own window.logout BEFORE this script runs and it will be left alone.
-    if (typeof window.logout !== 'function') {
-        window.logout = function () {
-            const lang = getStoredLang();
-            const msg = (lang === 'en')
-                ? 'Are you sure you want to log out?'
-                : 'هل أنت متأكد من تسجيل الخروج؟';
-            if (!confirm(msg)) return;
-            localStorage.removeItem('userSession');
-            window.location.href = 'index.html';
-        };
-    }
+    // NOTE: logout is handled exclusively by window.logoutUser() in
+    // auth-guard.js (it calls the real Supabase auth.signOut(), which
+    // actually invalidates the session). A local window.logout()
+    // fallback used to live here that only cleared a leftover
+    // 'userSession' localStorage key and never signed the user out of
+    // Supabase - meaning "logout" didn't really end the session. It has
+    // been removed; every logout button/link in the markup should call
+    // logoutUser() instead of logout().
 })();
 
 /*

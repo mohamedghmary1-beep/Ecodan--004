@@ -24,6 +24,7 @@
       // في كل مرة، عشان أي تحديث يترفع على GitHub يوصل فورًا للمستخدمين
       // من غير ما يتحبس في كاش المتصفح أو كاش سيرفر GitHub Pages.
       document.write('<script src="./auth-guard.js?v=' + Date.now() + '"><' + '/script>');
+      document.write('<script src="./notify.js?v=' + Date.now() + '"><' + '/script>');
       document.write('<script src="./lang.js?v=' + Date.now() + '"><' + '/script>');
     </script>
     <style>
@@ -391,7 +392,7 @@
     <button onclick="toggleLanguage()" class="nav-btn translate-btn">
         <i class="fa-solid fa-language"></i> <span id="lang-btn-text">English</span>
     </button>
-    <button onclick="logout()" class="nav-btn logout-btn" title="Logout">
+    <button onclick="logoutUser()" class="nav-btn logout-btn" title="Logout">
         <i class="fa-solid fa-right-from-bracket"></i> <span data-i18n="navLogout">تسجيل الخروج</span>
     </button>
 </div>

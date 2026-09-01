@@ -4,14 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MDCEO Submittals Dashboard</title>
-    <!-- منع أي كاش للصفحة نفسها (Browser cache) -->
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+        <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <script>
-      // فحص فوري: هل فيه نسخة أحدث من نفس الصفحة اتنشرت على GitHub؟ لو آه،
-      // يعمل تحميل كامل تلقائي مرة واحدة — يتخطى كاش المتصفح وكاش GitHub Pages
-      // معاً (منطق الفحص كامل في cache-buster.js المشترك بين كل الصفحات).
       document.write('<script src="./cache-buster.js?v=' + Date.now() + '"><' + '/script>');
     </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -23,10 +19,8 @@
    <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
    <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
 <script>
-  // تحميل الملفات المهمة (auth-guard.js / lang.js) برقم إصدار مختلف
-  // في كل مرة، عشان أي تحديث يترفع على GitHub يوصل فورًا للمستخدمين
-  // من غير ما يتحبس في كاش المتصفح أو كاش سيرفر GitHub Pages.
   document.write('<script src="./auth-guard.js?v=' + Date.now() + '"><' + '/script>');
+  document.write('<script src="./notify.js?v=' + Date.now() + '"><' + '/script>');
   document.write('<script src="./lang.js?v=' + Date.now() + '"><' + '/script>');
 </script>
     <style>
@@ -59,9 +53,7 @@
             -webkit-font-smoothing: antialiased;
         }
 
-        /* ============================================
-           الهيدر
-           ============================================ */
+        
         .header {
             background: linear-gradient(135deg, var(--primary), var(--primary-hover));
             color: #fff;
@@ -81,9 +73,7 @@
         }
         .header i { font-size: 21px; opacity: 0.92; }
 
-        /* ============================================
-           الناف بار
-           ============================================ */
+        
         .nav-container {
             display: flex;
             justify-content: center;
@@ -157,9 +147,7 @@
         }
         .nav-btn.logout-btn:hover { background: rgba(239, 68, 68, 0.2) !important; }
 
-        /* ============================================
-           هيرو الترحيب
-           ============================================ */
+        
         .welcome-hero {
             background:
                 radial-gradient(circle at 15% 20%, rgba(59,130,246,0.18), transparent 45%),
@@ -187,9 +175,7 @@
             font-weight: 400;
         }
 
-        /* ============================================
-           تخطيط الصفحة: سايدبار + محتوى
-           ============================================ */
+        
         .container {
             display: block;
             height: auto;
@@ -234,10 +220,7 @@
             box-sizing: border-box;
         }
 
-        /* ============================================
-           قائمة الموظفين — شريط أفقي (زي المواقع الكبيرة)
-           بدل عمود جانبي ثابت ياخد مساحة من الشاشة
-           ============================================ */
+        
         .employee {
             padding: 8px 16px;
             margin: 0;
@@ -289,9 +272,7 @@
             box-shadow: 0 4px 12px -3px rgba(30,64,175,0.5);
         }
 
-        /* ============================================
-           بطاقة أدوات التحكم (فلاتر + بحث + إحصائيات)
-           ============================================ */
+        
         .card {
             background: var(--bg-card);
             padding: 20px 22px;
@@ -395,9 +376,7 @@
             box-shadow: 0 0 0 4px rgba(30, 64, 175, 0.1);
         }
 
-        /* ============================================
-           كارت التاسك — الشكل الجديد
-           ============================================ */
+        
         .task {
             background: var(--bg-card);
             padding: 14px 16px;
@@ -464,9 +443,7 @@
             border: 1px solid var(--border);
         }
 
-        /* ============================================
-           كارت الريفيجن — الشكل الجديد
-           ============================================ */
+        
         .revision-box {
             margin-top: 8px;
             padding: 10px 12px;
@@ -530,9 +507,7 @@
         .open   { background: #fef9c3; color: #854d0e; }
         .delay  { background: #fee2e2; color: #b91c1c; }
 
-        /* ============================================
-           أزرار الروابط داخل كارت الريفيجن
-           ============================================ */
+        
         .link-btn {
             display: inline-flex;
             align-items: center;
@@ -569,9 +544,7 @@
         }
         .task-delete-btn:hover { background: #fecaca; }
 
-        /* ============================================
-           صندوق المرفقات
-           ============================================ */
+        
         .attachments-box {
             margin-top: 12px;
             padding: 14px 16px;
@@ -608,9 +581,7 @@
         .attach-btn { background: #8b5cf6; }
         .attach-btn:hover { background: #7c3aed; }
 
-        /* ============================================
-           مودال المعاينة
-           ============================================ */
+        
         .review-overlay {
             display: none;
             position: fixed;
@@ -680,9 +651,7 @@
             gap: 8px;
         }
 
-        /* ============================================
-           التوست
-           ============================================ */
+        
         .toast-container {
             position: fixed;
             bottom: 20px;
@@ -714,9 +683,7 @@
         .toast.error { background: #dc2626; }
         .toast.toast-hide { opacity: 0; transform: translateY(10px); }
 
-        /* =========================================
-           إعدادات التجاوب (Responsive Media Queries)
-           ========================================= */
+        
         @media screen and (max-width: 768px) {
             .header { font-size: 19px; padding: 16px; }
             .employee-toolbar { padding: 8px 12px; flex-wrap: nowrap; }
@@ -725,9 +692,7 @@
             .revision-header { flex-direction: column; align-items: flex-start; gap: 8px; }
         }
 
-        /* ============================================
-           قفل الصفحة أثناء الرفع + مودال التأكيد في النص
-           ============================================ */
+        
         .upload-lock-overlay {
             display: none;
             position: fixed;
@@ -781,11 +746,7 @@
 
         @keyframes upload-spin { to { transform: rotate(360deg); } }
 
-        /* ============================================
-           ودجت مدموجة جوه كارت الريفيجن نفسه (مش مودال منفصل) -
-           اختيار الملف + الكود (A/B/C/D) ظاهرين على طول في الكارت،
-           والمهندس لازم يختار الاتنين قبل ما زرار الإرسال يشتغل.
-           ============================================ */
+        
         .inline-rev-upload {
             margin-top: 12px;
             padding: 14px;
@@ -855,9 +816,7 @@
         .inline-rev-send:disabled { background: #94a3b8; cursor: not-allowed; }
         .inline-rev-hint { font-size: 11px; color: var(--danger); margin-top: 8px; min-height: 14px; font-weight: 600; }
 
-        /* =========================================================
-           لمسات احترافية عامة — سكرول بار مخصص
-           ========================================================= */
+        
         ::-webkit-scrollbar { width: 10px; height: 10px; }
         ::-webkit-scrollbar-track { background: var(--bg-main); }
         ::-webkit-scrollbar-thumb {
@@ -874,9 +833,7 @@
         }
 
     
-        /* ============================================
-           MDCEO Professional Header/Nav — تحديث موحّد
-           ============================================ */
+        
         .header {
             display: flex !important;
             align-items: center !important;
@@ -922,10 +879,7 @@
             box-shadow: 0 4px 12px -3px rgba(30,64,175,0.5) !important;
         }
 
-        /* ============================================
-           كارت ريكوستات المقاولين — مدموج جوه نفس قائمة التاسكات
-           (نفس المهام + مراجعة المهندس بقوا صفحة واحدة)
-           ============================================ */
+        
         .task.contractor-task { border-top-color: var(--warning, #f59e0b); }
         .contractor-summary { cursor: pointer; }
         .contractor-summary:hover .title { color: var(--primary); }
@@ -942,6 +896,7 @@
         .contractor-comment-box {
             width: 100%; box-sizing: border-box; padding: 7px 10px; border: 1px solid var(--border);
             border-radius: 8px; font-family: inherit; font-size: 13px; min-height: 44px; resize: vertical;
+            margin-bottom: 12px;
         }
         .contractor-code-row { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
         .contractor-code-wrap { flex: 1 1 60px; display: flex; flex-direction: column; }
@@ -978,7 +933,7 @@
         .sig-confirm-btn { background:var(--success); color:#fff; }
         .sig-confirm-btn:disabled { background:#94a3b8; cursor:not-allowed; }
 
-        /* محرر الكتابة الحرة على الملف (نص/توقيع) قبل ما يترفع للأدمن */
+        
         .annot-overlay { display:none; position:fixed; inset:0; background:rgba(15,23,42,0.7); z-index:1001; align-items:center; justify-content:center; padding:0; }
         .annot-overlay.active { display:flex; }
         .annot-modal { background:#fff; border-radius:0; width:100vw; height:100vh; max-width:100vw; max-height:100vh; display:flex; flex-direction:column; overflow:hidden; box-shadow:none; }
@@ -1015,12 +970,10 @@
 </head>
 <body>
 
-<!-- حقل الرفع المخفي الخاص بمرفقات التاسك (مش مرتبط بريفيجن معينة) -->
 <input type="file" id="attachment-file-input"
        accept=".pdf,.xls,.xlsx,.xlsm,.csv,.doc,.docx,.dwg,.dxf,.dwf,.zip"
        style="display: none;" onchange="handleAttachmentFileSelection(this)">
 
-<!-- خلفية قفل الصفحة أثناء الرفع + مودال التأكيد في نص الشاشة -->
 <div class="upload-lock-overlay" id="uploadLockOverlay">
     <div class="upload-modal" id="uploadModal">
         <div class="spinner" id="uploadModalSpinner"></div>
@@ -1031,7 +984,6 @@
     </div>
 </div>
 
-<!-- مودال معاينة الملف — بيفتح جوه نفس الصفحة بدل ما يودّي على جوجل درايف في تاب جديد -->
 <div class="review-overlay" id="reviewOverlay">
     <div class="review-modal">
         <div class="review-modal-header">
@@ -1043,7 +995,6 @@
     </div>
 </div>
 
-<!-- قفل شاشة بسيط (سبينر) بيستخدمه فلو مراجعة المقاولين وقت الرفع/التجهيز -->
 <div class="lock-overlay" id="lockOverlay">
     <div class="lock-modal">
         <div class="spinner"></div>
@@ -1051,7 +1002,6 @@
     </div>
 </div>
 
-<!-- مودال رسم التوقيع بالإصبع/الماوس، أو رفع صورة توقيع جاهزة، بيستخدمه المهندس وهو بيراجع ريكوست مقاول -->
 <div class="sig-overlay" id="sigOverlay">
     <div class="sig-modal">
         <h3>وقّع الملف</h3>
@@ -1074,7 +1024,6 @@
     </div>
 </div>
 
-<!-- محرر الكتابة الحرة (نص/توقيع) فوق ملف الريكوست قبل ما يترفع نهائيًا للأدمن -->
 <div class="annot-overlay" id="annotOverlay">
     <div class="annot-modal">
         <div class="annot-toolbar">
@@ -1111,7 +1060,6 @@
     </div>
 </div>
 
-<!-- حاوية إشعارات (Toast) بتظهر لما حالة مرفق تتغيّر -->
 <div id="toastContainer" class="toast-container"></div>
 
 <div class="header">
@@ -1153,7 +1101,7 @@
     <button onclick="toggleLanguage()" class="nav-btn translate-btn">
         <i class="fa-solid fa-language"></i> <span id="lang-btn-text">English</span>
     </button>
-    <button onclick="logout()" class="nav-btn logout-btn" title="Logout">
+    <button onclick="logoutUser()" class="nav-btn logout-btn" title="Logout">
         <i class="fa-solid fa-right-from-bracket"></i> <span data-i18n="navLogout">تسجيل الخروج</span>
     </button>
 </div>
@@ -1198,7 +1146,6 @@ let selected = [];
 let filter = "all";
 let currentEmployee = "";
 
-// خريطة الطلبات المعلّقة: المفتاح = taskKey + '||' + revisionName
 let pendingMap = {};
 
 let currentUploadTaskKey = "";
@@ -1209,7 +1156,6 @@ let currentUploadEmployee = "";
 let currentUploadDiscipline = "";
 let currentUploadActivity = "";
 
-// بيانات مرفق التاسك اللي بيترفع دلوقتي (مش مرتبط بريفيجن معينة)
 let currentAttachTaskKey = "";
 let currentAttachRawNo = "";
 let currentAttachTaskTitle = "";
@@ -1217,19 +1163,13 @@ let currentAttachEmployee = "";
 let currentAttachDiscipline = "";
 let currentAttachActivity = "";
 
-// خريطة مرفقات التاسكات: المفتاح = taskKey، القيمة = مصفوفة طلبات (pending/approved)
 let attachmentsMap = {};
 
-// بيتسجل فيها آخر حالة معروفة لكل طلب مرفق (id -> status)، عشان نقدر نكتشف
-// أي تغيير حصل (approved/rejected) ونطلع إشعار للموظف من غير ما يعمل رفرش يدوي
 let previousAttachmentStatus = {};
 let attachmentsLoadedOnce = false;
 
-// أقصى عدد مرفقات مسموح بيه لكل تاسك
 const MAX_ATTACHMENTS_PER_TASK = 2;
 
-// اسم الـ Bucket بتاع Supabase Storage اللي بتتخزن فيه المرفقات مؤقتًا
-// (لازم يتعمل مسبقًا من لوحة تحكم Supabase قبل ما الميزة دي تشتغل)
 const ATTACHMENTS_BUCKET = "task-attachments";
 
 const SUPABASE_URL = "https://uhhtvpxtpayovbtmnstz.supabase.co";
@@ -1237,16 +1177,11 @@ const SUPABASE_KEY = "sb_publishable_QsS0UhLBORy6mOaBDgW62g_9OacC3oO";
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const GOOGLE_SCRIPT_UPLOAD_URL = "https://script.google.com/macros/s/AKfycbxP9S7qbgK888SHhCejIGZUx-wXN7pFtJ0OHbFvAUV9ARbtfxtI1_KwUNaU3c-LTubKnw/exec";
 
-// ============================================
-// مراجعة ريكوستات المقاولين — بقت جوه نفس صفحة المهام
-// (بدل ما كانت صفحة منفصلة engineer-review.html)
-// ============================================
 const CONTRACTOR_BUCKET_KEY = "__contractor__";
-let contractorRequests = [];              // الريكوستات المعلّقة للمهندس الحالي (pending_engineer)
-let selectedContractorCode = {};          // { [id]: 'A'|'B'|'C' }
-let expandedContractorCards = {};         // { [id]: true } — الكارت مفتوح ولا لأ
+let contractorRequests = [];
+let selectedContractorCode = {};
+let expandedContractorCards = {};
 
-// حالة محرر الكتابة على الملف (نص/توقيع) + التوقيع نفسه
 let annotState = null;
 let draggingEl = null, dragStartX = 0, dragStartY = 0, dragOrigLeft = 0, dragOrigTop = 0;
 let selectedAnnotItem = null, selectedAnnotEl = null;
@@ -1262,8 +1197,7 @@ const FONT_OPTIONS = [
     { key: 'CourierBold',    label: 'Courier (سميك)', css: '"Courier New", Courier, monospace', weight: '800' }
 ];
 
-// كل قد ايه (بالثواني) الشارة والبيانات المعلّقة بتتحدّث تلقائيًا
-const PENDING_POLL_INTERVAL = 60000; // كل دقيقة بدل كل 5 ثواني - كانت بتعمل رعشة وتمسح شغل المهندس
+const PENDING_POLL_INTERVAL = 60000;
 
 const dictionary = {
     ar: {
@@ -1468,15 +1402,6 @@ window.onLanguageChanged = function () {
     render();
 };
 
-// ============================================
-// حماية من XSS — أي نص جاي من الداتا (اسم تاسك، موظف،
-// discipline، activity، اسم ملف...) لازم يتعقّم قبل ما
-// يتحط جوه HTML أو جوه onclick، عشان لو فيه حد حط تاج
-// <script> أو HTML غريب في أي حقل، ميتنفذش في المتصفح.
-// ============================================
-
-// بتستخدم لما النص هيتحط كـ نص عادي جوه HTML (زي عنوان التاسك
-// أو discipline)، بتحوّل الرموز الخطرة لـ HTML entities.
 function escapeHtml(str) {
     return String(str == null ? "" : str)
         .replace(/&/g, "&amp;")
@@ -1486,10 +1411,6 @@ function escapeHtml(str) {
         .replace(/'/g, "&#39;");
 }
 
-// بتستخدم لما النص هيتحط جوه onclick="...('${value}')" — يعني
-// جوه string جافاسكريبت متكوّنة داخل attribute بعلامتين تنصيص
-// مزدوجتين. بتعقّم من كسر الـ JS string ومن كسر الـ HTML attribute
-// نفسه في نفس الوقت.
 function escapeForJsAttr(str) {
     return String(str == null ? "" : str)
         .replace(/\\/g, "\\\\")
@@ -1511,7 +1432,6 @@ function generateTaskKey(row) {
     return fallback;
 }
 
-// جلب بيانات جدول المهام مباشرة من Supabase
 async function loadTasks() {
     try {
         const { data: rows, error } = await supabaseClient
@@ -1520,6 +1440,7 @@ async function loadTasks() {
 
         if (error) throw error;
         build(rows || []);
+        if (authGuardReadyFired) loadContractorRequests();
     } catch (err) {
         console.error("Error loading submittals:", err);
         document.getElementById('sidebar').innerHTML = T('failedToLoad');
@@ -1527,11 +1448,6 @@ async function loadTasks() {
 }
 loadTasks();
 
-// ============================================
-// حماية من "الرعشة": طول ما فيه مهندس مختار ملف أو كود لسه ما
-// بعتهمش، أي تحديث تلقائي في الخلفية (polling) مش هيعمل render()
-// كامل يمسحله اختياره - بيستنى لحد ما يخلص أو يمسح اختياره.
-// ============================================
 let activeRevSelections = new Set();
 
 function markRevSelectionActive(uid) { activeRevSelections.add(uid); }
@@ -1542,7 +1458,6 @@ function renderIfNoActiveSelections() {
     render();
 }
 
-// جلب الطلبات المعلّقة فقط (status = pending) وبناء الخريطة + تحديث الشارة
 async function loadPendingRequests() {
     try {
         const { data: rows, error } = await supabaseClient
@@ -1576,8 +1491,6 @@ function updatePendingBadge(count) {
     }
 }
 
-// جلب مرفقات التاسكات وتجميعها حسب التاسك + اكتشاف أي تغيير في حالة
-// أي مرفق (approved/rejected) عشان نطلع إشعار فوري للموظف اللي رفعه
 async function loadTaskAttachments() {
     try {
         const { data: rows, error } = await supabaseClient
@@ -1603,7 +1516,6 @@ async function loadTaskAttachments() {
         previousAttachmentStatus = newStatusMap;
         attachmentsLoadedOnce = true;
 
-        // في العرض بنوري بس pending و approved (المرفوضة بتظهر من خلال الإشعار وقتها بس)
         attachmentsMap = {};
         allRows.forEach(r => {
             if (r.status === 'rejected') return;
@@ -1617,7 +1529,6 @@ async function loadTaskAttachments() {
     }
 }
 
-// إشعار صوتي بسيط (Web Audio API — من غير ملف صوت خارجي)
 function playNotificationSound() {
     try {
         let ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -1636,7 +1547,6 @@ function playNotificationSound() {
     }
 }
 
-// عرض إشعار (Toast) بيختفي لوحده بعد شوية
 function showToast(message, type) {
     let container = document.getElementById('toastContainer');
     if (!container) return;
@@ -1667,9 +1577,6 @@ setInterval(() => {
     loadTaskAttachments();
 }, PENDING_POLL_INTERVAL);
 
-// ============================================
-// قفل الصفحة أثناء الرفع + مودال التأكيد في نص الشاشة
-// ============================================
 let isUploadInProgress = false;
 let uploadWatchdogTimer = null;
 
@@ -1681,15 +1588,10 @@ function openUploadModal(title, message) {
     document.getElementById('uploadModalTitle').textContent = title;
     document.getElementById('uploadModalMessage').textContent = message || '';
     document.getElementById('uploadLockOverlay').classList.add('active');
-    // تحذير لو حاول يقفل التاب أو يعمل رفرش أثناء الرفع
     window.onbeforeunload = function () {
         return 'في رفع ملف شغال دلوقتي، متقفلش الصفحة.';
     };
 
-    // شبكة أمان إضافية: بتاخد في الاعتبار وقت كل محاولات الرفع
-    // وإعادة المحاولة التلقائية (Retry) مجتمعة، ولو العملية فضلت
-    // "معلّقة" أكتر من كده لأي سبب غير متوقع، تفتح المودال تلقائيًا
-    // برسالة خطأ واضحة بدل ما تفضل عالقة للأبد.
     clearTimeout(uploadWatchdogTimer);
     let watchdogMs = (UPLOAD_TIMEOUT_MS * (UPLOAD_MAX_RETRIES + 1)) + (3000 * UPLOAD_MAX_RETRIES) + 15000;
     uploadWatchdogTimer = setTimeout(() => {
@@ -1703,8 +1605,6 @@ function updateUploadModalMessage(message) {
     document.getElementById('uploadModalMessage').textContent = message || '';
 }
 
-// بتقفل حالة "جاري الرفع" وتحول المودال لنتيجة نهائية (نجاح/فشل) بزرار إغلاق،
-// بدل ما تقفل المودال فورًا، عشان الموظف يشوف النتيجة بوضوح في نص الشاشة
 function finishUploadModal(success, title, message) {
     isUploadInProgress = false;
     clearTimeout(uploadWatchdogTimer);
@@ -1723,12 +1623,8 @@ function closeUploadModal() {
     document.getElementById('uploadLockOverlay').classList.remove('active');
 }
 
-// بتقرأ ملف واحد وترفعه لجوجل درايف عن طريق الـ Apps Script، وترجع رابطه.
-// فيها timeout لكل محاولة + إعادة محاولة تلقائية (Retry) لو حصل انقطاع
-// اتصال (نت فصل لحظة الرفع مثلاً)، عشان زرار واحد من زراير الرفع ما
-// "يفصلش" لوحده وسط باقي الزراير اللي شغالة عادي.
-const UPLOAD_TIMEOUT_MS = 120000; // 2 دقيقة — أقصى مدة لكل محاولة رفع
-const UPLOAD_MAX_RETRIES = 2;     // يعني 3 محاولات إجمالي لو فيه انقطاع
+const UPLOAD_TIMEOUT_MS = 120000;
+const UPLOAD_MAX_RETRIES = 2;
 
 function uploadFileToDrive(file) {
     return new Promise((resolve, reject) => {
@@ -1792,24 +1688,17 @@ function attemptUploadToDrive(file, rawLog, attemptNum, resolve, reject) {
     .then(res => res.json())
     .then(result => {
         if (!result.url) {
-            // السيرفر ردّ فعلاً بس برفض واضح (مثلاً ملف غير مقبول) —
-            // مش مشكلة اتصال، فمفيش داعي نعيد المحاولة، نوقف على طول.
             settleHardReject(new Error(result.error || "فشل الرفع"));
             return;
         }
         settleResolve(result.url);
     })
     .catch(err => {
-        // لو الـ abort جه من التايم آوت، التعامل معاه بقى بالفعل فوق.
         if (err && err.name === 'AbortError') return;
-        // أي خطأ شبكة/اتصال تاني (فصل نت، فشل fetch، إلخ) — نجرب تاني.
         settleFail(err);
     });
 }
 
-// بتتنفذ لما محاولة رفع تفشل بسبب اتصال (مش رفض من السيرفر نفسه) —
-// بتعيد المحاولة تلقائيًا لحد UPLOAD_MAX_RETRIES مرة، وبتحدّث رسالة
-// المودال عشان الموظف يشوف إنه في محاولة تانية شغالة، مش إن الرفع وقف.
 function handleUploadAttemptFailure(err, file, rawLog, attemptNum, resolve, reject) {
     if (attemptNum <= UPLOAD_MAX_RETRIES) {
         let nextAttempt = attemptNum + 1;
@@ -1822,18 +1711,14 @@ function handleUploadAttemptFailure(err, file, rawLog, attemptNum, resolve, reje
     }
 }
 
-// بترفع ملف واحد بس لكل ريفيجن (الملف الرئيسي)، جوه الفولدر بتاع نفس التاسك/الريفيجن.
-// الامتدادات المسموح رفعها فقط: PDF - Excel - Word - CAD - ZIP
 const ALLOWED_UPLOAD_EXTENSIONS = [
-    "pdf",                          // PDF
-    "xls", "xlsx", "xlsm", "csv",   // Excel
-    "doc", "docx",                  // Word
-    "dwg", "dxf", "dwf",            // CAD
-    "zip"                           // ملف مضغوط
+    "pdf",
+    "xls", "xlsx", "xlsm", "csv",
+    "doc", "docx",
+    "dwg", "dxf", "dwf",
+    "zip"
 ];
 
-// أقصى حجم مسموح به للملف الواحد (بالميجابايت) — عشان نلاقي المشكلة بدري
-// قبل ما الرفع يفشل بصمت بسبب حد سيرفر Google Apps Script
 const MAX_UPLOAD_SIZE_MB = 40;
 const MAX_UPLOAD_SIZE_BYTES = MAX_UPLOAD_SIZE_MB * 1024 * 1024;
 
@@ -1850,9 +1735,6 @@ function isAllowedFileSize(file) {
     return file.size <= MAX_UPLOAD_SIZE_BYTES;
 }
 
-// بتجمع كل شروط قبول الملف (الامتداد + الحجم) في مكان واحد،
-// وترجع رسالة الخطأ المناسبة لو فيه مشكلة، أو null لو الملف سليم.
-// بتُستخدم في رفع الريفيجن ورفع المرفقات عشان مانكررش نفس المنطق.
 function validateFile(file) {
     if (!isAllowedFileType(file)) {
         return `مسموح برفع ملفات PDF / Excel / Word / CAD / ZIP بس.\nالملف "${file.name}" امتداده مش مسموح.`;
@@ -1864,19 +1746,12 @@ function validateFile(file) {
     return null;
 }
 
-// ============================================
-// مرفقات التاسك (Attachments) — ملفات إضافية جوه نفس التاسك،
-// مش مرتبطة بريفيجن معينة. بتترفع أولاً على Supabase Storage
-// كـ "رابط عادي" مؤقت، ولما الأدمن يوافق عليها من صفحة الموافقات
-// وقتها بس بتتنقل لجوجل درايف كرابط رسمي نهائي.
-// ============================================
-
 function triggerAttachmentUpload(taskKey, rawNo, taskTitle, employee, discipline, activity) {
     if (isUploadInProgress) return;
 
     let existingCount = (attachmentsMap[taskKey] || []).length;
     if (existingCount >= MAX_ATTACHMENTS_PER_TASK) {
-        alert(T('maxAttachmentsReached'));
+        notify.error(T('maxAttachmentsReached'));
         return;
     }
 
@@ -1891,30 +1766,27 @@ function triggerAttachmentUpload(taskKey, rawNo, taskTitle, employee, discipline
 
 async function handleAttachmentFileSelection(input) {
     if (input.files.length === 0) return;
-    if (isUploadInProgress) return; // منع أي رفع تاني وقت رفع شغال بالفعل
+    if (isUploadInProgress) return;
 
     let file = input.files[0];
     input.value = "";
 
-    // تحقق من الملف (الامتداد + الحجم) في خطوة واحدة
     let validationError = validateFile(file);
     if (validationError) {
-        alert(validationError);
+        notify.error(validationError);
         return;
     }
 
     let existingCount = (attachmentsMap[currentAttachTaskKey] || []).length;
     if (existingCount >= MAX_ATTACHMENTS_PER_TASK) {
-        alert(T('maxAttachmentsReached'));
+        notify.error(T('maxAttachmentsReached'));
         return;
     }
 
-    // تأكيد من الموظف قبل ما نبدأ الرفع فعليًا — بيوريله اسم الملف واسم التاسك
-    // عشان يتأكد إنه مش غلط الملف أو التاسك
     let confirmMsg = T('confirmAttachmentUpload')
         .replace('{file}', file.name)
         .replace('{task}', currentAttachTaskTitle || currentAttachTaskKey || '-');
-    if (!confirm(confirmMsg)) return;
+    if (!(await notify.confirm(confirmMsg))) return;
 
     openUploadModal(
         "جاري رفع المرفق...",
@@ -1922,7 +1794,6 @@ async function handleAttachmentFileSelection(input) {
     );
 
     try {
-        // تنضيف اسم الملف من مسافات ورموز ممكن تكسر الـ path في الـ Storage
         let safeName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_');
         let storagePath = `${currentAttachTaskKey}/${Date.now()}_${safeName}`;
 
@@ -1941,8 +1812,6 @@ async function handleAttachmentFileSelection(input) {
         let publicUrl = urlData && urlData.publicUrl;
         if (!publicUrl) throw new Error("تعذر توليد رابط الملف بعد الرفع.");
 
-        // بننشئ "طلب موافقة" بمرفق إضافي (column_target فاضي = مش مرتبط بريفيجن معينة).
-        // revision_name هنا اسم فريد بس عشان مايتعارضش مع أي مفتاح تاني، مش ريفيجن حقيقية.
         const { data: insertedRows, error: insertError } = await supabaseClient
             .from('upload_requests')
             .insert({
@@ -1994,11 +1863,9 @@ async function handleAttachmentFileSelection(input) {
     loadPendingRequests();
 }
 
-// بيبني الـ HTML الخاص بقسم مرفقات التاسك (الملفات المعتمدة + المعلّقة + زرار الإضافة)
 function buildAttachmentsSection(t, status) {
     let list = attachmentsMap[t.taskKey] || [];
 
-    // التاسك مقفول ومفيهوش أي مرفقات — نخفي القسم كله عشان الكارت يبقى أصغر
     if (status === "CLOSED" && list.length === 0) {
         return "";
     }
@@ -2060,7 +1927,6 @@ function build(rows) {
         });
     });
 
-    // لو المستخدم مش Admin ولا Administrator (super_admin)، يشوف بس التاسكات المرتبطة باسمه هو
     let isFullAccessRole = !window.currentUserRole || window.currentUserRole === 'admin' || window.currentUserRole === 'super_admin';
     if (!isFullAccessRole) {
         let myName = (window.currentUsername || '').trim().toLowerCase();
@@ -2075,7 +1941,6 @@ function build(rows) {
         selected = data[currentEmployee];
         render();
     } else if (!isFullAccessRole) {
-        // اختيار تلقائي لتاسكات المستخدم نفسه (مفيش سايدبار يدوي له)
         let onlyKey = Object.keys(data)[0];
         if (onlyKey) selectEmployee(onlyKey);
     }
@@ -2085,7 +1950,7 @@ function renderSidebar() {
     let isAdmin = !window.currentUserRole || window.currentUserRole === 'admin' || window.currentUserRole === 'super_admin';
     let html = "";
     Object.keys(data).forEach(emp => {
-        if (emp === CONTRACTOR_BUCKET_KEY) return; // بيتحط آخر حاجة في الشريط، مش مع الموظفين
+        if (emp === CONTRACTOR_BUCKET_KEY) return;
         let activeClass = emp === currentEmployee ? "active" : "";
         let openCount = data[emp].filter(t => computeTaskStatus(t) === "OPEN").length;
         let badgeHtml = openCount > 0 ? `<span class="emp-open-badge">${openCount}</span>` : "";
@@ -2123,11 +1988,6 @@ function validLink(link) {
     return cleanLink.length > 3 && (cleanLink.startsWith("http") || cleanLink.includes(".com") || cleanLink.includes("drive.google"));
 }
 
-// ============================================
-// معاينة الملف (Review) — بتفتح مودال جوه نفس الصفحة بدل ما تودّي
-// على تاب جديد. بتدعم روابط جوجل درايف (عن طريق تحويلها لصيغة /preview
-// اللي بتتعرض جوه iframe) وكمان ملفات PDF المرفوعة على Supabase Storage.
-// ============================================
 function getFileExtensionForReview(filename) {
     let parts = (filename || "").toString().trim().split(".");
     return parts.length > 1 ? parts.pop().toLowerCase() : "";
@@ -2175,10 +2035,7 @@ function closeReviewModal() {
     document.getElementById('reviewModalBody').innerHTML = '';
 }
 
-// بيحسب حالة أي تاسك (OPEN / CLOSED / DELAY) بناءً على آخر Revision عندها بيانات
 function computeTaskStatus(t) {
-    // ريكوستات المقاولين مالهاش revisions زي تاسكات الموظفين - هي دايمًا
-    // "قيد المراجعة" لحد ما المهندس يبعتها للأدمن، فبنعتبرها OPEN في الإحصائيات/الفلتر
     if (t.type === 'contractor') return "OPEN";
 
     let activeRevisions = [];
@@ -2248,7 +2105,6 @@ function buildRevision(rev, taskKey, rawNo, taskTitle, employee, discipline, act
     if (pendingRequest) {
         uploadButtonHtml = `<button class="link-btn pending-btn" style="opacity:0.7; cursor:not-allowed;" disabled>⏳ ${T('pendingApproval')}</button>`;
     } else if (isRevisionDone) {
-        // الريفيجن خلصت (فيها كود واستلام) — مفيش داعي لودجت رفع تانية، بيقلل ارتفاع الكارت
         uploadButtonHtml = "";
     } else {
         let uid = toDomId(taskKey) + '_' + revIndex;
@@ -2289,13 +2145,8 @@ function buildRevision(rev, taskKey, rawNo, taskTitle, employee, discipline, act
     return { html: html, delay: delay, hasData: true };
 }
 
-// ============================================
-// ودجت مدموجة جوه كارت الريفيجن (مش مودال منفصل) - اختيار الملف
-// والكود (A/B/C/D) ظاهرين على طول جوه الكارت، وزرار "إرسال للموافقة"
-// مقفول لحد ما المهندس يختار الاتنين مع بعض.
-// ============================================
-let inlineRevMeta = {};   // uid -> بيانات التاسك/الريفيجن المطلوبة وقت الإرسال
-let inlineRevCode = {};   // uid -> الكود المختار حاليًا (A/B/C/D)
+let inlineRevMeta = {};
+let inlineRevCode = {};
 
 function toDomId(str) {
     return (str || '').toString().replace(/[^a-zA-Z0-9_-]/g, '_');
@@ -2342,7 +2193,7 @@ function onInlineRevFileChange(uid, input) {
     if (input.files.length > 0) {
         let validationError = validateFile(input.files[0]);
         if (validationError) {
-            alert(validationError);
+            notify.error(validationError);
             input.value = '';
         }
     }
@@ -2399,12 +2250,8 @@ async function submitInlineRevUpload(uid) {
     if (!code) { if (hint) hint.textContent = T('revCodeMissingCode'); return; }
     if (isUploadInProgress) return;
 
-    // بمجرد ما نبدأ الإرسال فعليًا، مبقاش محتاجين نحمي الكارت ده من الـ render
-    // التلقائي - أي رفريش جاي دلوقتي هيلاقي حالة "pending" وهيرسمها صح.
     clearRevSelectionActive(uid);
 
-    // uploadFileToDrive() لسه بيقرا من المتغيرات العامة دي لبيانات جوجل درايف
-    // (اسم التاسك/الموظف/التخصص..)، فلازم نظبطها هنا قبل ما ننادي عليها.
     currentUploadTaskKey = meta.taskKey;
     currentUploadRevName = meta.revName;
     currentUploadRawNo = meta.rawNo;
@@ -2427,9 +2274,6 @@ async function submitInlineRevUpload(uid) {
     try {
         let uploadedUrl = await uploadFileToDrive(file);
 
-        // بدل تحديث submittals مباشرة، بننشئ "طلب موافقة" معلّق - شايل معاه
-        // كمان الكود (A/B/C/D) اللي المهندس اختاره مع الملف، عشان الأدمن
-        // يعتمدهم مع بعض لما يوافق (الكود + الرابط + تاريخ الاستلام).
         const { data: insertedRows, error: insertError } = await supabaseClient
             .from('upload_requests')
             .insert({
@@ -2485,15 +2329,8 @@ async function submitInlineRevUpload(uid) {
     loadPendingRequests();
 }
 
-// ============================================
-// حذف نهائي من القاعدة — للسوبر أدمن فقط
-// ============================================
-const REV_COLUMN_SUFFIXES = ['', '_1', '_2', '_3']; // Original, Revision 1, 2, 3
+const REV_COLUMN_SUFFIXES = ['', '_1', '_2', '_3'];
 
-// دالة مشتركة: أي إجراء حذف نهائي للسوبر أدمن لازم يعدّي منها —
-// بتتأكد إنه فعلاً super_admin، وبتلف الإجراء جوه نفس مودال تأكيد
-// الباسورد/الـ PIN المستخدم في باقي إجراءات الحذف بالموقع (guardUpload).
-// ده بديل التكرار اللي كان موجود قبل كده جوه كل دالة حذف لوحدها.
 function runWithSuperAdminGuard(action) {
     if (window.currentUserRole !== 'super_admin') return;
     if (typeof window.guardUpload === 'function') {
@@ -2507,71 +2344,68 @@ function runWithSuperAdminGuard(action) {
     }
 }
 
-// بيمسح تاسك كامل (الصف كله) نهائيًا من جدول submittals
 function deleteTaskCompletely(rowId, taskKey, employeeKey) {
     if (window.currentUserRole !== 'super_admin') return;
-    if (!confirm(T('confirmDeleteTask'))) return;
+    notify.confirm(T('confirmDeleteTask')).then(ok => {
+        if (!ok) return;
+        runWithSuperAdminGuard(async () => {
+            try {
+                const { error } = await supabaseClient.from('submittals').delete().eq('id', rowId);
+                if (error) throw error;
 
-    runWithSuperAdminGuard(async () => {
-        try {
-            const { error } = await supabaseClient.from('submittals').delete().eq('id', rowId);
-            if (error) throw error;
-
-            // شيل التاسك من الداتا المحلية وحدّث الشاشة على طول من غير ما نستنى ريلود كامل
-            if (data[employeeKey]) {
-                data[employeeKey] = data[employeeKey].filter(t => t.taskKey !== taskKey);
-                if (data[employeeKey].length === 0) delete data[employeeKey];
+                if (data[employeeKey]) {
+                    data[employeeKey] = data[employeeKey].filter(t => t.taskKey !== taskKey);
+                    if (data[employeeKey].length === 0) delete data[employeeKey];
+                }
+                if (currentEmployee === employeeKey) {
+                    selected = data[employeeKey] || [];
+                }
+                renderSidebar();
+                render();
+            } catch (e) {
+                console.error('deleteTaskCompletely failed:', e);
+                notify.error(T('deleteTaskErr'));
             }
-            if (currentEmployee === employeeKey) {
-                selected = data[employeeKey] || [];
-            }
-            renderSidebar();
-            render();
-        } catch (e) {
-            console.error('deleteTaskCompletely failed:', e);
-            alert(T('deleteTaskErr'));
-        }
+        });
     });
 }
 
-// بيمسح بيانات ريفيجن واحدة بس (submitted/received/duration/code/link)
-// من نفس صف التاسك، من غير ما يمسح التاسك كله
 function deleteRevisionData(rowId, taskKey, employeeKey, revIndex, revName) {
     if (window.currentUserRole !== 'super_admin') return;
-    if (!confirm(T('confirmDeleteRevision'))) return;
+    notify.confirm(T('confirmDeleteRevision')).then(ok => {
+        if (!ok) return;
 
-    let suffix = REV_COLUMN_SUFFIXES[revIndex] || '';
-    let payload = {};
-    payload['submitted_on' + suffix] = null;
-    payload['received_on' + suffix] = null;
-    payload['duration' + suffix] = null;
-    payload['code' + suffix] = null;
-    payload['link' + suffix] = null;
+        let suffix = REV_COLUMN_SUFFIXES[revIndex] || '';
+        let payload = {};
+        payload['submitted_on' + suffix] = null;
+        payload['received_on' + suffix] = null;
+        payload['duration' + suffix] = null;
+        payload['code' + suffix] = null;
+        payload['link' + suffix] = null;
 
-    runWithSuperAdminGuard(async () => {
-        try {
-            const { error } = await supabaseClient.from('submittals').update(payload).eq('id', rowId);
-            if (error) throw error;
+        runWithSuperAdminGuard(async () => {
+            try {
+                const { error } = await supabaseClient.from('submittals').update(payload).eq('id', rowId);
+                if (error) throw error;
 
-            // امسح بيانات الريفيجن دي محليًا وحدّث الشاشة على طول
-            let taskList = data[employeeKey];
-            let task = taskList && taskList.find(t => t.taskKey === taskKey);
-            if (task && task.revisions[revIndex]) {
-                task.revisions[revIndex].submitted = "";
-                task.revisions[revIndex].received = "";
-                task.revisions[revIndex].duration = "";
-                task.revisions[revIndex].code = "";
-                task.revisions[revIndex].link = "";
+                let taskList = data[employeeKey];
+                let task = taskList && taskList.find(t => t.taskKey === taskKey);
+                if (task && task.revisions[revIndex]) {
+                    task.revisions[revIndex].submitted = "";
+                    task.revisions[revIndex].received = "";
+                    task.revisions[revIndex].duration = "";
+                    task.revisions[revIndex].code = "";
+                    task.revisions[revIndex].link = "";
+                }
+                render();
+            } catch (e) {
+                console.error('deleteRevisionData failed:', e);
+                notify.error(T('deleteRevisionErr'));
             }
-            render();
-        } catch (e) {
-            console.error('deleteRevisionData failed:', e);
-            alert(T('deleteRevisionErr'));
-        }
+        });
     });
 }
 
-// بيحسب ويحدّث عدادات التاسكات (الكل / مفتوح / مغلق / متأخر) للموظف المختار حاليًا
 function updateStats() {
     let total = selected.length;
     let openCount = 0, closedCount = 0, delayCount = 0;
@@ -2589,8 +2423,6 @@ function updateStats() {
     document.getElementById('statDelay').textContent = delayCount;
 }
 
-// بياخد أقدم تاريخ "submitted" صالح بين كل الريفيجنز بتاعة التاسك،
-// وده بيتحسب كـ "تاريخ فتح" التاسك (أول ما اتفتح)
 function getTaskOpenTime(t) {
     let earliest = null;
     (t.revisions || []).forEach(rev => {
@@ -2610,8 +2442,6 @@ function render() {
 
     updateStats();
 
-    // ترتيب التاسكات حسب تاريخ الفتح: الأحدث فتحًا الأول، والتاسكات
-    // اللي مالهاش تاريخ فتح لسه بتتحط في الآخر
     let orderedTasks = [...selected].sort((a, b) => {
         let timeA = getTaskOpenTime(a);
         let timeB = getTaskOpenTime(b);
@@ -2624,8 +2454,6 @@ function render() {
     let cardIndex = 0;
 
     orderedTasks.forEach(t => {
-        // ريكوستات المقاولين ليها شكل كارت مختلف تمامًا (كود A/B/C + تعليق +
-        // مراجعة/توقيع)، فبتتبني بدالة منفصلة بدل منطق تاسكات الموظفين تحت
         if (t.type === 'contractor') {
             let searchText = ((t.title || "") + " " + (t.submittal_no || "") + " " + (t.discipline || "") + " " + (t.activity || "") + " " + (t.contractor_username || "")).toLowerCase();
             if (keyword && !searchText.includes(keyword)) return;
@@ -2705,20 +2533,6 @@ function render() {
     tasksContainer.innerHTML = html || `<div style="text-align:center; color:var(--text-muted); margin-top:20px;">${T('noSubmittals')}</div>`;
 }
 
-// ============================================================
-// مراجعة ريكوستات المقاولين (سابقًا engineer-review.html) — دلوقتي
-// جوه نفس صفحة المهام، كارتاتها بتظهر في نفس القائمة وبتتفتح للتعديل
-// جوه الكارت نفسه من غير ما نودّي المستخدم لصفحة تانية.
-//
-// بتتحط جوه التاب بتاع المهندس نفسه (نفس مفتاح data اللي تاسكاته العادية
-// من submittals متخزنة عليه) - مش جوه تاب "مراجعة المقاولين" منفصل، عشان
-// المهندس ميحتاجش ينتقل بين تابات؛ بتظهر في التاب المفتوح أصلاً عنده،
-// وكأنها تاسك عادي جاي من جدول submittals.
-// ============================================================
-
-// نفس منطق المطابقة اللي build() بيستخدمه: بيدور على مفتاح موظف في data
-// بيطابق اسم المستخدم الحالي (case-insensitive)، ولو مفيش، بيرجع اسم
-// المستخدم نفسه كمفتاح جديد (يتعمله لازم لو المهندس مالوش تاسكات عادية لسه)
 function myTaskBucketKey() {
     let myName = (window.currentUsername || '').trim().toLowerCase();
     if (!myName) return null;
@@ -2726,7 +2540,6 @@ function myTaskBucketKey() {
     return matchedKey || window.currentUsername;
 }
 
-// جلب الريكوستات المعلّقة اللي محتاجة موافقة المهندس الحالي بالظبط
 async function loadContractorRequests() {
     try {
         let session = window.__guardSession || (await supabaseClient.auth.getSession()).data.session;
@@ -2778,8 +2591,6 @@ async function resolveFileLinkForDisplay(fileLink) {
     return await window.getAttachmentSignedUrl(fileLink, ATTACHMENTS_BUCKET, 3600);
 }
 
-// نفس فكرة openReviewModal بتاعة تاسكات الموظفين، بس بتحل رابط الملف الأول
-// (ممكن يكون على Supabase Storage محتاج signed URL بدل ما يكون رابط عام)
 async function openContractorReviewFile(id) {
     let req = contractorRequests.find(r => r.id === id);
     if (!req) return;
@@ -2820,7 +2631,7 @@ function closeLock() {
 function extractStoragePath(publicUrl) {
     let marker = `/storage/v1/object/public/${ATTACHMENTS_BUCKET}/`;
     let idx = (publicUrl || "").indexOf(marker);
-    if (idx === -1) return publicUrl; // already a bare storage path
+    if (idx === -1) return publicUrl;
     return decodeURIComponent(publicUrl.substring(idx + marker.length));
 }
 
@@ -2832,10 +2643,7 @@ function dataUrlToUint8Array(dataUrl) {
     return bytes;
 }
 
-// بيبني كارت ريكوست مقاول واحد بنفس شكل كارت التاسك (.task)، فيه ملخص
-// دايمًا ظاهر + جزء تعديل/مراجعة بيتفتح لما تدوس على الكارت (accordion)
 function buildContractorCard(r, animDelay) {
-    let isExpanded = !!expandedContractorCards[r.id];
     let currentLang = (typeof window.getCurrentLang === 'function') ? window.getCurrentLang() : 'ar';
     let submittedAtStr = r.requested_at ? new Date(r.requested_at).toLocaleString(currentLang === 'ar' ? 'ar-EG' : 'en-US') : '-';
 
@@ -2848,49 +2656,51 @@ function buildContractorCard(r, animDelay) {
 
     let codes = ['A', 'B', 'C', 'D'];
     let codeButtonsHtml = codes.map(c => `
-        <div class="contractor-code-wrap">
-            <button type="button" class="contractor-code-btn ${selectedContractorCode[r.id] === c ? 'selected' : ''}"
+        <div class="inline-rev-code-wrap">
+            <button type="button" data-code="${c}" class="${selectedContractorCode[r.id] === c ? 'selected' : ''}"
                 onclick="event.stopPropagation(); pickContractorCode(${r.id}, '${c}')">${c}</button>
-            <div class="contractor-code-hint">${T('contractor' + c + 'Hint')}</div>
+            <div class="inline-rev-code-hint">${T('contractor' + c + 'Hint')}</div>
         </div>
     `).join('');
 
-    let expandedBodyHtml = isExpanded ? `
-        <div class="contractor-body" onclick="event.stopPropagation();">
-            <textarea class="contractor-comment-box" id="contractor-comment-${r.id}" placeholder="${T('contractorCommentPlaceholder')}"></textarea>
-            <div class="contractor-code-row">${codeButtonsHtml}</div>
-            <div class="contractor-actions-row">
-                <button class="link-btn view-btn" onclick="event.stopPropagation(); openContractorReviewFile(${r.id})">🔗 ${T('contractorReviewFile')}</button>
-                <button class="link-btn" style="background:var(--success); color:#fff;" onclick="event.stopPropagation(); openAnnotationModal(${r.id})">✅ ${T('contractorSubmitBtn')}</button>
-            </div>
-        </div>
-    ` : "";
+    let revLabel = r.revision_number ? `Revision ${r.revision_number}` : 'Original';
 
     return `
-    <div class="task contractor-task" style="animation-delay:${animDelay}s;" id="contractor-task-${r.id}" onclick="toggleContractorCard(${r.id}, event)">
-        <div class="contractor-summary">
-            <div class="task-header-row">
-                <div class="task-activity">${T('contractorChipLabel')}</div>
-            </div>
-            <div class="title">${escapeHtml(r.title || '')}${r.submittal_no ? ' - ' + escapeHtml(r.submittal_no) : ''}</div>
-            <div class="meta-tags">
-                <span class="tag">${T('discipline')}: ${escapeHtml(r.discipline || '-')}</span>
-                ${r.activity ? `<span class="tag">${T('contractorActivityLabel')}: ${escapeHtml(r.activity)}</span>` : ""}
-                <span class="tag">${T('contractorContractor')}: ${escapeHtml(r.contractor_username || '-')}</span>
-                <span class="tag">${T('contractorSubmittedAt')}: ${escapeHtml(submittedAtStr)}</span>
-            </div>
-            ${notesHtml}
-            ${adminNoteHtml}
-            <div class="contractor-expand-hint"><i class="fa-solid fa-${isExpanded ? 'chevron-up' : 'chevron-down'}"></i> ${T('contractorExpandHint')}</div>
+    <div class="task contractor-task" style="animation-delay:${animDelay}s;" id="contractor-task-${r.id}">
+        <div class="task-header-row">
+            <div class="task-activity">${T('contractorChipLabel')}</div>
         </div>
-        ${expandedBodyHtml}
+        <div class="title">${escapeHtml(r.title || '')}${r.submittal_no ? ' - ' + escapeHtml(r.submittal_no) : ''}</div>
+        <div class="meta-tags">
+            <span class="tag">${T('no')}: ${escapeHtml(r.submittal_no || '-')}</span>
+            <span class="tag">${T('discipline')}: ${escapeHtml(r.discipline || '-')}</span>
+            <span class="tag">${T('contractorContractor')}: ${escapeHtml(r.contractor_username || '-')}</span>
+        </div>
+        ${notesHtml}
+        ${adminNoteHtml}
+        <div class="revision-box">
+            <div class="revision-header">
+                <span>${escapeHtml(revLabel)}</span>
+                <span class="code-tag code-open">${T('codeOpenPending')}</span>
+            </div>
+            <div class="small">${T('contractorSubmittedAt')}: ${escapeHtml(submittedAtStr)}</div>
+            <div class="inline-rev-upload">
+                <div class="inline-rev-filename has-file" style="cursor:pointer;" onclick="openContractorReviewFile(${r.id})">
+                    <i class="fa-solid fa-circle-check"></i> ${escapeHtml(r.file_name || T('contractorReviewFile'))}
+                </div>
+                ${commentRequiredForCode(selectedContractorCode[r.id]) ? `<textarea class="contractor-comment-box" id="contractor-comment-${r.id}" placeholder="${T('contractorCommentPlaceholder')}"></textarea>` : `<textarea class="contractor-comment-box" id="contractor-comment-${r.id}" style="display:none;"></textarea>`}
+                <div class="inline-rev-codes">${codeButtonsHtml}</div>
+                <button type="button" class="inline-rev-send" onclick="openAnnotationModal(${r.id})">📨 ${T('revCodeSend')}</button>
+            </div>
+        </div>
+        <div class="status-container">
+            <b>${T('status')}:</b>
+            <span class="status-badge open">${T('statusOpen')}</span>
+        </div>
     </div>
     `;
 }
 
-// ============================================
-// مربع رسم التوقيع الصغير (Canvas)
-// ============================================
 function initSignaturePad() {
     let canvas = document.getElementById('sigCanvas');
     let ratio = Math.max(window.devicePixelRatio || 1, 1);
@@ -2920,7 +2730,7 @@ function closeSigDrawModal() {
 
 function confirmSigDraw() {
     if (!sigPad || sigPad.isEmpty()) {
-        alert('من فضلك ارسم التوقيع الأول.');
+        notify.error('يرجى رسم التوقيع أولًا.');
         return;
     }
     let dataUrl = sigPad.toDataURL('image/png');
@@ -2931,8 +2741,6 @@ function confirmSigDraw() {
     }
 }
 
-// المهندس بيرفع صورة توقيع جاهزة من جهازه بدل ما يرسم - بتتحط في نفس
-// المكان اللي كان دوس عليه بالظبط، زي التوقيع المرسوم بالظبط.
 function handleSigImageUpload(input) {
     let file = input.files && input.files[0];
     if (!file) return;
@@ -2946,18 +2754,12 @@ function handleSigImageUpload(input) {
         input.value = '';
     };
     reader.onerror = function () {
-        alert('تعذر قراءة الصورة، جرّب صورة تانية.');
+        notify.error('تعذر قراءة الصورة، يرجى تجربة صورة أخرى.');
         input.value = '';
     };
     reader.readAsDataURL(file);
 }
 
-// ============================================
-// محرر الكتابة الحرة على الملف: المهندس يدوس "نص" أو "توقيع"، وبعدين يدوس
-// في أي مكان في الصفحة يحبه - النص/التوقيع يتحط هناك بالظبط، وممكن يسحبه
-// لمكان تاني أو يمسحه. لما يخلص ويدوس "إرسال"، كل ده بيتحط فعليًا جوه ملف
-// الـ PDF الحقيقي (باستخدام pdf-lib) قبل ما يترفع.
-// ============================================
 function populateFontFamilySelect() {
     let sel = document.getElementById('fontFamilySelect');
     sel.innerHTML = FONT_OPTIONS.map(f => `<option value="${f.key}">${f.label}</option>`).join('');
@@ -3127,7 +2929,7 @@ function placeSignatureAt(x, y, dataUrl) {
     div._item = item;
     div.addEventListener('click', function (e) {
         e.stopPropagation();
-        selectAnnotItem(null, null); // التوقيع مالوش خط، يشيل أي تحديد نص حالي
+        selectAnnotItem(null, null);
     });
     makeItemDraggable(div);
     layer.appendChild(div);
@@ -3136,7 +2938,7 @@ function placeSignatureAt(x, y, dataUrl) {
 
 function handleAnnotLayerClick(e) {
     if (!annotState) return;
-    if (e.target.closest && e.target.closest('.annot-item')) return; // العنصر نفسه بيتعامل مع تحديده
+    if (e.target.closest && e.target.closest('.annot-item')) return;
     selectAnnotItem(null, null);
     if (!annotState.tool) return;
     let layer = document.getElementById('annotLayer');
@@ -3158,29 +2960,31 @@ function setAnnotTool(tool) {
     document.getElementById('toolSigBtn').classList.toggle('active-tool', annotState.tool === 'sig');
     document.getElementById('annotLayer').classList.toggle('tool-none', !annotState.tool);
     document.getElementById('annotHint').textContent = annotState.tool === 'text'
-        ? 'دوس في أي مكان في الصفحة عشان تكتب هناك.'
+        ? 'انقر في أي مكان بالصفحة لإضافة نص هناك.'
         : annotState.tool === 'sig'
-            ? 'دوس في المكان اللي عايز تحط فيه التوقيع.'
-            : 'دوس "نص" أو "توقيع" فوق، وبعدين دوس في أي مكان في الصفحة عشان تضيف هناك.';
+            ? 'انقر في المكان الذي تريد وضع التوقيع فيه.'
+            : 'اختر "نص" أو "توقيع" أعلاه، ثم انقر في أي مكان بالصفحة للإضافة.';
 }
 
 function clearAllAnnotations() {
     if (!annotState || annotState.items.length === 0) return;
-    if (!confirm('تمسح كل النصوص والتوقيعات اللي حطيتها؟')) return;
-    document.getElementById('annotLayer').innerHTML = '';
-    annotState.items = [];
+    notify.confirm('هل تريد مسح كل النصوص والتوقيعات التي أضفتها؟').then(ok => {
+        if (!ok) return;
+        document.getElementById('annotLayer').innerHTML = '';
+        annotState.items = [];
+    });
 }
 
 async function openAnnotationModal(id) {
     let code = selectedContractorCode[id];
-    if (!code) { alert(T('contractorErrNoCode')); return; }
+    if (!code) { notify.error(T('contractorErrNoCode')); return; }
     if (!validateCommentForCode(id, code)) return;
     let req = contractorRequests.find(r => r.id === id);
     if (!req) return;
 
     let isPdf = /\.pdf($|\?)/i.test(req.file_name || '');
     if (!isPdf) {
-        if (!confirm('الملف ده مش PDF، فمش هينفع نكتب عليه مباشرة. تحب تبعت الريكوست للأدمن للموافقة زي ما هو (من غير كتابة على الملف)؟')) return;
+        if (!(await notify.confirm('هذا الملف ليس بصيغة PDF، فلا يمكن الكتابة عليه مباشرة. هل تريد إرسال الطلب إلى الأدمن للموافقة كما هو (من دون كتابة على الملف)؟'))) return;
         submitForFinalApproval(id, null);
         return;
     }
@@ -3197,9 +3001,6 @@ async function openAnnotationModal(id) {
         let page = await pdf.getPage(1);
         let viewport1 = page.getViewport({ scale: 1 });
 
-        // المودال لازم يبقى ظاهر (active) الأول قبل ما نقيس مساحة العرض
-        // المتاحة، وإلا clientWidth/clientHeight بترجع صفر (لسه مخفي) وده
-        // كان بيخلي الصفحة تتحسب بأصغر سكيل ممكن دايمًا مهما كان حجم الشاشة
         document.getElementById('annotOverlay').classList.add('active');
 
         let containerWidth = document.getElementById('annotCanvasArea').clientWidth - 28;
@@ -3241,7 +3042,7 @@ async function openAnnotationModal(id) {
     } catch (err) {
         console.error('openAnnotationModal error:', err);
         document.getElementById('annotOverlay').classList.remove('active');
-        alert('حصل خطأ أثناء تجهيز الملف للكتابة عليه: ' + (err.message || ''));
+        notify.error('حدث خطأ أثناء تجهيز الملف للكتابة عليه: ' + (err.message || ''));
     } finally {
         closeLock();
     }
@@ -3249,7 +3050,15 @@ async function openAnnotationModal(id) {
 
 function closeAnnotationModal() {
     if (annotState && annotState.items.length > 0) {
-        if (!confirm('هتقفل من غير ما تبعت - أي حاجة كتبتها هتضيع. متأكد؟')) return;
+        notify.confirm('سيتم الإغلاق من دون إرسال - أي محتوى كتبته سيُفقد. هل أنت متأكد؟').then(ok => {
+            if (!ok) return;
+            document.getElementById('annotOverlay').classList.remove('active');
+            document.getElementById('annotLayer').innerHTML = '';
+            annotState = null;
+            selectedAnnotItem = null;
+            selectedAnnotEl = null;
+        });
+        return;
     }
     document.getElementById('annotOverlay').classList.remove('active');
     document.getElementById('annotLayer').innerHTML = '';
@@ -3258,14 +3067,9 @@ function closeAnnotationModal() {
     selectedAnnotEl = null;
 }
 
-// بيرسم أي نص (عربي أو إنجليزي) على canvas مخفي واخد باله من اتجاه الكتابة
-// (RTL للعربي) ولاصق الحروف صح زي ما المتصفح نفسه بيعرضها، وبعدين بيرجعه
-// كصورة PNG - عشان نحطه جوه الـ PDF كصورة بدل نص حقيقي. ده بيتفادى تمامًا
-// مشكلة إن خطوط PDF القياسية (Helvetica/Times/Courier) معندهاش حروف عربي
-// أصلًا (كانت بتدي خطأ "WinAnsi cannot encode").
 function renderTextItemToImage(text, fontSizePt, fontOpt) {
     let isRtl = /[\u0600-\u06FF]/.test(text);
-    let dpr = 6; // دقة عالية جدًا عشان النص يطلع واضح تمامًا حتى لو الملف اتكبر أو اتطبع
+    let dpr = 6;
 
     let measureCanvas = document.createElement('canvas');
     let mctx = measureCanvas.getContext('2d');
@@ -3285,7 +3089,7 @@ function renderTextItemToImage(text, fontSizePt, fontOpt) {
     let ctx = canvas.getContext('2d');
     ctx.scale(dpr, dpr);
     ctx.font = fontCss;
-    ctx.fillStyle = 'rgb(192,32,43)'; // نفس لون التعليقات #c0202b في محرر الكتابة
+    ctx.fillStyle = 'rgb(192,32,43)';
     ctx.textBaseline = 'alphabetic';
     ctx.direction = isRtl ? 'rtl' : 'ltr';
     ctx.textAlign = isRtl ? 'right' : 'left';
@@ -3304,7 +3108,6 @@ async function bakeAnnotationsIntoPdf(state) {
     let page = pdfDoc.getPages()[0];
 
     for (let item of state.items) {
-        // تحويل إحداثيات المحرر (بكسل، من فوق-يسار) لنقاط PDF (من تحت-يسار)
         let pdfX = item.x / state.renderScale;
         let pdfYFromTop = item.y / state.renderScale;
 
@@ -3319,7 +3122,7 @@ async function bakeAnnotationsIntoPdf(state) {
         } else if (item.type === 'sig') {
             let sigBytes = dataUrlToUint8Array(item.dataUrl);
             let sigImage = await pdfDoc.embedPng(sigBytes);
-            let displayWidthPx = 130; // نفس عرض .annot-item.sig-item في الـ CSS
+            let displayWidthPx = 130;
             let sigWidthPt = displayWidthPx / state.renderScale;
             let sigHeightPt = sigWidthPt * (sigImage.height / sigImage.width);
             let pdfY = state.pageHeightPt - pdfYFromTop - sigHeightPt;
@@ -3332,7 +3135,7 @@ async function bakeAnnotationsIntoPdf(state) {
 }
 
 function commentRequiredForCode(code) {
-    return code === 'B' || code === 'C' || code === 'D'; // A = موافقة من غير تعليق، B/C/D لازم تعليق
+    return code === 'B' || code === 'C' || code === 'D';
 }
 
 function validateCommentForCode(id, code) {
@@ -3340,7 +3143,7 @@ function validateCommentForCode(id, code) {
     let el = document.getElementById(`contractor-comment-${id}`);
     let comment = (el && el.value ? el.value : '').trim();
     if (!comment) {
-        alert(T('contractorErrCommentRequired'));
+        notify.error(T('contractorErrCommentRequired'));
         return false;
     }
     return true;
@@ -3375,28 +3178,27 @@ async function submitAnnotatedRequest() {
         annotState = null;
         selectedAnnotItem = null;
         selectedAnnotEl = null;
-        alert('تم إرسال الريكوست للأدمن للموافقة النهائية.');
+        notify.success('تم إرسال الطلب إلى الأدمن للموافقة النهائية.');
     } catch (err) {
         console.error('submitAnnotatedRequest error:', err);
-        alert(err.message || 'حصل خطأ أثناء الإرسال.');
+        notify.error(err.message || 'حدث خطأ أثناء الإرسال.');
     } finally {
         document.getElementById('annotSubmitBtn').disabled = false;
         closeLock();
     }
 }
 
-// المسار البديل للملفات اللي مش PDF - بيتبعت للأدمن من غير كتابة على الملف
 async function submitForFinalApproval(id, finalFileLink) {
     let code = selectedContractorCode[id];
-    if (!code) { alert(T('contractorErrNoCode')); return; }
+    if (!code) { notify.error(T('contractorErrNoCode')); return; }
     if (!validateCommentForCode(id, code)) return;
     openLock(T('contractorWorking'));
     try {
         await finishSubmitForFinalApproval(id, code, finalFileLink);
-        alert('تم إرسال الريكوست للأدمن للموافقة النهائية.');
+        notify.success('تم إرسال الطلب إلى الأدمن للموافقة النهائية.');
     } catch (err) {
         console.error('submitForFinalApproval error:', err);
-        alert(err.message || T('contractorErrSubmit'));
+        notify.error(err.message || T('contractorErrSubmit'));
     } finally {
         closeLock();
     }
@@ -3431,7 +3233,10 @@ async function finishSubmitForFinalApproval(id, code, finalFileLink) {
     render();
 }
 
+let authGuardReadyFired = false;
+
 document.addEventListener('authguard:ready', function () {
+    authGuardReadyFired = true;
     loadContractorRequests();
 });
 </script>

@@ -4,14 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>طلبات الموافقة - MDCEO</title>
-    <!-- منع أي كاش للصفحة نفسها (Browser cache) -->
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+        <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <script>
-      // فحص فوري: هل فيه نسخة أحدث من نفس الصفحة اتنشرت على GitHub؟ لو آه،
-      // يعمل تحميل كامل تلقائي مرة واحدة — يتخطى كاش المتصفح وكاش GitHub Pages
-      // معاً (منطق الفحص كامل في cache-buster.js المشترك بين كل الصفحات).
       document.write('<script src="./cache-buster.js?v=' + Date.now() + '"><' + '/script>');
     </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -20,10 +16,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;800;900&family=Tajawal:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
-      // تحميل الملفات المهمة (auth-guard.js / lang.js) برقم إصدار مختلف
-      // في كل مرة، عشان أي تحديث يترفع على GitHub يوصل فورًا للمستخدمين
-      // من غير ما يتحبس في كاش المتصفح أو كاش سيرفر GitHub Pages.
       document.write('<script src="./auth-guard.js?v=' + Date.now() + '"><' + '/script>');
+      document.write('<script src="./notify.js?v=' + Date.now() + '"><' + '/script>');
       document.write('<script src="./lang.js?v=' + Date.now() + '"><' + '/script>');
     </script>
     <style>
@@ -349,10 +343,7 @@
             padding: 40px 0;
         }
 
-        /* =========================================================
-           تاب "الموافقة النهائية" — مدموج هنا من final-approval.html
-           (كانت صفحة منفصلة، بقت تاب جوه نفس صفحة الموافقات)
-           ========================================================= */
+        
         .req-card {
             background: var(--bg-card);
             border-radius: 12px;
@@ -383,9 +374,7 @@
         }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* =========================================================
-           لمسات احترافية عامة — سكرول بار مخصص + دخول ناعم للهيدر
-           ========================================================= */
+        
         ::-webkit-scrollbar { width: 10px; height: 10px; }
         ::-webkit-scrollbar-track { background: var(--bg-main); }
         ::-webkit-scrollbar-thumb {
@@ -408,9 +397,7 @@
         }
 
     
-        /* ============================================
-           MDCEO Professional Header/Nav — تحديث موحّد
-           ============================================ */
+        
         .header {
             display: flex !important;
             align-items: center !important;
@@ -501,12 +488,11 @@
     <button onclick="toggleLanguage()" class="nav-btn translate-btn">
         <i class="fa-solid fa-language"></i> <span id="lang-btn-text">English</span>
     </button>
-    <button onclick="logout()" class="nav-btn logout-btn" title="Logout">
+    <button onclick="logoutUser()" class="nav-btn logout-btn" title="Logout">
         <i class="fa-solid fa-right-from-bracket"></i> <span data-i18n="navLogout">تسجيل الخروج</span>
     </button>
 </div>
 
-<!-- مودال معاينة المرفق قبل الموافقة عليه -->
 <div class="review-overlay" id="reviewOverlay">
     <div class="review-modal">
         <div class="review-modal-header">
@@ -536,7 +522,6 @@
     <div id="list"></div>
 </div>
 
-<!-- مودال "جاري التنفيذ" لتاب الموافقة النهائية -->
 <div class="lock-overlay" id="lockOverlay">
     <div class="lock-modal">
         <div class="spinner"></div>
@@ -547,18 +532,9 @@
 <script>
 const SUPABASE_URL = "https://uhhtvpxtpayovbtmnstz.supabase.co";
 const SUPABASE_KEY = "sb_publishable_QsS0UhLBORy6mOaBDgW62g_9OacC3oO";
-// بنستخدم نفس عميل Supabase اللي عمله auth-guard.js (window.__guardClient)
-// بدل ما نعمل عميل جديد منفصل. الاتنين كانوا بيتصلوا بنفس المشروع بنفس
-// الـ URL/KEY، يعني بيتشاركوا نفس مفتاح تخزين الجلسة في المتصفح - وده كان
-// بيسبب تحذير "Multiple GoTrueClient instances detected" وبيخلي طلبات
-// زي توليد رابط موقّت (getAttachmentSignedUrl، اللي بيستخدم guardClient
-// أصلاً) تفشل بصمت لحظة ما أي حد من العميلين يعمل refresh للتوكن. auth-guard.js
-// نفسه بيعرّض window.__guardClient لنفس السبب ده تحديدًا. الـ fallback هنا
-// (لو لأي سبب auth-guard.js لسه ماحملش) بيمنع الصفحة من الكسر بالكامل.
 const supabaseClient = window.__guardClient || supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const GOOGLE_SCRIPT_UPLOAD_URL = "https://script.google.com/macros/s/AKfycbxP9S7qbgK888SHhCejIGZUx-wXN7pFtJ0OHbFvAUV9ARbtfxtI1_KwUNaU3c-LTubKnw/exec";
 
-// نفس اسم الـ Bucket المستخدم في task-list.html لرفع المرفقات المؤقتة
 const ATTACHMENTS_BUCKET = "task-attachments";
 
 let currentLang = (typeof window.getCurrentLang === 'function') ? window.getCurrentLang() : 'ar';
@@ -584,10 +560,10 @@ const dictionary = {
         statusCompleted: "تم الاعتماد",
         statusRejectedAdmin: "مرفوض من الأدمن",
         statusRejectedEngineer: "مرفوض من المهندس",
-        confirmApproveContractor: "تأكيد توجيه الريكوست للمهندس المختار؟",
-        confirmRejectContractor: "تأكيد رفض الريكوست ده؟",
-        errApproveContractor: "فشل توجيه الريكوست للمهندس.",
-        errRejectContractor: "فشل رفض الريكوست.",
+        confirmApproveContractor: "تأكيد توجيه الطلب إلى المهندس المختار؟",
+        confirmRejectContractor: "تأكيد رفض هذا الطلب؟",
+        errApproveContractor: "فشل توجيه الطلب إلى المهندس.",
+        errRejectContractor: "فشل رفض الطلب.",
         loading: "جاري التحميل...",
         loadError: "حدث خطأ أثناء تحميل الطلبات.",
         noPending: "لا يوجد طلبات معلّقة.",
@@ -721,8 +697,6 @@ function setTab(tab) {
     render();
 }
 
-// تاب "الموافقة النهائية" كان صفحة منفصلة (final-approval.html) - ظاهر
-// بس لل super_admin، زي ما كان مقفول قبل كده على مستوى الصفحة.
 document.addEventListener('authguard:ready', function () {
     if (window.currentUserRole === 'super_admin') {
         document.getElementById('tab-final').style.display = '';
@@ -730,17 +704,6 @@ document.addEventListener('authguard:ready', function () {
     }
 });
 
-// تصنيف ناقص = مفيش discipline أو activity متسجلين للطلب ده
-// SECURITY FIX (Aug 2026): every field rendered below can originate from a
-// LOWER-privilege role than the person viewing this page - a contractor's
-// free-text title/notes, or an engineer's review comment - and this page is
-// viewed by admins/super_admins. Without escaping, a contractor or engineer
-// could store an HTML/script payload (e.g. in "notes" or "engineer_comment")
-// that executes in the admin's browser session as soon as they open this
-// page, and could exfiltrate the admin's Supabase auth token. Every
-// untrusted value MUST go through escapeHtml() before being placed in
-// innerHTML, and through escapeForJsAttr() if placed inside an inline
-// onclick="...('...')" string.
 function escapeHtml(str) {
     return String(str == null ? "" : str)
         .replace(/&/g, "&amp;")
@@ -789,8 +752,6 @@ function render() {
             ? `<span class="classification-line" style="background:#f1f5f9; color:var(--text-muted); margin-inline-start:6px;">${t.attachmentTag}</span>`
             : '';
 
-        // كل الطلبات (سواء ريفيجن أو مرفق) بقى ليها نفس زرار "مراجعة" اللي
-        // بيفتح مودال معاينة جوه نفس الصفحة، بدل ما يودّي على تاب جديد.
         let viewActionHtml = `<button class="btn btn-review" onclick="reviewRequest(${r.id})"><i class="fa-solid fa-eye"></i> ${t.review}</button>`;
 
         return `
@@ -822,11 +783,6 @@ function render() {
     }).join('');
 }
 
-// ============================================
-// معاينة الملف (Review) — بيفتح مودال جوه نفس الصفحة بدل ما
-// يفتح تاب جديد. بتدعم روابط جوجل درايف (بتتحول لصيغة /preview
-// وتتعرض جوه iframe) وكمان ملفات PDF المرفوعة على Supabase Storage.
-// ============================================
 function getFileExtensionApv(filename) {
     let parts = (filename || "").toString().trim().split(".");
     return parts.length > 1 ? parts.pop().toLowerCase() : "";
@@ -844,15 +800,8 @@ function getReviewEmbedSrc(fileName, fileLink) {
     return null;
 }
 
-// SECURITY FIX (Aug 2026): the task-attachments Storage bucket is now
-// private (see security_migration.sql) instead of publicly readable by
-// anyone with the link. A file that's already been approved has a Google
-// Drive link here and needs no change; a still-pending file's link points
-// at Supabase Storage and must be exchanged for a short-lived SIGNED URL
-// before it can actually be opened/embedded.
 async function resolveFileLinkForDisplay(fileLink) {
     if (!fileLink || fileLink.indexOf('drive.google.com') !== -1) return fileLink;
-    if (fileLink.indexOf('/storage/v1/object/') === -1) return fileLink;
     return await window.getAttachmentSignedUrl(fileLink, ATTACHMENTS_BUCKET, 3600);
 }
 
@@ -886,7 +835,6 @@ async function reviewRequest(id) {
     document.getElementById('reviewOverlay').classList.add('active');
 }
 
-// اسم قديم متسيب لتوافق أي كود تاني ممكن يستخدمه
 function reviewAttachment(id) { reviewRequest(id); }
 
 function closeReviewModal() {
@@ -894,15 +842,10 @@ function closeReviewModal() {
     document.getElementById('reviewModalBody').innerHTML = '';
 }
 
-// ============================================
-// نقل ملف المرفق من Supabase Storage لجوجل درايف — بيتنفذ بس لحظة
-// موافقة الأدمن على المرفق (قبل كده الملف بيفضل في Supabase بس).
-// ============================================
 function extractStoragePath(publicUrl) {
-    // شكل الرابط العام: {SUPABASE_URL}/storage/v1/object/public/{bucket}/{path}
     let marker = `/storage/v1/object/public/${ATTACHMENTS_BUCKET}/`;
     let idx = (publicUrl || "").indexOf(marker);
-    if (idx === -1) return publicUrl || null; // already a bare storage path (or empty)
+    if (idx === -1) return publicUrl || null;
     return decodeURIComponent(publicUrl.substring(idx + marker.length));
 }
 
@@ -916,9 +859,6 @@ function blobToBase64(blob) {
 }
 
 async function uploadAttachmentToDrive(req) {
-    // Bucket is private now, so req.file_link (a stable storage-path
-    // reference) isn't directly fetchable - exchange it for a short-lived
-    // signed URL first.
     let fetchLink = await resolveFileLinkForDisplay(req.file_link);
     let response = await fetch(fetchLink);
     if (!response.ok) throw new Error("تعذر تحميل الملف من التخزين المؤقت.");
@@ -947,8 +887,6 @@ async function uploadAttachmentToDrive(req) {
     return result.url;
 }
 
-// شيل الملف المؤقت من Supabase Storage بعد ما يترفع بنجاح لجوجل درايف
-// (Best-effort — أي فشل هنا متسجلش في الـ console بس، مايوقفش الموافقة).
 async function deleteFromAttachmentsStorage(publicUrl) {
     let path = extractStoragePath(publicUrl);
     if (!path) return;
@@ -965,16 +903,14 @@ async function approveRequest(id) {
     let t = dictionary[currentLang];
 
     if (isClassificationMissing(req)) {
-        if (!confirm(t.confirmApproveMissingClassification)) return;
+        if (!(await notify.confirm(t.confirmApproveMissingClassification))) return;
     } else {
-        if (!confirm(`${t.confirmApprove} "${req.file_name}" ${t.confirmApproveEnd}`)) return;
+        if (!(await notify.confirm(`${t.confirmApprove} "${req.file_name}" ${t.confirmApproveEnd}`))) return;
     }
 
     let originalStorageUrl = req.file_link;
     let listEl = document.getElementById('list');
 
-    // 0) لو الطلب ده "مرفق إضافي" (column_target فاضي)، الملف لسه في Supabase Storage —
-    // لازم يترفع لجوجل درايف أول ما الأدمن يوافق، وبعدين نعتمد الرابط النهائي بتاعه.
     let finalFileLink = req.file_link;
     if (!req.column_target) {
         closeReviewModal();
@@ -983,15 +919,12 @@ async function approveRequest(id) {
             finalFileLink = await uploadAttachmentToDrive(req);
         } catch (e) {
             console.error(e);
-            alert(t.errDriveUpload);
+            notify.error(t.errDriveUpload);
             listEl.style.opacity = '1';
             return;
         }
     }
 
-    // 1) تحديث العمود الأصلي في جدول submittals
-    // لو الطلب ده "مرفق إضافي" (column_target فاضي)، متحاولش تحدث أي عمود -
-    // الملف اترفع في نفس الفولدر بس مش هو الرابط الرسمي للريفيجن.
     if (req.column_target) {
         let updateQuery = supabaseClient
             .from('submittals')
@@ -1002,7 +935,7 @@ async function approveRequest(id) {
         } else if (req.task_title) {
             updateQuery = updateQuery.eq('title', req.task_title);
         } else {
-            alert(t.errUpdateRow);
+            notify.error(t.errUpdateRow);
             listEl.style.opacity = '1';
             return;
         }
@@ -1010,13 +943,12 @@ async function approveRequest(id) {
         const { error: updateError } = await updateQuery;
         if (updateError) {
             console.error(updateError);
-            alert(t.errUpdateLink);
+            notify.error(t.errUpdateLink);
             listEl.style.opacity = '1';
             return;
         }
     }
 
-    // 2) تحديث حالة الطلب نفسه (وتحديث الرابط لرابط جوجل درايف النهائي لو كان مرفق)
     const { error: statusError } = await supabaseClient
         .from('upload_requests')
         .update({ status: 'approved', reviewed_at: new Date().toISOString(), file_link: finalFileLink })
@@ -1024,12 +956,11 @@ async function approveRequest(id) {
 
     if (statusError) {
         console.error(statusError);
-        alert(t.errUpdateStatusAfterLink);
+        notify.error(t.errUpdateStatusAfterLink);
         listEl.style.opacity = '1';
         return;
     }
 
-    // 3) شيل نسخة Supabase Storage المؤقتة (Best-effort) بعد ما اترفع لجوجل درايف
     if (!req.column_target) {
         deleteFromAttachmentsStorage(originalStorageUrl);
     }
@@ -1041,7 +972,7 @@ async function approveRequest(id) {
 async function rejectRequest(id) {
     let req = requests.find(r => r.id === id);
     let t = dictionary[currentLang];
-    if (!confirm(t.confirmReject)) return;
+    if (!(await notify.confirm(t.confirmReject))) return;
 
     const { error } = await supabaseClient
         .from('upload_requests')
@@ -1050,11 +981,10 @@ async function rejectRequest(id) {
 
     if (error) {
         console.error(error);
-        alert(t.errReject);
+        notify.error(t.errReject);
         return;
     }
 
-    // لو كان مرفق إضافي (لسه في Supabase Storage)، نشيل نسخة الملف المؤقتة بعد الرفض
     if (req && !req.column_target) {
         deleteFromAttachmentsStorage(req.file_link);
     }
@@ -1063,12 +993,6 @@ async function rejectRequest(id) {
     loadRequests();
 }
 
-// ============================================
-// تاب "الموافقة النهائية" (كانت final-approval.html) - ريكوستات المقاولين
-// اللي المهندس خلص مراجعتها وبتستنى توقيع/اعتماد الأدمن الأخير قبل ما
-// تتبعت لجوجل درايف. بيستخدم نفس الدوال المشتركة فوق (resolveFileLinkForDisplay/
-// blobToBase64/deleteFromAttachmentsStorage) بدل ما يكرر نسخة تانية منها.
-// ============================================
 const FINAL_CODE_LABELS = { A: 'Approved', B: 'Approved as Noted', C: 'Rejected' };
 const FINAL_REVISION_SLOTS = ['', '_1', '_2', '_3'];
 
@@ -1167,17 +1091,10 @@ async function finalReviewRequest(id) {
     document.getElementById('reviewOverlay').classList.add('active');
 }
 
-// ============================================
-// اعتماد نهائي: جدول submittals عندك "عريض" - مش صف لكل مراجعة، لكل صف
-// submittal فيه أعمدة المراجعة الأساسية (submitted_on/received_on/code/
-// duration/link) وبعدين _1/_2/_3 لكل مراجعة تالية بنفس رقم الـ "no". فلو
-// رقم السبمتال ده موجود بالفعل، بنملى أول عمود مراجعة فاضي بدل ما نعمل
-// صف مكرر؛ ولو مش موجود، بنعمل صف جديد بالمراجعة الأساسية.
-// ============================================
 async function finalApproveRequest(id) {
     let req = finalRequests.find(r => r.id === id);
     if (!req) return;
-    if (!confirm('تأكيد الاعتماد النهائي وإرسال الملف على جوجل درايف؟')) return;
+    if (!(await notify.confirm('تأكيد الاعتماد النهائي وإرسال الملف على جوجل درايف؟'))) return;
 
     finalOpenLock('جاري الاعتماد...');
     try {
@@ -1198,8 +1115,6 @@ async function finalApproveRequest(id) {
         if (existing) {
             let freeSlot = FINAL_REVISION_SLOTS.find(slot => !existing['submitted_on' + slot]);
             if (freeSlot === undefined) {
-                // كل مراجعات الصف ده (R00 لـ R03) اتملوا بالفعل - نعمل صف
-                // جديد منفصل بدل ما نضيع بيانات المراجعة الجديدة دي.
                 const { data: inserted, error: insErr } = await supabaseClient
                     .from('submittals')
                     .insert({
@@ -1252,12 +1167,17 @@ async function finalApproveRequest(id) {
 
         finalRequests = finalRequests.filter(r => r.id !== id);
         renderFinalTab();
+
+        finalOpenLock('جاري رفع الملف على جوجل درايف...');
+        let driveUploadOk = await finalPushFileToDriveInBackground(req, newSubmittalId, linkColumn, id);
         finalCloseLock();
 
-        finalPushFileToDriveInBackground(req, newSubmittalId, linkColumn, id);
+        if (!driveUploadOk) {
+            notify.error('تم الاعتماد، لكن حصل خطأ أثناء رفع الملف على جوجل درايف. راجع الطلب وحاول تاني.');
+        }
     } catch (err) {
         console.error('finalApproveRequest error:', err);
-        alert(err.message || 'حصل خطأ أثناء الاعتماد.');
+        notify.error(err.message || 'حدث خطأ أثناء الاعتماد.');
         finalCloseLock();
     }
 }
@@ -1303,16 +1223,16 @@ async function finalPushFileToDriveInBackground(req, newSubmittalId, linkColumn,
             .eq('id', requestId);
         if (reqUpdateError) console.error('Could not update contractor_requests.file_link:', reqUpdateError);
 
-        // تنظيف النسخ المؤقتة (الأصلية + النسخة اللي كتب عليها المهندس)
-        // بعد ما اتأكدنا إن النسخة النهائية وصلت درايف بنجاح.
         deleteFromAttachmentsStorage(req.file_link);
         if (req.final_file_link) deleteFromAttachmentsStorage(req.final_file_link);
+        return true;
     } catch (err) {
         console.error('Background Drive upload failed:', err);
         await supabaseClient
             .from('contractor_requests')
             .update({ drive_status: 'failed' })
             .eq('id', requestId);
+        return false;
     }
 }
 
@@ -1320,10 +1240,10 @@ async function finalRejectRequest(id) {
     let req = finalRequests.find(r => r.id === id);
     if (!req) return;
 
-    let note = prompt('اكتب سبب الرفض عشان يوصل للمهندس:');
-    if (note === null) return; // اتلغى
+    let note = await notify.prompt('يرجى كتابة سبب الرفض ليصل إلى المهندس:');
+    if (note === null) return;
     note = note.trim();
-    if (!note) { alert('لازم تكتب سبب الرفض.'); return; }
+    if (!note) { notify.error('يجب كتابة سبب الرفض.'); return; }
 
     finalOpenLock('جاري الإرسال للمهندس...');
     try {
@@ -1343,21 +1263,14 @@ async function finalRejectRequest(id) {
         renderFinalTab();
     } catch (err) {
         console.error('finalRejectRequest error:', err);
-        alert(err.message || 'حصل خطأ أثناء الرفض.');
+        notify.error(err.message || 'حدث خطأ أثناء الرفض.');
     } finally {
         finalCloseLock();
     }
 }
 
-// lang.js بيشغّل نسخته المشتركة من عداد "finalNavBadge" بس لو الصفحة دي
-// مالهاش نسختها الغنية بتاعتها - وهي هنا موجودة، فبنستخدم نفس الاسم
-// اللي final-approval.html كانت بتستخدمه عشان lang.js يعرف يستنى.
 window.loadFinalApprovalRequests = finalLoadRequests;
 
-// ============================================
-// تبويب "طلبات المقاولين" - ريكوستات جديدة (مش ريفيجن) رفعها مقاول،
-// بننتظر الأدمن يراجعها ويحدد/يأكد المهندس، وبعدين تروح تلقائيًا للمهندس.
-// ============================================
 let contractorRequests = [];
 let contractorEngineers = [];
 
@@ -1494,7 +1407,7 @@ async function approveContractorRequest(id) {
     if (!req) return;
     let t = dictionary[currentLang];
 
-    if (!confirm(t.confirmApproveContractor)) return;
+    if (!(await notify.confirm(t.confirmApproveContractor))) return;
 
     let overrideSelect = document.getElementById(`eng-override-${id}`);
     let chosenEngineerId = overrideSelect ? overrideSelect.value : req.engineer_id;
@@ -1513,7 +1426,7 @@ async function approveContractorRequest(id) {
 
     if (error) {
         console.error(error);
-        alert(t.errApproveContractor);
+        notify.error(t.errApproveContractor);
         return;
     }
 
@@ -1523,7 +1436,7 @@ async function approveContractorRequest(id) {
 
 async function rejectContractorRequest(id) {
     let t = dictionary[currentLang];
-    if (!confirm(t.confirmRejectContractor)) return;
+    if (!(await notify.confirm(t.confirmRejectContractor))) return;
 
     const { error } = await supabaseClient
         .from('contractor_requests')
@@ -1536,7 +1449,7 @@ async function rejectContractorRequest(id) {
 
     if (error) {
         console.error(error);
-        alert(t.errRejectContractor);
+        notify.error(t.errRejectContractor);
         return;
     }
 

@@ -20,6 +20,7 @@
   // في كل مرة، عشان أي تحديث يترفع على GitHub يوصل فورًا للمستخدمين
   // من غير ما يتحبس في كاش المتصفح أو كاش سيرفر GitHub Pages.
   document.write('<script src="./auth-guard.js?v=' + Date.now() + '"><' + '/script>');
+  document.write('<script src="./notify.js?v=' + Date.now() + '"><' + '/script>');
   document.write('<script src="./lang.js?v=' + Date.now() + '"><' + '/script>');
 </script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
@@ -256,7 +257,7 @@
     <button onclick="toggleLanguage()" class="nav-btn translate-btn">
       <i class="fa-solid fa-language"></i> <span id="lang-btn-text">English</span>
     </button>
-    <button onclick="logout()" class="nav-btn logout-btn" title="Logout">
+    <button onclick="logoutUser()" class="nav-btn logout-btn" title="Logout">
       <i class="fa-solid fa-right-from-bracket"></i> <span data-i18n="navLogout">تسجيل الخروج</span>
     </button>
   </nav>
@@ -480,15 +481,8 @@ window.registerDictionary({
   }
 });
 
-// تسجيل الخروج: مسح الجلسة المحفوظة والرجوع لصفحة الدخول
-function logout() {
-  const msg = (typeof window.getCurrentLang === "function" && window.getCurrentLang() === "en")
-    ? "Are you sure you want to log out?"
-    : "هل أنت متأكد من تسجيل الخروج؟";
-  if (!confirm(msg)) return;
-  localStorage.removeItem("userSession");
-  window.location.href = "index.html";
-}
+// تسجيل الخروج: يُعالَج بالكامل عبر window.logoutUser() في auth-guard.js
+// (تُنهي الجلسة فعليًا عبر Supabase). لا تُعرَّف هنا نسخة محلية بديلة.
 
 // ---------- Saved reports list (read-only) ----------
 async function loadReportsList() {
@@ -581,11 +575,11 @@ function updateFreezeBtnVisibility() {
 async function freezePerformanceSnapshot() {
   if (!window.isPrivilegedViewer) return;
   if (!currentViewedReportId) {
-    alert(T('noReportSelectedToDeleteView'));
+    notify.error(T('noReportSelectedToDeleteView'));
     return;
   }
   if (!lastLoadedLivePerfData) {
-    alert(T('freezePerfNoData'));
+    notify.error(T('freezePerfNoData'));
     return;
   }
 
@@ -593,7 +587,7 @@ async function freezePerformanceSnapshot() {
   const noToFreeze = currentViewedReportNo;
   const snapshotToSave = lastLoadedLivePerfData;
   const confirmMsg = T('confirmFreezePerf').replace('{no}', noToFreeze || '-');
-  if (!confirm(confirmMsg)) return;
+  if (!(await notify.confirm(confirmMsg))) return;
 
   const btn = document.getElementById('freezePerfBtn');
 
@@ -605,14 +599,14 @@ async function freezePerformanceSnapshot() {
         .update({ performance_snapshot: snapshotToSave })
         .eq('id', idToFreeze);
       if (error) throw error;
-      alert(T('freezePerfSuccess'));
+      notify.success(T('freezePerfSuccess'));
       // Re-render this same report so it now reads its freshly-saved
       // snapshot instead of falling back to live data.
       renderPerformanceSnapshot(snapshotToSave);
       updateFreezeBtnVisibility();
     } catch (e) {
       console.error(e);
-      alert(T('freezePerfErr'));
+      notify.error(T('freezePerfErr'));
     } finally {
       btn.disabled = false;
     }
@@ -628,7 +622,7 @@ async function freezePerformanceSnapshot() {
     }
   } else {
     console.error('PIN confirmation unavailable — freeze aborted for safety.');
-    alert(T('freezePerfErr'));
+    notify.error(T('freezePerfErr'));
   }
 }
 
@@ -639,14 +633,14 @@ async function deleteViewedReport() {
   if (!window.isPrivilegedViewer) return;
 
   if (!currentViewedReportId) {
-    alert(T('noReportSelectedToDeleteView'));
+    notify.error(T('noReportSelectedToDeleteView'));
     return;
   }
 
   const idToDelete = currentViewedReportId;
   const noToDelete = currentViewedReportNo;
   const confirmMsg = T('confirmDeleteReportView').replace('{no}', noToDelete || '-');
-  if (!confirm(confirmMsg)) return;
+  if (!(await notify.confirm(confirmMsg))) return;
 
   const btn = document.getElementById('deleteReportViewBtn');
 
@@ -655,7 +649,7 @@ async function deleteViewedReport() {
     try {
       const { error } = await client.from('weekly_reports').delete().eq('id', idToDelete);
       if (error) throw error;
-      alert(T('deleteViewSuccess'));
+      notify.success(T('deleteViewSuccess'));
       currentViewedReportId = null;
       currentViewedReportNo = '';
       document.getElementById('reportContent').innerHTML = `<div class="loading-state">${T('noReportsYet')}</div>`;
@@ -664,7 +658,7 @@ async function deleteViewedReport() {
       await loadReportsList();
     } catch (e) {
       console.error(e);
-      alert(T('deleteViewErr'));
+      notify.error(T('deleteViewErr'));
     } finally {
       btn.disabled = false;
     }
@@ -683,7 +677,7 @@ async function deleteViewedReport() {
     // If auth-guard.js hasn't loaded its PIN modal for some reason, do not
     // silently delete without the extra confirmation layer.
     console.error('PIN confirmation unavailable — delete aborted for safety.');
-    alert(T('deleteViewErr'));
+    notify.error(T('deleteViewErr'));
   }
 }
 

@@ -20,6 +20,7 @@
   // في كل مرة، عشان أي تحديث يترفع على GitHub يوصل فورًا للمستخدمين
   // من غير ما يتحبس في كاش المتصفح أو كاش سيرفر GitHub Pages.
   document.write('<script src="./auth-guard.js?v=' + Date.now() + '"><' + '/script>');
+  document.write('<script src="./notify.js?v=' + Date.now() + '"><' + '/script>');
   document.write('<script src="./lang.js?v=' + Date.now() + '"><' + '/script>');
 </script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
@@ -379,7 +380,7 @@
     <button onclick="toggleLanguage()" class="nav-btn translate-btn">
         <i class="fa-solid fa-language"></i> <span id="lang-btn-text">English</span>
     </button>
-    <button onclick="logout()" class="nav-btn logout-btn" title="Logout">
+    <button onclick="logoutUser()" class="nav-btn logout-btn" title="Logout">
         <i class="fa-solid fa-right-from-bracket"></i> <span data-i18n="navLogout">تسجيل الخروج</span>
     </button>
   </nav>
@@ -975,7 +976,7 @@ function applyPermissions() {
 // auth-guard.js), instead of comparing to one shared hardcoded string.
 function checkEditPassword(onConfirmed) {
   if (window.canEditDashboard === false) {
-    alert('ماعندكش صلاحية تعدّل أو تحذف البيانات دي.');
+    notify.error('ليست لديك صلاحية لتعديل أو حذف هذه البيانات.');
     return;
   }
 
@@ -1282,7 +1283,7 @@ async function deleteSelectedReport() {
     statusEl.style.color = '#ef4444';
     return;
   }
-  if (!confirm(T('confirmDeleteReport'))) return;
+  if (!(await notify.confirm(T('confirmDeleteReport')))) return;
 
   const btn = document.getElementById('deleteReportBtn');
 

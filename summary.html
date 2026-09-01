@@ -64,6 +64,7 @@
       // في كل مرة، عشان أي تحديث يترفع على GitHub يوصل فورًا للمستخدمين
       // من غير ما يتحبس في كاش المتصفح أو كاش سيرفر GitHub Pages.
       document.write('<script src="./auth-guard.js?v=' + Date.now() + '"><' + '/script>');
+      document.write('<script src="./notify.js?v=' + Date.now() + '"><' + '/script>');
       document.write('<script src="./lang.js?v=' + Date.now() + '"><' + '/script>');
     </script>
     <!-- Font Awesome for Icons -->
@@ -905,7 +906,7 @@
     <button onclick="toggleLanguage()" class="nav-btn translate-btn">
         <i class="fa-solid fa-language"></i> <span id="lang-btn-text">English</span>
     </button>
-    <button onclick="logout()" class="nav-btn logout-btn" title="Logout">
+    <button onclick="logoutUser()" class="nav-btn logout-btn" title="Logout">
         <i class="fa-solid fa-right-from-bracket"></i> <span data-i18n="navLogout">تسجيل الخروج</span>
     </button>
 </div>
@@ -1083,8 +1084,8 @@ async function loadSummaryData() {
 }
 loadSummaryData();
 
-// المرفقات الإضافية اللي بتترفع من صفحة "task-list" (زرار Add Attachment) —
-// بتترسم هنا جنب الريكوست/الطلب بتاعها، مش بس الرابط الأساسي (link) للريفيجن.
+// المرفقات الإضافية التي تُرفع من صفحة "task-list" (زر Add Attachment) —
+// تُعرض هنا بجانب الطلب الخاص بها، وليس فقط الرابط الأساسي (link) للمراجعة.
 async function loadExtraAttachments() {
     try {
         const { data: rows, error } = await supabaseClient
@@ -1465,9 +1466,9 @@ function renderTasks(filteredData) {
     document.getElementById('accordions-container').innerHTML = containerHtml;
 }
 
-// ---- عرض المرفق (المستند) جوه الصفحة نفسها بدل ما يفتح تاب جديد على جوجل درايف ----
-// بيحول رابط جوجل درايف العادي لصيغة "preview" القابلة للعرض جوه iframe.
-// لو الرابط مش من جوجل درايف أو الصيغة مش معروفة، بيجرب يعرضه زي ما هو.
+// ---- عرض المرفق (المستند) داخل الصفحة نفسها بدلًا من فتح تبويب جديد على جوجل درايف ----
+// يحوّل رابط جوجل درايف العادي إلى صيغة "preview" القابلة للعرض داخل iframe.
+// إذا لم يكن الرابط من جوجل درايف أو كانت الصيغة غير معروفة، يُعرض كما هو.
 function toEmbeddableUrl(url) {
     let driveMatch = url.match(/drive\.google\.com\/file\/d\/([^/]+)/);
     if (driveMatch) {
