@@ -926,9 +926,20 @@ async function approveRequest(id) {
     }
 
     if (req.column_target) {
+        // column_target is one of: link, link_1, link_2, link_3
+        // Derive the matching suffix so we also stamp the code + received_on
+        // for that same revision slot - previously only the file link was
+        // saved here, which is why the reviewer's code never showed up on
+        // the submittals table and had to be typed in again by hand.
+        let suffix = req.column_target === 'link' ? '' : req.column_target.replace('link', '');
+        let today = new Date().toISOString().slice(0, 10);
+        let submittalPayload = { [req.column_target]: finalFileLink };
+        submittalPayload['code' + suffix] = req.code || null;
+        submittalPayload['received_on' + suffix] = today;
+
         let updateQuery = supabaseClient
             .from('submittals')
-            .update({ [req.column_target]: finalFileLink });
+            .update(submittalPayload);
 
         if (req.raw_no && req.raw_no !== '-') {
             updateQuery = updateQuery.eq('no', req.raw_no);
