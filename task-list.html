@@ -1874,7 +1874,7 @@ function buildAttachmentsSection(t, status) {
         if (r.status === 'approved') {
             let safeName = escapeForJsAttr(r.file_name || '');
             let safeLink = escapeForJsAttr(r.file_link || '');
-            return `<button class="attachment-chip approved" onclick="openReviewModal('${safeName}', '${safeLink}')">📎 ${escapeHtml(r.file_name)}</button>`;
+            return `<button class="attachment-chip approved" onclick="openAttachmentReview('${safeName}', '${safeLink}')">📎 ${escapeHtml(r.file_name)}</button>`;
         }
         return `<span class="attachment-chip pending">📎 ${escapeHtml(r.file_name)} — ${T('pendingApproval')}</span>`;
     }).join('');
@@ -2003,6 +2003,11 @@ function getReviewEmbedSrc(fileName, fileLink) {
         return fileLink;
     }
     return null;
+}
+
+async function openAttachmentReview(fileName, storedLink) {
+    let freshLink = await resolveFileLinkForDisplay(storedLink);
+    openReviewModal(fileName, freshLink);
 }
 
 function openReviewModal(fileName, fileLink) {
@@ -2588,7 +2593,9 @@ function getFileExtensionRev(filename) {
 
 async function resolveFileLinkForDisplay(fileLink) {
     if (!fileLink || fileLink.indexOf('drive.google.com') !== -1) return fileLink;
-    return await window.getAttachmentSignedUrl(fileLink, ATTACHMENTS_BUCKET, 3600);
+    // 5-minute expiry: link is regenerated fresh every time a file is opened,
+    // so this only limits how long a copied/shared link stays valid.
+    return await window.getAttachmentSignedUrl(fileLink, ATTACHMENTS_BUCKET, 300);
 }
 
 async function openContractorReviewFile(id) {
