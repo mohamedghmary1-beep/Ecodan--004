@@ -1,0 +1,5 @@
+[functions.contractor-download]
+verify_jwt = false
+
+[functions.temporary-download]
+verify_jwt = false

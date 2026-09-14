@@ -1,0 +1,1000 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>التقرير الأسبوعي - عرض | Weekly Report View</title>
+<!-- منع أي كاش للصفحة نفسها (Browser cache) -->
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<script>
+  // فحص فوري: هل فيه نسخة أحدث من نفس الصفحة اتنشرت على GitHub؟ لو آه،
+  // يعمل تحميل كامل تلقائي مرة واحدة — يتخطى كاش المتصفح وكاش GitHub Pages
+  // معاً (منطق الفحص كامل في cache-buster.js المشترك بين كل الصفحات).
+  document.write('<script src="../shared/cache-buster.js?v=' + Date.now() + '"><' + '/script>');
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  // تحميل الملفات المهمة (auth-guard.js / lang.js) برقم إصدار مختلف
+  // في كل مرة، عشان أي تحديث يترفع على GitHub يوصل فورًا للمستخدمين
+  // من غير ما يتحبس في كاش المتصفح أو كاش سيرفر GitHub Pages.
+  document.write('<script src="../shared/auth-guard.js?v=' + Date.now() + '"><' + '/script>');
+  document.write('<script src="../shared/notify.js?v=' + Date.now() + '"><' + '/script>');
+  document.write('<script src="../shared/lang.js?v=' + Date.now() + '"><' + '/script>');
+</script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+  :root{
+    --primary:#1e40af;
+    --primary-hover:#1032b9;
+    --primary-light:#eff6ff;
+    --bg-main:#f8fafc;
+    --bg-card:#ffffff;
+    --text-main:#1e293b;
+    --text-muted:#64748b;
+    --border:#e2e8f0;
+    --success:#1d4ed8;
+    --danger:#ef4444;
+    --shadow-sm:0 1px 3px rgba(0,0,0,0.05);
+    --shadow-md:0 4px 6px -1px rgba(0,0,0,0.05);
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--bg-main);color:var(--text-main);padding:0 0 40px 0;}
+
+  /* ----- Shared topbar / nav (same pattern as weekly_report.html & performance.html) ----- */
+  .topbar{display:flex;flex-direction:column;gap:10px;margin-bottom:20px;background:var(--primary);color:#fff;padding:14px 24px;box-shadow:0 2px 4px rgba(0,0,0,0.1);animation: header-fade-in 0.5s ease;}
+  .topbar-main{display:flex;align-items:center;justify-content:space-between;gap:14px;}
+  .topbar-logo-block{display:flex;flex-direction:column;align-items:center;gap:6px;flex-shrink:0;width:70px;}
+  .topbar-logo-slot{width:60px;height:60px;flex-shrink:0;border:1px dashed rgba(255,255,255,0.5);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:10px;color:#dbeafe;background:rgba(255,255,255,0.08);overflow:hidden;}
+  .topbar-logo-slot.filled{border:none;background:#fff;padding:5px;box-shadow:0 1px 4px rgba(0,0,0,0.2);}
+  .topbar-logo-slot img{max-width:100%;max-height:100%;object-fit:contain;display:none;}
+  .topbar-logo-slot img.has-src{display:block;}
+  .topbar-logo-name{font-size:10.5px;font-weight:700;color:#dbeafe;text-align:center;max-width:80px;line-height:1.2;word-break:break-word;}
+  .topbar-title-wrap{flex:1;text-align:center;min-width:0;padding:0 10px;}
+  .topbar h1{font-size:20px;margin:0;color:#fff;font-weight:800;letter-spacing:0.3px;}
+  .topbar .meta{font-size:11px;color:#dbeafe;margin-top:4px;}
+  .nav-container{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.15);}
+  .nav-btn{display:inline-flex;align-items:center;gap:6px;color:#fff;text-decoration:none;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.3);padding:7px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;transition:background .15s ease;font-family:inherit;position:relative;}
+  .nav-badge{position:absolute;top:-6px;right:-6px;background:#ef4444;color:#fff;font-size:11px;font-weight:700;min-width:18px;height:18px;border-radius:999px;display:none;align-items:center;justify-content:center;padding:0 4px;line-height:1;}
+  .nav-btn:hover{background:rgba(255,255,255,0.22);}
+  .nav-btn.active{background:rgba(255,255,255,0.3);box-shadow:inset 0 -2px 0 #fff;}
+  .nav-btn:active{transform:scale(0.96);}
+  .translate-btn{background:rgba(255,255,255,0.16);}
+
+  .wrap{max-width:1100px;margin:0 auto;padding:0 20px;}
+
+  .card{background:var(--bg-card);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow-sm);padding:20px 22px;margin-bottom:20px;transition:transform 0.2s ease, box-shadow 0.2s ease;}
+  .card:hover{box-shadow:0 10px 22px -10px rgba(15,23,42,0.18);}
+  .card h2.section-title{font-size:16px;font-weight:800;margin:0 0 14px;color:var(--primary);padding-bottom:8px;border-bottom:2px solid var(--primary-light);display:flex;align-items:center;gap:8px;}
+
+  select#reportsSelect{width:100%;padding:12px 14px;border:1px solid var(--border);border-radius:10px;font-size:15px;font-family:inherit;background:#fff;color:var(--text-main);}
+  .meta-row{display:flex;flex-wrap:wrap;gap:24px;margin-top:16px;}
+  .meta-item{flex:1;min-width:160px;}
+  .meta-item .lbl{font-size:12px;color:var(--text-muted);font-weight:700;text-transform:uppercase;margin-bottom:4px;}
+  .meta-item .val{font-size:16px;font-weight:700;color:var(--text-main);}
+
+  table.works-table{
+    width:100%;border-collapse:separate;border-spacing:0;margin-top:4px;
+    border:1px solid var(--border);border-radius:10px;overflow:hidden;
+  }
+  table.works-table th{background:var(--primary);color:#fff;padding:10px;font-size:12.5px;text-align:right;font-weight:700;text-transform:uppercase;letter-spacing:.3px;}
+  table.works-table td{padding:10px;font-size:13.5px;border-bottom:1px solid var(--border);vertical-align:top;color:var(--text-main);}
+  table.works-table tr:last-child td{border-bottom:none;}
+  table.works-table tbody tr:nth-child(even){background:#f8fafc;}
+  table.works-table td.activity-cell{font-weight:400;color:#475569;line-height:1.55;}
+  .empty-note{padding:20px;text-align:center;color:var(--text-muted);font-weight:600;}
+
+  .photo-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:4px;}
+  @media (max-width:640px){.photo-grid{grid-template-columns:1fr;}}
+  .photo-block{text-align:center;}
+  .photo-block img{width:100%;height:260px;object-fit:contain;border:1px solid var(--border);border-radius:8px;background:#f1f5f9;}
+  .photo-caption{display:inline-block;margin-top:8px;border:1px solid var(--primary);color:var(--primary);font-weight:700;font-size:12.5px;padding:6px 16px;border-radius:20px;}
+
+  /* ----- Print: photos laid out 4-per-page (2x2), sized for easy viewing.
+     Each .photo-print-page is its own sheet; leftover photos (1–3) on the
+     last page are centered and enlarged via the pv-count-N modifier. ----- */
+  .photo-print-page{display:none;}
+  .photo-print-page .photo-page-title{
+    background:#0ea5e9;color:#fff;text-align:center;font-weight:800;font-size:14px;
+    padding:10px;border-radius:8px;margin:0 0 18px;
+  }
+  .photo-print-page .photo-page-grid{display:flex;flex-wrap:wrap;justify-content:center;align-content:flex-start;gap:22px;}
+  .photo-print-page .photo-page-grid .photo-block{flex:0 0 calc(50% - 11px);page-break-inside:avoid;}
+  .photo-print-page .photo-page-grid .photo-block img{height:330px;}
+  .photo-print-page .photo-page-grid.pv-count-1 .photo-block{flex:0 0 68%;}
+  .photo-print-page .photo-page-grid.pv-count-1 .photo-block img{height:560px;}
+  .photo-print-page .photo-page-grid.pv-count-2 .photo-block{flex:0 0 46%;}
+  .photo-print-page .photo-page-grid.pv-count-2 .photo-block img{height:440px;}
+
+  .loading-state{padding:60px 20px;text-align:center;color:var(--text-muted);font-weight:700;}
+  .loading-state i{font-size:22px;margin-bottom:10px;display:block;}
+
+  /* ----- Cover page (mirrors weekly_report.html's print cover) ----- */
+  .cover-card{padding:0;overflow:hidden;}
+  .cover-inner{padding:26px 26px 20px;}
+  .cover-logos{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}
+  .cover-logos img{height:50px;max-width:200px;object-fit:contain;}
+  .cover-photo{width:100%;max-height:280px;object-fit:cover;border-radius:14px;margin-bottom:18px;display:block;background:#f1f5f9;}
+  .cover-titlebar{background:linear-gradient(135deg,#1e3a8a,#2563eb);color:#fff;text-align:center;font-weight:800;font-size:19px;padding:16px;border-radius:14px;margin-bottom:14px;letter-spacing:0.3px;}
+  .cover-reportno{display:block;width:fit-content;margin:0 auto 8px;background:var(--primary-light);color:var(--primary);font-weight:800;font-size:13px;padding:8px 22px;border-radius:20px;border:1px solid var(--primary);}
+  .cover-period{text-align:center;color:var(--text-muted);font-size:12.5px;font-weight:700;}
+
+  /* ---------- Performance dashboard (mirrors performance.html — stays in English, same as elsewhere in the app) ---------- */
+  .perf-section .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  @media (max-width:768px){.perf-section .grid{grid-template-columns:1fr;}}
+  .perf-section .panel{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow-sm);padding:16px 18px;}
+  .perf-section .row-label{font-size:11px;color:var(--text-main);font-weight:600;margin-bottom:3px;}
+  .perf-section .bar-wrap{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+  .perf-section .bar-track{flex:1;height:20px;background:#f1f5f9;border:1px solid var(--border);position:relative;border-radius:6px;}
+  .perf-section .bar-fill{height:100%;background:var(--danger);border-radius:6px 0 0 6px;}
+  .perf-section .bar-value{font-size:11px;font-weight:700;min-width:110px;text-align:left;}
+  .perf-section .date-fill{background:var(--primary);}
+  .perf-section table.simple{width:100%;border-collapse:collapse;font-size:11px;}
+  .perf-section table.simple th{background:var(--primary);color:#fff;padding:6px;text-align:center;}
+  .perf-section table.simple td{padding:6px;text-align:center;border-bottom:1px solid var(--border);}
+  .perf-section .var-up{color:var(--success);font-weight:700;}
+  .perf-section .var-down{color:var(--danger);font-weight:700;}
+  .perf-section .legend-bar{display:flex;align-items:center;justify-content:center;gap:18px;background:var(--primary-light);border:1px solid var(--border);border-radius:8px;padding:8px;margin-top:8px;font-size:11px;font-weight:700;color:var(--text-main);}
+  .perf-section .dot{width:10px;height:10px;display:inline-block;margin-inline-end:6px;border-radius:2px;}
+  .perf-section .perf-row{display:flex;justify-content:space-around;align-items:center;margin:6px 0 4px;}
+  .perf-section .gauge-label{text-align:center;font-size:12px;font-weight:800;margin-top:4px;}
+  .perf-section .gauge-label.actual{color:#1e40af;}
+  .perf-section .gauge-label.planned{color:#10b981;}
+  .perf-section .manpower-box label{font-size:11px;font-weight:700;color:var(--text-muted);}
+  .perf-section .manpower-input{width:100%;border:1px solid var(--border);border-radius:6px;padding:6px;font-size:13px;text-align:center;font-weight:700;background:#f8fafc;margin:4px 0 2px;color:var(--text-main);}
+  .perf-section .manpower-tag{color:var(--text-muted);font-weight:800;font-size:12px;text-align:center;}
+  .perf-section .chart-box{height:260px;position:relative;}
+  .perf-section .chart-header{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;}
+  .perf-section .chart-title{flex:1;text-align:center;font-size:13px;font-weight:700;margin:0;color:var(--text-main);}
+  .perf-section .spi-value{font-size:26px;font-weight:900;color:var(--text-main);}
+  .perf-section .cash-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  @media (max-width:640px){.perf-section .cash-grid{grid-template-columns:1fr;}}
+  .perf-section .cash-col{display:flex;flex-direction:column;gap:8px;}
+  .perf-section .cash-item{display:flex;align-items:center;gap:6px;font-size:11px;}
+  .perf-section .cash-item .box{flex:1;border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-weight:800;font-size:12px;background:#f8fafc;color:var(--text-main);}
+  .perf-section .cash-item .box.negative{color:var(--danger);}
+  .perf-section .cash-item .lbl{min-width:130px;font-weight:700;color:var(--text-muted);}
+
+  .btn-print{background:var(--primary);color:#fff;border:none;padding:10px 24px;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer;}
+
+  @media print{
+    .no-print{display:none !important;}
+    body{background:#fff;}
+    .card{box-shadow:none;border:1px solid var(--border);page-break-inside:avoid;}
+    .topbar{background:#fff !important;color:var(--text-main) !important;box-shadow:none;border-bottom:2px solid var(--primary);}
+    .topbar h1{color:var(--text-main) !important;}
+    .nav-container{display:none !important;}
+
+    /* ----- Project cover: prints as its own framed page, first in the report ----- */
+    .cover-card{
+      border:3px solid #29a9e0 !important;border-radius:30px !important;
+      page-break-after:always;break-after:page;
+      min-height:95vh;display:flex;flex-direction:column;justify-content:center;
+    }
+    .cover-inner{padding:34px 34px 24px;}
+    .cover-titlebar{font-size:24px;padding:20px;}
+
+    /* ----- Photos: the on-screen card is hidden at print time; the
+       dedicated 4-per-page print pages (built in renderReport()) are
+       shown instead, each on its own sheet. ----- */
+    .photo-grid-card{display:none !important;}
+    .photo-print-page{
+      display:block !important;border:3px solid #29a9e0;border-radius:30px;
+      padding:24px 26px 30px;box-sizing:border-box;
+      page-break-before:always;break-before:page;
+      page-break-after:always;break-after:page;
+      /* Fill the full physical page even when there are only 1–3 photos on
+         this page, so the frame doesn't hug the content and leave a big
+         blank gap below it — same fix as the cover page's min-height. */
+      min-height:95vh;
+    }
+    .photo-print-page:last-child{page-break-after:auto;break-after:auto;}
+  }
+
+  /* لمسات احترافية عامة — سكرول بار مخصص + دخول ناعم للتوب بار */
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: var(--bg-main); }
+  ::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 999px;
+    border: 2px solid var(--bg-main);
+  }
+  ::-webkit-scrollbar-thumb:hover { background: var(--primary); }
+  * { scrollbar-width: thin; scrollbar-color: #cbd5e1 var(--bg-main); }
+
+  @keyframes header-fade-in {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+
+  .nav-btn.logout-btn{margin-inline-start:auto;background:rgba(239,68,68,0.28);}
+  .nav-btn.logout-btn:hover{background:rgba(239,68,68,0.45);}
+</style>
+    <link rel="stylesheet" href="../shared/design-system.css?v=3">
+    <script src="../shared/nav-toggle.js?v=1" defer></script>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-main">
+    <div class="topbar-logo-block">
+      <div class="topbar-logo-slot" id="logoLeftSlot">
+        <img id="logoLeftImg" src="../images/logo-mdeco.jpeg" alt="Company Logo"
+             onload="this.classList.add('has-src'); this.parentElement.classList.add('filled');"
+             onerror="this.classList.remove('has-src'); this.parentElement.classList.remove('filled');">
+      </div>
+      <div class="topbar-logo-name">MDECO</div>
+    </div>
+    <div class="topbar-title-wrap">
+      <h1><span data-i18n="pageTitle">التقرير الأسبوعي — عرض</span></h1>
+      <div class="meta" data-i18n="pageSubtitle">👁️ صفحة عرض فقط — متاحة لأي زائر</div>
+    </div>
+    <div class="topbar-logo-block">
+      <div class="topbar-logo-slot" id="logoRightSlot">
+        <img id="logoRightImg" src="../images/afford.jpg" alt="Company Logo"
+             onload="this.classList.add('has-src'); this.parentElement.classList.add('filled');"
+             onerror="this.classList.remove('has-src'); this.parentElement.classList.remove('filled');">
+      </div>
+      <div class="topbar-logo-name">Affordable House</div>
+    </div>
+  </div>
+
+  <nav class="nav-container no-print">
+    <a href="home.html" class="nav-btn"><i class="fa-solid fa-house"></i> <span data-i18n="navHome">الرئيسية</span></a>
+    <a href="summary.html" class="nav-btn"><i class="fa-solid fa-chart-column"></i> <span data-i18n="navSummary">الملخص</span></a>
+    <a href="task-list.html" class="nav-btn"><i class="fa-solid fa-list-check"></i> <span data-i18n="navTasks">المهام</span></a>
+    <a href="general_by_activity.html" class="nav-btn"><i class="fa-solid fa-layer-group"></i> <span data-i18n="navGeneral">عام</span></a>
+    <a href="approvals.html" class="nav-btn"><i class="fa-solid fa-clipboard-check"></i> <span data-i18n="navApprovals">طلبات الموافقة</span> <span id="pendingNavBadge" class="nav-badge">0</span></a>
+    <a href="team_overview.html" class="nav-btn"><i class="fa-solid fa-users"></i> <span data-i18n="navTeam">نظرة عامة على الموظفين</span></a>
+    <a href="engineer-review.html" class="nav-btn"><i class="fa-solid fa-user-check"></i> <span data-i18n="navEngineerReview">مراجعة المهندس</span></a>
+    <a href="contractor-submit.html" class="nav-btn"><i class="fa-solid fa-file-arrow-up"></i> <span data-i18n="navContractorSubmit">رفع طلب مقاول</span></a>
+    <a href="performance.html" class="nav-btn"><i class="fa-solid fa-chart-column"></i> <span data-i18n="navDashboard">لوحة التحكم</span></a>
+    <a href="weekly_report.html" class="nav-btn"><i class="fa-solid fa-file-lines"></i> <span data-i18n="navReport">التقرير الأسبوعي</span></a>
+    <a href="weekly_report_view.html" class="nav-btn active"><i class="fa-solid fa-eye"></i> <span data-i18n="navReportView">عرض التقرير</span></a>
+    <button onclick="toggleLanguage()" class="nav-btn translate-btn">
+      <i class="fa-solid fa-language"></i> <span id="lang-btn-text">English</span>
+    </button>
+    <button onclick="logoutUser()" class="nav-btn logout-btn" title="Logout">
+      <i class="fa-solid fa-right-from-bracket"></i> <span data-i18n="navLogout">تسجيل الخروج</span>
+    </button>
+  </nav>
+</div>
+
+<div class="wrap">
+
+  <div class="card no-print">
+    <h2 class="section-title"><i class="fa-solid fa-folder-open"></i> <span data-i18n="chooseReport">اختاري تقرير</span></h2>
+    <select id="reportsSelect" onchange="onSelectReport()">
+      <option data-i18n="loadingReport">جاري التحميل...</option>
+    </select>
+  </div>
+
+  <div id="reportContent">
+    <div class="loading-state"><i class="fa-solid fa-spinner fa-spin"></i> <span data-i18n="loadingReportFull">جاري تحميل التقرير...</span></div>
+  </div>
+
+  <div class="card perf-section">
+    <h2 class="section-title"><i class="fa-solid fa-chart-line"></i> <span data-i18n="perfTitle">لوحة الأداء (Performance Dashboard)</span></h2>
+    <p style="font-size:12px;color:var(--text-muted);margin:-6px 0 14px;" data-i18n="perfLiveNote">
+      * هذا القسم يعرض أحدث بيانات الأداء المتاحة دايمًا، بغض النظر عن التقرير المختار فوق.
+    </p>
+    <button id="freezePerfBtn" class="btn-print privileged-only" style="display:none;margin:-4px 0 14px;" onclick="freezePerformanceSnapshot()">
+      <i class="fa-solid fa-lock"></i> <span data-i18n="freezePerfBtn">تجميد بيانات الأداء لهذا التقرير</span>
+    </button>
+    <div id="perfLoadingMsg" style="padding:40px;text-align:center;font-weight:700;color:var(--text-main);">Loading performance data...</div>
+    <div id="perfDashboard" style="display:none;">
+      <div class="grid">
+        <div class="panel">
+          <h2 class="section-title" style="font-size:14px;border-bottom:2px solid var(--primary-light);">Contract Information</h2>
+          <div class="row-label">Project Value</div>
+          <div class="row-label" style="font-weight:400;">Contract Value without VAT</div>
+          <div class="bar-wrap">
+            <div class="bar-track"><div class="bar-fill" style="width:70%;"></div></div>
+            <div class="bar-value" id="perfValNoVat">-</div>
+          </div>
+          <div class="row-label" style="font-weight:400;">Contract Value with VAT</div>
+          <div class="bar-wrap">
+            <div class="bar-track"><div class="bar-fill" style="width:82%;"></div></div>
+            <div class="bar-value" id="perfValVat">-</div>
+          </div>
+          <div class="row-label" style="font-weight:400;">Approved Change Order</div>
+          <div style="font-size:12px;margin-bottom:10px;" id="perfValChangeOrder">-</div>
+
+          <h2 class="section-title" style="font-size:14px;border-bottom:2px solid var(--primary-light);margin-top:14px;">Project Dates</h2>
+          <div class="row-label" style="font-weight:400;">Contract Finish Date For phase 01</div>
+          <div class="bar-wrap">
+            <div class="bar-track"><div class="bar-fill date-fill" style="width:100%;"></div></div>
+            <div class="bar-value" id="perfValPhase1">-</div>
+          </div>
+          <div class="row-label" style="font-weight:400;">Finish Date After EOT</div>
+          <div class="bar-wrap">
+            <div class="bar-track"><div class="bar-fill date-fill" style="width:100%;"></div></div>
+            <div class="bar-value" id="perfValEot">-</div>
+          </div>
+          <div class="row-label" style="font-weight:400;">Expected Finish Date</div>
+          <div class="bar-wrap">
+            <div class="bar-track"><div class="bar-fill date-fill" style="width:100%;"></div></div>
+            <div class="bar-value" id="perfValExpected">-</div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h2 class="section-title" style="font-size:14px;border-bottom:2px solid var(--primary-light);">Project Planned Vs Actual</h2>
+          <div style="display:grid;grid-template-columns:1.3fr 1fr;gap:12px;">
+            <div class="chart-box" style="height:200px;"><canvas id="perfPlannedActualChart"></canvas></div>
+            <table class="simple" id="perfWeeklyTable">
+              <thead><tr><th>Week</th><th>Actual</th><th>Plan</th><th>Variance</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="legend-bar">
+            <span><span class="dot" style="background:#10b981;"></span>Planned % This Period</span>
+            <span><span class="dot" style="background:#1e40af;"></span>Actual % This Period</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid" style="margin-top:10px;align-items:start;">
+        <div class="panel">
+          <h2 class="section-title" style="font-size:14px;border-bottom:2px solid var(--primary-light);">Projects Performance %</h2>
+          <div class="perf-row">
+            <div style="text-align:center;">
+              <div class="chart-box" style="height:110px;width:110px;"><canvas id="perfActualGauge"></canvas></div>
+              <div class="gauge-label actual">Actual %</div>
+            </div>
+            <div style="text-align:center;">
+              <div class="chart-box" style="height:110px;width:110px;"><canvas id="perfPlannedGauge"></canvas></div>
+              <div class="gauge-label planned">Planned %</div>
+            </div>
+          </div>
+
+          <h2 class="section-title" style="font-size:14px;border-bottom:2px solid var(--primary-light);margin-top:14px;">🧑‍🤝‍🧑 Actual Manpower This Week (Direct &amp; Indirect)</h2>
+          <div class="manpower-box">
+            <label>Direct Planned</label>
+            <div class="manpower-input" id="perfManpowerPlanned">-</div>
+            <div class="manpower-tag" id="perfManpowerPlannedTag">- Person</div>
+            <label style="margin-top:8px;display:block;">Direct Actual</label>
+            <div class="manpower-input" id="perfManpowerActual">-</div>
+            <div class="manpower-tag" id="perfManpowerActualTag">- Person</div>
+          </div>
+
+          <h2 class="section-title" style="font-size:14px;border-bottom:2px solid var(--primary-light);margin-top:14px;">Schedule Performance Index ( SPI )</h2>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div class="chart-box" style="height:90px;width:140px;"><canvas id="perfSpiGauge"></canvas></div>
+            <div class="spi-value" id="perfSpiValue">SPI = -</div>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:14px;">
+          <div class="panel">
+            <div class="chart-header"><div class="chart-title">Planned Value Cost(S-Curve)</div></div>
+            <div class="chart-box" style="height:280px;"><canvas id="perfScurveChart"></canvas></div>
+          </div>
+          <div class="panel">
+            <div class="chart-header"><div class="chart-title">Manpower Histogram -week-(Phase 1)</div></div>
+            <div class="chart-box" style="height:280px;"><canvas id="perfManpowerChart"></canvas></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel" style="margin-top:10px;">
+        <h2 class="section-title" style="font-size:14px;border-bottom:2px solid var(--primary-light);">Cash Flow</h2>
+        <div class="cash-grid">
+          <div class="cash-col">
+            <div class="cash-item"><span class="lbl">Cash Flow (EV)</span><div class="box" id="perfCfEv1">-</div></div>
+            <div class="cash-item"><span class="lbl">Actual Invoice (AI)</span><div class="box" id="perfCfAi">-</div></div>
+            <div class="cash-item"><span class="lbl" style="color:#ef4444;">Variance ( AI-EV )</span><div class="box negative" id="perfCfVarAiEv">-</div></div>
+          </div>
+          <div class="cash-col">
+            <div class="cash-item"><span class="lbl">Cash Flow (EV)</span><div class="box" id="perfCfEv2">-</div></div>
+            <div class="cash-item"><span class="lbl">Planned Value (PV)</span><div class="box" id="perfCfPv">-</div></div>
+            <div class="cash-item"><span class="lbl">Variance ( EV-PV )</span><div class="box" id="perfCfVarEvPv">-</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="no-print" style="text-align:center;margin-top:10px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+    <button onclick="window.print()" class="btn-print"><i class="fa-solid fa-print"></i> <span data-i18n="btnPrint">طباعة</span></button>
+    <button id="deleteReportViewBtn" class="btn-print privileged-only" style="background:var(--danger);display:none;" onclick="deleteViewedReport()">
+      <i class="fa-solid fa-trash"></i> <span data-i18n="deleteReportViewBtn">حذف التقرير</span>
+    </button>
+  </div>
+
+</div>
+
+<script>
+const SUPABASE_URL = "https://uhhtvpxtpayovbtmnstz.supabase.co";
+const SUPABASE_KEY = "sb_publishable_QsS0UhLBORy6mOaBDgW62g_9OacC3oO";
+const client = window.__guardClient;
+
+function escapeHtml(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+// T() is a global function provided by lang.js (same as weekly_report.html uses) —
+// looks up the current-language string for a key registered below.
+
+// Page-specific translations, merged into the shared dictionary lang.js manages
+// (same registerDictionary pattern used by weekly_report.html).
+window.registerDictionary({
+  ar: {
+    pageTitle: 'التقرير الأسبوعي — عرض',
+    pageSubtitle: '👁️ صفحة عرض فقط — متاحة لأي زائر',
+    navHome: 'الرئيسية', navSummary: 'الملخص', navTasks: 'المهام', navGeneral: 'عام',
+    navApprovals: 'طلبات الموافقة', navTeam: 'نظرة عامة على الموظفين', navDashboard: 'لوحة التحكم',
+    navReport: 'التقرير الأسبوعي', navReportView: 'عرض التقرير', navLogout: 'تسجيل الخروج',
+    chooseReport: 'اختاري تقرير', loadingReport: 'جاري التحميل...', loadingReportFull: 'جاري تحميل التقرير...',
+    noReports: 'لا يوجد تقارير محفوظة', noReportsYet: 'لا يوجد تقارير محفوظة بعد.',
+    loadListErr: 'تعذر تحميل التقارير. حاولي تحديث الصفحة.', loadErr: 'تعذر تحميل هذا التقرير.',
+    reportOptionLabel: 'تقرير رقم',
+    reportInfoTitle: 'بيانات التقرير', reportNoLabel: 'رقم التقرير', periodFromLabel: 'من تاريخ', periodToLabel: 'إلى تاريخ',
+    worksTitle: 'الأعمال المنفذة', worksColCategory: 'البند', worksColActivity: 'وصف العمل', worksColLocation: 'الموقع',
+    noWorks: 'لا توجد أعمال مسجلة لهذا التقرير.',
+    photosTitle: 'صور الموقع', noPhotos: 'لا توجد صور مرفقة لهذا التقرير.',
+    perfTitle: 'لوحة الأداء (Performance Dashboard)',
+    perfLiveNote: '* هذا القسم يعرض أحدث بيانات الأداء المتاحة دايمًا، بغض النظر عن التقرير المختار فوق. (هذا تقرير قديم اتحفظ قبل تفعيل حفظ لقطة الأداء لكل تقرير)',
+    perfSnapshotNote: '* بيانات الأداء دي محفوظة زي ما كانت بالظبط وقت حفظ هذا التقرير.',
+    freezePerfBtn: 'تجميد بيانات الأداء لهذا التقرير',
+    confirmFreezePerf: 'هل تريد حفظ بيانات الأداء الحالية بشكل دائم مع التقرير رقم {no}؟ بعد كده هذا التقرير هيعرض دايمًا نفس البيانات دي، ومش هيتحدث تاني حتى لو الأداء الحي اتغيّر.',
+    freezePerfSuccess: 'تم تجميد بيانات الأداء لهذا التقرير بنجاح.',
+    freezePerfErr: 'تعذر حفظ لقطة الأداء. حاولي مرة أخرى.',
+    freezePerfNoData: 'لسه البيانات الحية بتتحمل، حاولي تاني بعد شوية.',
+    btnPrint: 'طباعة',
+    deleteReportViewBtn: 'حذف التقرير',
+    confirmDeleteReportView: 'هل أنتِ متأكدة إنك عايزة تحذفي التقرير رقم {no} نهائيًا؟ لا يمكن التراجع عن هذا الإجراء.',
+    noReportSelectedToDeleteView: 'اختاري تقرير محفوظ الأول عشان تقدري تحذفيه.',
+    deleteViewSuccess: 'تم حذف التقرير نهائيًا بنجاح.',
+    deleteViewErr: 'تعذر حذف التقرير. حاولي مرة أخرى.',
+  },
+  en: {
+    pageTitle: 'Weekly Report — View',
+    pageSubtitle: '👁️ View-only page — open to any visitor',
+    navHome: 'Home', navSummary: 'Summary', navTasks: 'Tasks', navGeneral: 'General',
+    navApprovals: 'Approvals', navTeam: 'Team Overview', navDashboard: 'Dashboard',
+    navReport: 'Weekly Report', navReportView: 'View Report', navLogout: 'Logout',
+    chooseReport: 'Choose a report', loadingReport: 'Loading...', loadingReportFull: 'Loading report...',
+    noReports: 'No saved reports', noReportsYet: 'No saved reports yet.',
+    loadListErr: 'Could not load reports. Try refreshing the page.', loadErr: 'Could not load this report.',
+    reportOptionLabel: 'Report No.',
+    reportInfoTitle: 'Report Details', reportNoLabel: 'Report No.', periodFromLabel: 'From date', periodToLabel: 'To date',
+    worksTitle: 'Work Completed', worksColCategory: 'Category', worksColActivity: 'Activity', worksColLocation: 'Location',
+    noWorks: 'No works recorded for this report.',
+    photosTitle: 'Site Photos', noPhotos: 'No photos attached to this report.',
+    perfTitle: 'Performance Dashboard',
+    perfLiveNote: '* This section always shows the latest available performance data, regardless of the report selected above. (This is an older report saved before per-report performance snapshots were enabled)',
+    perfSnapshotNote: '* This performance data is saved exactly as it was at the time this report was created.',
+    freezePerfBtn: 'Freeze performance data for this report',
+    confirmFreezePerf: 'Save the current performance data permanently with report No. {no}? After this, the report will always show this same data, even if the live performance data changes later.',
+    freezePerfSuccess: 'Performance data has been frozen for this report.',
+    freezePerfErr: 'Could not save the performance snapshot. Please try again.',
+    freezePerfNoData: 'Live data is still loading, please try again in a moment.',
+    btnPrint: 'Print',
+    deleteReportViewBtn: 'Delete Report',
+    confirmDeleteReportView: 'Are you sure you want to permanently delete report No. {no}? This action cannot be undone.',
+    noReportSelectedToDeleteView: 'Choose a saved report first to delete it.',
+    deleteViewSuccess: 'Report permanently deleted.',
+    deleteViewErr: 'Could not delete the report. Please try again.',
+  }
+});
+
+// تسجيل الخروج: يُعالَج بالكامل عبر window.logoutUser() في auth-guard.js
+// (تُنهي الجلسة فعليًا عبر Supabase). لا تُعرَّف هنا نسخة محلية بديلة.
+
+// ---------- Saved reports list (read-only) ----------
+async function loadReportsList() {
+  const sel = document.getElementById('reportsSelect');
+  try {
+    const { data, error } = await client
+      .from('weekly_reports')
+      .select('id, report_no, period_from, period_to')
+      .order('report_no', { ascending: false });
+    if (error) throw error;
+    const reports = data || [];
+    if (!reports.length) {
+      sel.innerHTML = `<option value="">${T('noReports')}</option>`;
+      document.getElementById('reportContent').innerHTML = `<div class="loading-state">${T('noReportsYet')}</div>`;
+      loadPerformanceDashboard();
+      return;
+    }
+    sel.innerHTML = reports.map(r =>
+      `<option value="${r.id}">${T('reportOptionLabel')} ${escapeHtml(r.report_no)} (${r.period_from || '-'} → ${r.period_to || '-'})</option>`
+    ).join('');
+    sel.value = reports[0].id;
+    onSelectReport();
+  } catch (e) {
+    console.error(e);
+    sel.innerHTML = `<option value="">${T('loadListErr')}</option>`;
+    document.getElementById('reportContent').innerHTML = `<div class="loading-state">${T('loadListErr')}</div>`;
+  }
+}
+
+let currentViewedReportId = null;
+let currentViewedReportNo = '';
+
+async function onSelectReport() {
+  const id = document.getElementById('reportsSelect').value;
+  const content = document.getElementById('reportContent');
+  if (!id) { currentViewedReportId = null; currentViewedReportNo = ''; return; }
+  content.innerHTML = `<div class="loading-state"><i class="fa-solid fa-spinner fa-spin"></i> ${T('loadingReportFull')}</div>`;
+  try {
+    const { data, error } = await client.from('weekly_reports').select('*').eq('id', id).single();
+    if (error) throw error;
+    currentViewedReportId = data.id;
+    currentViewedReportNo = data.report_no || '';
+    renderReport(data);
+
+    // بيانات الأداء: لو التقرير ده فيه لقطة محفوظة وقت حفظه بنعرضها، ولو
+    // تقرير قديم اتحفظ قبل تفعيل الميزة دي بنرجع لأحدث بيانات حية كحل بديل
+    if (data.performance_snapshot) {
+      renderPerformanceSnapshot(data.performance_snapshot);
+    } else {
+      loadPerformanceDashboard();
+    }
+  } catch (e) {
+    console.error(e);
+    currentViewedReportId = null;
+    currentViewedReportNo = '';
+    content.innerHTML = `<div class="loading-state">${T('loadErr')}</div>`;
+  }
+}
+
+// ---------- Permissions: delete restricted to admin / super_admin ----------
+window.isPrivilegedViewer = false;
+function applyViewPermissions() {
+  const role = window.currentUserRole; // set by auth-guard.js
+  window.isPrivilegedViewer = (role === 'super_admin' || role === 'admin');
+  document.querySelectorAll('.privileged-only').forEach(el => {
+    el.style.display = window.isPrivilegedViewer ? '' : 'none';
+  });
+  // The freeze button has extra conditions (must be an old report currently
+  // showing *live* data) on top of the privileged-only check above, so
+  // re-apply that logic every time permissions are (re)computed.
+  updateFreezeBtnVisibility();
+}
+
+// ---------- Freeze (permanently snapshot) old reports that fall back to live data ----------
+// Holds whatever live performance row was last fetched from `project_performance`,
+// so freezePerformanceSnapshot() can save that exact payload without re-fetching
+// (avoids a race where live data changes between render and save).
+let lastLoadedLivePerfData = null;
+let currentPerfNoteMode = 'live';
+
+function updateFreezeBtnVisibility() {
+  const btn = document.getElementById('freezePerfBtn');
+  if (!btn) return;
+  const shouldShow = window.isPrivilegedViewer
+    && currentPerfNoteMode === 'live'
+    && !!currentViewedReportId;
+  btn.style.display = shouldShow ? '' : 'none';
+}
+
+async function freezePerformanceSnapshot() {
+  if (!window.isPrivilegedViewer) return;
+  if (!currentViewedReportId) {
+    notify.error(T('noReportSelectedToDeleteView'));
+    return;
+  }
+  if (!lastLoadedLivePerfData) {
+    notify.error(T('freezePerfNoData'));
+    return;
+  }
+
+  const idToFreeze = currentViewedReportId;
+  const noToFreeze = currentViewedReportNo;
+  const snapshotToSave = lastLoadedLivePerfData;
+  const confirmMsg = T('confirmFreezePerf').replace('{no}', noToFreeze || '-');
+  if (!(await notify.confirm(confirmMsg))) return;
+
+  const btn = document.getElementById('freezePerfBtn');
+
+  async function doFreeze() {
+    btn.disabled = true;
+    try {
+      const { error } = await client
+        .from('weekly_reports')
+        .update({ performance_snapshot: snapshotToSave })
+        .eq('id', idToFreeze);
+      if (error) throw error;
+      notify.success(T('freezePerfSuccess'));
+      // Re-render this same report so it now reads its freshly-saved
+      // snapshot instead of falling back to live data.
+      renderPerformanceSnapshot(snapshotToSave);
+      updateFreezeBtnVisibility();
+    } catch (e) {
+      console.error(e);
+      notify.error(T('freezePerfErr'));
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  // Same PIN / password re-confirmation modal used for delete, since this
+  // permanently changes what a saved report displays.
+  if (typeof window.guardUpload === 'function') {
+    try {
+      window.guardUpload(doFreeze);
+    } catch (e) {
+      console.error('guardUpload failed:', e);
+    }
+  } else {
+    console.error('PIN confirmation unavailable — freeze aborted for safety.');
+    notify.error(T('freezePerfErr'));
+  }
+}
+
+// ---------- Delete (permanent, admin / super_admin only, PIN re-confirmation) ----------
+async function deleteViewedReport() {
+  // Defense-in-depth: block here too even though the button is already
+  // hidden for non-privileged roles by applyViewPermissions().
+  if (!window.isPrivilegedViewer) return;
+
+  if (!currentViewedReportId) {
+    notify.error(T('noReportSelectedToDeleteView'));
+    return;
+  }
+
+  const idToDelete = currentViewedReportId;
+  const noToDelete = currentViewedReportNo;
+  const confirmMsg = T('confirmDeleteReportView').replace('{no}', noToDelete || '-');
+  if (!(await notify.confirm(confirmMsg))) return;
+
+  const btn = document.getElementById('deleteReportViewBtn');
+
+  async function doDelete() {
+    btn.disabled = true;
+    try {
+      const { error } = await client.from('weekly_reports').delete().eq('id', idToDelete);
+      if (error) throw error;
+      notify.success(T('deleteViewSuccess'));
+      currentViewedReportId = null;
+      currentViewedReportNo = '';
+      document.getElementById('reportContent').innerHTML = `<div class="loading-state">${T('noReportsYet')}</div>`;
+      // Re-load the list from Supabase so the deleted report is gone for good
+      // and never appears again for any visitor.
+      await loadReportsList();
+    } catch (e) {
+      console.error(e);
+      notify.error(T('deleteViewErr'));
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  // Same PIN / password re-confirmation modal used across the app (e.g. when
+  // saving a report in weekly_report.html) — requires the admin/super_admin
+  // secret code before the delete actually goes through.
+  if (typeof window.guardUpload === 'function') {
+    try {
+      window.guardUpload(doDelete);
+    } catch (e) {
+      console.error('guardUpload failed:', e);
+    }
+  } else {
+    // If auth-guard.js hasn't loaded its PIN modal for some reason, do not
+    // silently delete without the extra confirmation layer.
+    console.error('PIN confirmation unavailable — delete aborted for safety.');
+    notify.error(T('deleteViewErr'));
+  }
+}
+
+function fmtDate(d) {
+  if (!d) return '-';
+  const dt = new Date(d);
+  const dd = String(dt.getDate()).padStart(2, '0');
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return `${dd}-${months[dt.getMonth()]}-${String(dt.getFullYear()).slice(2)}`;
+}
+
+function renderReport(data) {
+  const works = data.works || [];
+  const photos = data.photos || [];
+
+  // ----- Cover page, same layout as the printed report's cover -----
+  const coverHtml = `
+    <div class="card cover-card">
+      <div class="cover-inner">
+        <div class="cover-logos">
+          <img src="../images/logo-mdeco.jpeg" alt="MDECO" onerror="this.style.display='none'">
+          <img src="../images/afford.jpg" alt="Affordable House" onerror="this.style.display='none'">
+        </div>
+        <img class="cover-photo" src="../images/spark-building.jpeg" alt="ECODAN Offices' Complex Project" onerror="this.style.display='none'">
+        <div class="cover-titlebar">ECODAN Offices' Complex Project - SPARK</div>
+        <div class="cover-reportno">Weekly Report No ${escapeHtml(data.report_no || '-')}</div>
+        <div class="cover-period">For the period from ${fmtDate(data.period_from)} to ${fmtDate(data.period_to)}</div>
+      </div>
+    </div>`;
+
+  let worksHtml;
+  if (works.length) {
+    worksHtml = `
+      <table class="works-table">
+        <thead><tr><th>${T('worksColCategory')}</th><th>${T('worksColActivity')}</th><th>${T('worksColLocation')}</th></tr></thead>
+        <tbody>
+          ${works.map(w => `
+            <tr>
+              <td>${escapeHtml(w.category)}</td>
+              <td class="activity-cell">${escapeHtml(w.activity)}</td>
+              <td>${escapeHtml(w.location)}</td>
+            </tr>`).join('')}
+        </tbody>
+      </table>`;
+  } else {
+    worksHtml = `<div class="empty-note">${T('noWorks')}</div>`;
+  }
+
+  let photosHtml;
+  if (photos.length) {
+    photosHtml = `
+      <div class="photo-grid">
+        ${photos.map(p => `
+          <div class="photo-block">
+            <img src="${p.dataUrl}">
+            ${p.caption ? `<div class="photo-caption">${escapeHtml(p.caption)}</div>` : ''}
+          </div>`).join('')}
+      </div>`;
+  } else {
+    photosHtml = `<div class="empty-note">${T('noPhotos')}</div>`;
+  }
+
+  // Print-only pages: same photos, chunked 4-per-page and sized for easy
+  // viewing (see buildPhotoPrintPagesHtml). Hidden on screen, shown instead
+  // of .photo-grid-card only when printing (see the @media print rules).
+  const photoPrintPagesHtml = buildPhotoPrintPagesHtml(photos);
+
+  document.getElementById('reportContent').innerHTML = `
+    ${coverHtml}
+    <div class="card">
+      <h2 class="section-title"><i class="fa-solid fa-circle-info"></i> ${T('reportInfoTitle')}</h2>
+      <div class="meta-row">
+        <div class="meta-item"><div class="lbl">${T('reportNoLabel')}</div><div class="val">${escapeHtml(data.report_no || '-')}</div></div>
+        <div class="meta-item"><div class="lbl">${T('periodFromLabel')}</div><div class="val">${escapeHtml(data.period_from || '-')}</div></div>
+        <div class="meta-item"><div class="lbl">${T('periodToLabel')}</div><div class="val">${escapeHtml(data.period_to || '-')}</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2 class="section-title"><i class="fa-solid fa-list-check"></i> ${T('worksTitle')}</h2>
+      ${worksHtml}
+    </div>
+    <div class="card photo-grid-card">
+      <h2 class="section-title"><i class="fa-solid fa-camera"></i> ${T('photosTitle')}</h2>
+      ${photosHtml}
+    </div>
+    ${photoPrintPagesHtml}
+  `;
+}
+
+// Build the print-only "4 photos per page" pages as an HTML string. Any
+// leftover photos (1–3) on the final page get a modifier class so CSS can
+// center and enlarge them instead of leaving a sparse-looking grid.
+function buildPhotoPrintPagesHtml(photos) {
+  if (!photos.length) return '';
+  const chunkSize = 4;
+  const totalPages = Math.ceil(photos.length / chunkSize);
+  let html = '';
+  for (let i = 0; i < totalPages; i++) {
+    const chunk = photos.slice(i * chunkSize, i * chunkSize + chunkSize);
+    const title = totalPages > 1
+      ? `Site Progress Photos for the Week (${i + 1}/${totalPages})`
+      : 'Site Progress Photos for the Week';
+    html += `
+      <div class="photo-print-page">
+        <div class="photo-page-title">${escapeHtml(title)}</div>
+        <div class="photo-page-grid pv-count-${chunk.length}">
+          ${chunk.map(p => `
+            <div class="photo-block">
+              <img src="${p.dataUrl}">
+              ${p.caption ? `<div class="photo-caption">${escapeHtml(p.caption)}</div>` : ''}
+            </div>`).join('')}
+        </div>
+      </div>`;
+  }
+  return html;
+}
+
+// ---------- Performance dashboard (live data, same as performance.html) ----------
+function perfFmtNum(n, dec) {
+  if (n === null || n === undefined) return '-';
+  return Number(n).toLocaleString('en-US', { minimumFractionDigits: dec || 0, maximumFractionDigits: dec || 0 });
+}
+function perfFmtDate(d) { return fmtDate(d); }
+
+function perfDrawDonutGauge(canvasId, percentValue, color) {
+  const ctx = document.getElementById(canvasId).getContext('2d');
+  const pct = Math.max(0, Math.min(100, percentValue));
+  const numSegments = 20;
+  const filledCount = pct > 0 ? Math.max(1, Math.round((pct / 100) * numSegments)) : 0;
+  const segmentData = new Array(numSegments).fill(1);
+  const segmentColors = new Array(numSegments).fill(0).map((_, i) => i < filledCount ? color : '#e2e8f0');
+  new Chart(ctx, {
+    type: 'doughnut',
+    data: { datasets: [{ data: segmentData, backgroundColor: segmentColors, borderWidth: 3, borderColor: '#ffffff' }] },
+    options: {
+      responsive: true, maintainAspectRatio: false, cutout: '72%',
+      plugins: { legend: { display: false }, tooltip: { enabled: false } },
+      animation: false,
+    },
+    plugins: [{
+      id: 'centerText',
+      afterDraw(chart) {
+        const { ctx, chartArea } = chart;
+        ctx.save();
+        ctx.font = 'bold 15px Segoe UI';
+        ctx.fillStyle = '#0f172a';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        const cx = (chartArea.left + chartArea.right) / 2;
+        const cy = (chartArea.top + chartArea.bottom) / 2;
+        ctx.fillText(percentValue.toFixed(2) + '%', cx, cy);
+        ctx.restore();
+      }
+    }]
+  });
+}
+
+function perfDrawSpiGauge(spi) {
+  const ctx = document.getElementById('perfSpiGauge').getContext('2d');
+  new Chart(ctx, {
+    type: 'doughnut',
+    data: { datasets: [{ data: [40, 20, 40], backgroundColor: ['#ef4444', '#f59e0b', '#10b981'], borderWidth: 0, circumference: 180, rotation: 270 }] },
+    options: { responsive: true, maintainAspectRatio: false, cutout: '65%', plugins: { legend: { display: false }, tooltip: { enabled: false } }, animation: false }
+  });
+  document.getElementById('perfSpiValue').textContent = 'SPI = ' + Number(spi).toFixed(2);
+}
+
+function perfRenderWeeklyTable(rows) {
+  const tbody = document.querySelector('#perfWeeklyTable tbody');
+  tbody.innerHTML = '';
+  rows.forEach(r => {
+    const variance = (r.actual - r.plan);
+    const up = variance >= 0;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${r.week}</td>
+      <td style="color:#1e40af;font-weight:700;">${r.actual.toFixed(2)}%</td>
+      <td style="color:#10b981;font-weight:700;">${r.plan.toFixed(2)}%</td>
+      <td class="${up ? 'var-up' : 'var-down'}">${up ? '▲' : '▼'} ${Math.abs(variance).toFixed(2)}%</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function perfRenderPlannedActualChart(rows) {
+  const ctx = document.getElementById('perfPlannedActualChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: rows.map(r => r.week),
+      datasets: [
+        { label: 'Planned % This Period', data: rows.map(r => r.plan), backgroundColor: '#10b981', barPercentage: 0.6, categoryPercentage: 0.6 },
+        { label: 'Actual % This Period', data: rows.map(r => r.actual), backgroundColor: '#1e40af', barPercentage: 0.6, categoryPercentage: 0.6 },
+      ]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, animation: false, scales: { y: { display: false }, x: { grid: { display: false } } } }
+  });
+}
+
+function perfRenderScurve(rows) {
+  const ctx = document.getElementById('perfScurveChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: rows.map(r => r.week),
+      datasets: [
+        { label: 'Planned Value Cost', data: rows.map(r => r.planned_cost), backgroundColor: '#10b981', barPercentage: 0.6, categoryPercentage: 0.6 },
+        { label: 'Actual Value Cost', data: rows.map(r => r.actual_cost), backgroundColor: '#1e40af', barPercentage: 0.6, categoryPercentage: 0.6 },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, animation: false,
+      plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 9 } } } },
+      scales: { y: { ticks: { font: { size: 9 } } }, x: { ticks: { font: { size: 8 }, maxRotation: 90, minRotation: 90 } } }
+    }
+  });
+}
+
+function perfRenderManpower(rows) {
+  const ctx = document.getElementById('perfManpowerChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: rows.map(r => r.week),
+      datasets: [
+        { label: 'Planned', data: rows.map(r => r.planned), backgroundColor: '#10b981', barPercentage: 0.6, categoryPercentage: 0.6 },
+        { label: 'Actual', data: rows.map(r => r.actual), backgroundColor: '#1e40af', barPercentage: 0.6, categoryPercentage: 0.6 },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, animation: false,
+      plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 9 } } } },
+      scales: { y: { ticks: { font: { size: 9 } } }, x: { ticks: { font: { size: 8 }, maxRotation: 90, minRotation: 90 } } }
+    }
+  });
+}
+
+function perfApplyData(data) {
+  document.getElementById('perfLoadingMsg').style.display = 'none';
+  document.getElementById('perfDashboard').style.display = 'block';
+
+  document.getElementById('perfValNoVat').textContent = perfFmtNum(data.contract_value_no_vat, 2);
+  document.getElementById('perfValVat').textContent = perfFmtNum(data.contract_value_vat, 2);
+  document.getElementById('perfValChangeOrder').textContent = data.approved_change_order || '-';
+  document.getElementById('perfValPhase1').textContent = perfFmtDate(data.contract_finish_phase1);
+  document.getElementById('perfValEot').textContent = perfFmtDate(data.finish_date_after_eot);
+  document.getElementById('perfValExpected').textContent = perfFmtDate(data.expected_finish_date);
+
+  const weekly = data.weekly_table || [];
+  perfRenderWeeklyTable(weekly);
+  perfRenderPlannedActualChart(weekly);
+
+  const latest = weekly[weekly.length - 1] || { actual: 0, plan: 0 };
+  perfDrawDonutGauge('perfActualGauge', latest.actual, '#1e40af');
+  perfDrawDonutGauge('perfPlannedGauge', latest.plan, '#10b981');
+
+  document.getElementById('perfManpowerPlanned').textContent = data.manpower_planned ?? '-';
+  document.getElementById('perfManpowerPlannedTag').textContent = (data.manpower_planned ?? '-') + ' Person';
+  document.getElementById('perfManpowerActual').textContent = data.manpower_actual ?? '-';
+  document.getElementById('perfManpowerActualTag').textContent = (data.manpower_actual ?? '-') + ' Person';
+
+  perfDrawSpiGauge(data.spi ?? 0);
+
+  perfRenderScurve(data.scurve_data || []);
+  perfRenderManpower(data.manpower_data || []);
+
+  const ev = data.cash_flow_ev ?? 0, ai = data.cash_flow_ai ?? 0, pv = data.cash_flow_pv ?? 0;
+  document.getElementById('perfCfEv1').textContent = 'SAR ' + perfFmtNum(ev);
+  document.getElementById('perfCfEv2').textContent = 'SAR ' + perfFmtNum(ev);
+  document.getElementById('perfCfAi').textContent = 'SAR ' + perfFmtNum(ai);
+  document.getElementById('perfCfPv').textContent = 'SAR ' + perfFmtNum(pv);
+  const varAiEv = ai - ev, varEvPv = ev - pv;
+  document.getElementById('perfCfVarAiEv').textContent = (varAiEv < 0 ? '-' : '') + 'SAR ' + perfFmtNum(Math.abs(varAiEv));
+  document.getElementById('perfCfVarEvPv').textContent = (varEvPv < 0 ? '-' : '') + 'SAR ' + perfFmtNum(Math.abs(varEvPv));
+}
+
+// بيغيّر نص الملاحظة تحت لوحة الأداء حسب المصدر: لقطة محفوظة مع التقرير،
+// أو أحدث بيانات حية (للتقارير القديمة اللي اتحفظت قبل تفعيل هذه الميزة)
+function perfSetNoteMode(mode) {
+  currentPerfNoteMode = mode;
+  const el = document.querySelector('[data-i18n="perfLiveNote"], [data-i18n="perfSnapshotNote"]');
+  if (el) {
+    const key = mode === 'snapshot' ? 'perfSnapshotNote' : 'perfLiveNote';
+    el.setAttribute('data-i18n', key);
+    el.textContent = T(key);
+  }
+  updateFreezeBtnVisibility();
+}
+
+async function loadPerformanceDashboard() {
+  try {
+    const { data, error } = await client.from('project_performance').select('*').eq('id', 1).single();
+    if (error) throw error;
+    if (!data) throw new Error('no data');
+    lastLoadedLivePerfData = data;
+    perfApplyData(data);
+    perfSetNoteMode('live');
+  } catch (e) {
+    document.getElementById('perfLoadingMsg').textContent = 'Could not load performance data.';
+    console.error('[perf-view] load failed', e);
+  }
+}
+
+// بيعرض بيانات الأداء المحفوظة مع التقرير نفسه (وقت حفظه) بدل أحدث بيانات حية
+function renderPerformanceSnapshot(snapshot) {
+  try {
+    document.getElementById('perfLoadingMsg').style.display = 'none';
+    perfApplyData(snapshot);
+    perfSetNoteMode('snapshot');
+  } catch (e) {
+    console.error('[perf-view] snapshot render failed — falling back to live data', e);
+    loadPerformanceDashboard();
+  }
+}
+
+applyViewPermissions();
+loadReportsList();
+</script>
+</body>
+</html>

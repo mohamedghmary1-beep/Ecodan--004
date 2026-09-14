@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="en" id="html-tag">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MDCEO Portal - Login</title>
+    <!-- منع أي كاش للصفحة نفسها (Browser cache) -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <script>
+      // فحص فوري: هل فيه نسخة أحدث من نفس الصفحة اتنشرت على GitHub؟ لو آه،
+      // يعمل تحميل كامل تلقائي مرة واحدة — يتخطى كاش المتصفح وكاش GitHub Pages
+      // معاً (منطق الفحص كامل في cache-buster.js المشترك بين كل الصفحات).
+      document.write('<script src="./shared/cache-buster.js?v=' + Date.now() + '"><' + '/script>');
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;800;900&family=Tajawal:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+      // تحميل lang.js برقم إصدار مختلف في كل مرة عشان أي تحديث فيه يوصل فورًا
+      document.write('<script src="./shared/lang.js?v=' + Date.now() + '"><' + '/script>');
+    </script>
+    <style>
+        :root {
+            --primary: #1e40af;
+            --primary-dark: #1d4ed8;
+            --primary-light: #eff6ff;
+            --bg-main: #f8fafc;
+            --bg-card: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --error: #ef4444;
+            --success: #10b981;
+        }
+
+        * { box-sizing: border-box; }
+
+        html, body {
+            margin: 0;
+            min-height: 100vh;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--bg-main);
+            color: var(--text-main);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        ::-webkit-scrollbar { width: 10px; height: 10px; }
+        ::-webkit-scrollbar-track { background: var(--bg-main); }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 999px;
+            border: 2px solid var(--bg-main);
+        }
+        ::-webkit-scrollbar-thumb:hover { background: var(--primary); }
+        * { scrollbar-width: thin; scrollbar-color: #cbd5e1 var(--bg-main); }
+
+        /* ============================================
+           زرار اللغة - عائم فوق الاتنين نصّين
+           ============================================ */
+        .lang-container {
+            position: fixed;
+            top: 22px;
+            right: 24px;
+            z-index: 50;
+        }
+        html[dir="rtl"] .lang-container {
+            right: auto;
+            left: 24px;
+        }
+
+        .lang-btn {
+            background: rgba(15, 23, 42, 0.55);
+            backdrop-filter: blur(6px);
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            padding: 9px 18px;
+            font-size: 13.5px;
+            font-weight: 700;
+            border-radius: 999px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            transition: all 0.2s;
+        }
+        .lang-btn:hover {
+            background: rgba(15, 23, 42, 0.8);
+        }
+
+        /* ============================================
+           تقسيم الصفحة لنصين جنب بعض (Split Screen)
+           ============================================ */
+        .split-screen {
+            display: flex;
+            flex-direction: row;
+            min-height: 100vh;
+        }
+
+        /* --- النص الأول: الصورة الهندسية + اسم MDCEO --- */
+        .brand-panel {
+            flex: 1 1 50%;
+            position: relative;
+            overflow: hidden;
+            min-height: 100vh;
+            max-height: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .brand-bg {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            animation: brand-bg-zoom 18s ease-in-out infinite alternate;
+        }
+        @keyframes brand-bg-zoom {
+            from { transform: scale(1); }
+            to { transform: scale(1.08); }
+        }
+
+        .brand-overlay {
+            position: absolute;
+            inset: 0;
+            background:
+                linear-gradient(160deg, rgba(15,23,42,0.94) 0%, rgba(30,64,175,0.55) 55%, rgba(15,23,42,0.9) 100%);
+        }
+
+        /* توهج/انبعاث ناعم متحرك خلف اسم الشركة */
+        .brand-glow {
+            position: absolute;
+            width: 520px;
+            height: 520px;
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: radial-gradient(circle, rgba(96,165,250,0.4), transparent 70%);
+            animation: glow-pulse 5s ease-in-out infinite;
+            pointer-events: none;
+        }
+        @keyframes glow-pulse {
+            0%, 100% { opacity: 0.45; transform: translate(-50%, -50%) scale(0.9); }
+            50% { opacity: 0.85; transform: translate(-50%, -50%) scale(1.18); }
+        }
+
+        .brand-content {
+            position: relative;
+            z-index: 2;
+            color: #fff;
+            text-align: center;
+            padding: 40px;
+            max-width: 460px;
+            opacity: 0;
+            animation: brand-fade-in 0.7s ease 0.1s forwards;
+        }
+        @keyframes brand-fade-in {
+            from { opacity: 0; transform: translateY(14px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .brand-logo {
+            font-size: 46px;
+            font-weight: 900;
+            letter-spacing: 2px;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            text-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+        .brand-logo i {
+            font-size: 38px;
+            color: #93c5fd;
+            animation: icon-pulse 3s ease-in-out infinite;
+        }
+        @keyframes icon-pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.15) rotate(-4deg); }
+        }
+
+        .brand-underline {
+            width: 100px;
+            height: 3px;
+            margin: 14px auto 22px;
+            border-radius: 999px;
+            background: linear-gradient(90deg, transparent, #93c5fd, transparent);
+            background-size: 200% 100%;
+            animation: underline-sweep 2.4s linear infinite;
+        }
+        @keyframes underline-sweep {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        .brand-subtitle {
+            font-size: 15.5px;
+            opacity: 0.9;
+            margin: 0 0 30px 0;
+            line-height: 1.7;
+            font-weight: 400;
+        }
+
+        .brand-tagline {
+            font-size: 12px;
+            opacity: 0.65;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+            border-top: 1px solid rgba(255,255,255,0.25);
+            padding-top: 18px;
+            margin-top: 6px;
+            font-weight: 600;
+        }
+
+        /* --- النص الثاني: فورم تسجيل الدخول --- */
+        .form-panel {
+            flex: 1 1 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 48px 32px;
+            background: var(--bg-card);
+            min-height: 100vh;
+        }
+
+        .form-panel-inner {
+            width: 100%;
+            max-width: 400px;
+            opacity: 0;
+            animation: card-fade-in 0.6s ease 0.15s forwards;
+        }
+        @keyframes card-fade-in {
+            from { opacity: 0; transform: translateY(16px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .form-panel-inner h2 {
+            margin: 0 0 8px 0;
+            font-size: 24px;
+            font-weight: 800;
+            text-align: center;
+        }
+
+        .form-panel-inner .subtitle {
+            color: var(--text-muted);
+            font-size: 14px;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text-main);
+        }
+
+        .input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .input-wrapper i {
+            position: absolute;
+            left: 14px;
+            color: var(--text-muted);
+            font-size: 16px;
+        }
+        html[dir="rtl"] .input-wrapper i {
+            left: auto;
+            right: 14px;
+        }
+
+        .input-wrapper input {
+            width: 100%;
+            padding: 12px 12px 12px 40px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 15px;
+            background: #f8fafc;
+            color: var(--text-main);
+            outline: none;
+            box-sizing: border-box;
+            transition: all 0.2s;
+        }
+        html[dir="rtl"] .input-wrapper input {
+            padding: 12px 40px 12px 12px;
+        }
+
+        .input-wrapper input:focus {
+            border-color: var(--primary);
+            background: #fff;
+            box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.15);
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 13px;
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-top: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-submit:hover {
+            background: var(--primary-dark);
+        }
+
+        .btn-submit:disabled {
+            background: #94a3b8;
+            cursor: not-allowed;
+        }
+
+        .message-box {
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            display: none;
+            text-align: center;
+        }
+        .message-box.error {
+            background: #fee2e2;
+            color: var(--error);
+            border: 1px solid #fca5a5;
+            display: block;
+        }
+        .message-box.success {
+            background: #d1fae5;
+            color: var(--success);
+            border: 1px solid #6ee7b7;
+            display: block;
+        }
+
+        .login-tabs {
+            display: flex;
+            gap: 6px;
+            background: #f1f5f9;
+            padding: 4px;
+            border-radius: 10px;
+            margin-bottom: 26px;
+        }
+        .login-tab {
+            flex: 1;
+            text-align: center;
+            padding: 10px 8px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-muted);
+            cursor: pointer;
+            border: none;
+            background: transparent;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            transition: all 0.15s;
+        }
+        .login-tab.active {
+            background: #fff;
+            color: var(--primary);
+            box-shadow: var(--shadow-sm);
+        }
+        .login-panel { display: none; }
+        .login-panel.active { display: block; }
+
+        /* --- فوتر بسيط تحت الفورم --- */
+        .form-footer-note {
+            margin-top: 34px;
+            padding-top: 18px;
+            border-top: 1px solid var(--border);
+            text-align: center;
+        }
+        #footer-proj {
+            font-size: 12.5px;
+            font-weight: 700;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+        .form-footer-note .credit-line {
+            font-size: 11px;
+            color: #94a3b8;
+        }
+
+        /* ============================================
+           التجاوب - الشاشات الصغيرة (موبايل)
+           ============================================ */
+        @media (max-width: 900px) {
+            .split-screen { flex-direction: column; }
+            .brand-panel { flex: 0 0 auto; min-height: 220px; max-height: 260px; }
+            .brand-content { padding: 24px; }
+            .brand-logo { font-size: 30px; }
+            .brand-glow { width: 300px; height: 300px; }
+            .brand-tagline { display: none; }
+            .form-panel { flex: 1 1 auto; min-height: auto; padding: 32px 22px 44px; }
+            .lang-container { top: 16px; }
+        }
+    </style>
+    <link rel="stylesheet" href="./shared/design-system.css?v=3">
+    <script src="./shared/nav-toggle.js?v=1" defer></script>
+</head>
+<body>
+
+<div class="lang-container">
+    <div class="lang-btn" onclick="toggleLanguage()">
+        <i class="fa-solid fa-globe"></i> <span id="lang-text">العربية</span>
+    </div>
+</div>
+
+<div class="split-screen">
+
+    <div class="brand-panel">
+        <img class="brand-bg" src="./images/spark-building .jpeg" alt="ECODAN Offices - Spark Project">
+        <div class="brand-overlay"></div>
+        <div class="brand-glow"></div>
+        <div class="brand-content">
+            <div class="brand-logo"><i class="fa-solid fa-drafting-compass"></i> MDCEO</div>
+            <div class="brand-underline"></div>
+            <p id="sub-header" class="brand-subtitle">Management &amp; Document Control System</p>
+            <div class="brand-tagline">ECODAN Offices Complex — SPARK Project</div>
+        </div>
+    </div>
+
+    <div class="form-panel">
+        <div class="form-panel-inner">
+            <h2 id="login-title">Account Login</h2>
+            <div class="subtitle" id="login-subtitle">Enter your credentials to access the portal</div>
+
+            <div class="login-tabs">
+                <button type="button" class="login-tab active" id="tab-btn-employee" onclick="switchLoginTab('employee')">
+                    <i class="fa-solid fa-user-tie"></i> <span id="tab-label-employee">Employee Login</span>
+                </button>
+                <button type="button" class="login-tab" id="tab-btn-company" onclick="switchLoginTab('company')">
+                    <i class="fa-solid fa-building"></i> <span id="tab-label-company">Company Login</span>
+                </button>
+            </div>
+
+            <div id="message-id" class="message-box"></div>
+
+            <!-- Employee login panel -->
+            <div class="login-panel active" id="panel-employee">
+                <form id="login-form" onsubmit="handleLogin(event)">
+                    <div class="form-group">
+                        <label id="lbl-username">Email</label>
+                        <div class="input-wrapper">
+                            <i class="fa-solid fa-user"></i>
+                            <input type="email" id="username" required autocomplete="email">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label id="lbl-password">Password</label>
+                        <div class="input-wrapper">
+                            <i class="fa-solid fa-lock"></i>
+                            <input type="password" id="password" required autocomplete="current-password">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn-submit" id="btn-submit">
+                        <span id="btn-inner">Login</span>
+                    </button>
+                </form>
+            </div>
+
+            <!-- Company / contractor login panel -->
+            <div class="login-panel" id="panel-company">
+                <form id="company-login-form" onsubmit="handleCompanyLogin(event)">
+                    <div class="form-group">
+                        <label id="lbl-company-name">Company Name</label>
+                        <div class="input-wrapper">
+                            <i class="fa-solid fa-building"></i>
+                            <input type="text" id="company-name" required autocomplete="organization">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label id="lbl-company-username">Email</label>
+                        <div class="input-wrapper">
+                            <i class="fa-solid fa-user"></i>
+                            <input type="email" id="company-username" required autocomplete="email">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label id="lbl-company-password">Password</label>
+                        <div class="input-wrapper">
+                            <i class="fa-solid fa-lock"></i>
+                            <input type="password" id="company-password" required autocomplete="current-password">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn-submit" id="company-btn-submit">
+                        <span id="company-btn-inner">Login</span>
+                    </button>
+                </form>
+            </div>
+
+            <div class="form-footer-note">
+                <div id="footer-proj">Administrative Offices Project in Aspark</div>
+                <div class="credit-line">
+                    Developed by Mohamed Reda &nbsp;|&nbsp; WhatsApp: 0591413789 &nbsp;|&nbsp; Revision 1
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    // بيانات الاتصال بـ Supabase
+    const SUPABASE_URL = "https://uhhtvpxtpayovbtmnstz.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_QsS0UhLBORy6mOaBDgW62g_9OacC3oO";
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // ============================================================
+    // نفس قاعدة "أول صفحة يقدر المستخدم يشوفها فعلاً" الموجودة في
+    // auth-guard.js (PAGE_COLUMNS / REDIRECT_PRIORITY_PAGES / pageIsAllowed /
+    // firstAccessiblePage) - مكرّرة هنا لأن index.html عمدًا مش بيحمّل
+    // auth-guard.js (اللي بيخفي الصفحة كلها لحد ما يتأكد من السيشن - مش
+    // مطلوب في صفحة تسجيل الدخول نفسها). لو أي صفحة جديدة اتضافت أو
+    // عمود صلاحية جديد اتضاف في auth-guard.js، حدّث نفس الحاجة هنا كمان
+    // عشان التوجيه بعد الدخول يفضل متطابق مع باقي البوابة.
+    // ============================================================
+    const ADMIN_ONLY_PAGES = ['team_overview.html', 'final-approval.html', 'permissions.html'];
+    const ADMIN_AND_SUPER_ADMIN_PAGES = ['approvals.html'];
+    const CONTRACTOR_ONLY_PAGES = ['contractor-submit.html'];
+    const ENGINEER_ONLY_PAGES = ['engineer-review.html'];
+    const PAGE_COLUMNS = {
+        'performance.html': 'page_performance',
+        'summary.html': 'page_summary',
+        'task-list.html': 'page_task',
+        'home.html': 'page_home',
+        'weekly_report.html': 'page_weekly_report',
+        'weekly_report_view.html': 'page_weekly_report',
+        'general_by_activity.html': 'page_general_by_activity'
+    };
+    const REDIRECT_PRIORITY_PAGES = [
+        'home.html', 'task-list.html', 'summary.html', 'performance.html',
+        'general_by_activity.html', 'weekly_report.html', 'weekly_report_view.html',
+        'approvals.html', 'team_overview.html', 'engineer-review.html',
+        'contractor-submit.html', 'permissions.html'
+    ];
+
+    function computeUserRole(profile) {
+        if (!profile || profile.is_blocked) return 'blocked';
+        const rawPerm = (profile.permissions || '').trim().toLowerCase();
+        if (rawPerm === 'administrator') return 'super_admin';
+        if (rawPerm === 'admin' || rawPerm === '') return 'admin';
+        if (rawPerm === 'no_files') return 'no_files';
+        if (rawPerm === 'limited') return 'limited';
+        if (rawPerm === 'contractor') return 'contractor';
+        return 'blocked';
+    }
+
+    function pageIsAllowed(profile, role, pageName) {
+        if (role === 'super_admin') return true;
+        if (pageName === 'index.html') return true;
+        if (CONTRACTOR_ONLY_PAGES.includes(pageName)) {
+            if (role === 'contractor') return true;
+            return (profile.page_contractor_submit || '').toString().trim().toLowerCase() === 'yes';
+        }
+        if (role === 'contractor') return false;
+        if (ENGINEER_ONLY_PAGES.includes(pageName)) return !!profile.is_engineer;
+        if (ADMIN_AND_SUPER_ADMIN_PAGES.includes(pageName)) return role === 'admin' || role === 'super_admin';
+        if (ADMIN_ONLY_PAGES.includes(pageName)) return false;
+        const col = PAGE_COLUMNS[pageName];
+        if (!col) return false;
+        return (profile[col] || '').toString().trim().toLowerCase() === 'yes';
+    }
+
+    function firstAccessiblePage(profile, role) {
+        if (!profile || !role || role === 'blocked') return null;
+        for (const page of REDIRECT_PRIORITY_PAGES) {
+            if (role !== 'super_admin' && ADMIN_ONLY_PAGES.includes(page)) continue;
+            if (pageIsAllowed(profile, role, page)) return page;
+        }
+        return null;
+    }
+
+    const translations = {
+        en: {
+            dir: "ltr",
+            subHeader: "Management & Document Control System",
+            langText: "العربية",
+            loginTitle: "Account Login",
+            loginSubtitle: "Enter your credentials to access the portal",
+            tabEmployee: "Employee Login",
+            tabCompany: "Company Login",
+            lblUsername: "Email",
+            lblPassword: "Password",
+            lblCompanyName: "Company Name",
+            lblCompanyUsername: "Email",
+            lblCompanyPassword: "Password",
+            btnInner: "Login",
+            btnLoading: "Verifying...",
+            errFail: "Invalid email or password.",
+            errConn: "Connection error. Please try again later.",
+            errCompanyMismatch: "This company name doesn't match this account.",
+            errBlocked: "This account has been blocked. Contact your administrator.",
+            succOk: "Login successful! Redirecting...",
+            footerProj: "Administrative Offices Project in Aspark"
+        },
+        ar: {
+            dir: "rtl",
+            subHeader: "نظام إدارة ومتابعة المستندات والـ Submittals",
+            langText: "English",
+            loginTitle: "تسجيل الدخول",
+            loginSubtitle: "أدخل بيانات حسابك للوصول إلى البوابة الإلكترونية",
+            tabEmployee: "تسجيل دخول موظف",
+            tabCompany: "تسجيل دخول شركة",
+            lblUsername: "البريد الإلكتروني",
+            lblPassword: "كلمة المرور",
+            lblCompanyName: "اسم الشركة",
+            lblCompanyUsername: "البريد الإلكتروني",
+            lblCompanyPassword: "كلمة المرور",
+            btnInner: "تسجيل الدخول",
+            btnLoading: "جاري التحقق...",
+            errFail: "البريد الإلكتروني أو كلمة المرور غير صحيحة.",
+            errConn: "خطأ في الاتصال بالنظام. حاول مرة أخرى لاحقاً.",
+            errCompanyMismatch: "اسم الشركة الذي أدخلته غير مطابق لهذا الحساب.",
+            errBlocked: "هذا الحساب محظور. يرجى التواصل مع الأدمن.",
+            succOk: "تم تسجيل الدخول بنجاح! جاري التوجيه...",
+            footerProj: "مشروع المكاتب الإدارية في أسبارك"
+        }
+    };
+
+    let activeLoginTab = 'employee';
+    function switchLoginTab(tab) {
+        activeLoginTab = tab;
+        document.getElementById('tab-btn-employee').classList.toggle('active', tab === 'employee');
+        document.getElementById('tab-btn-company').classList.toggle('active', tab === 'company');
+        document.getElementById('panel-employee').classList.toggle('active', tab === 'employee');
+        document.getElementById('panel-company').classList.toggle('active', tab === 'company');
+        const msgBox = document.getElementById('message-id');
+        msgBox.className = "message-box";
+    }
+
+    // اللغة الحالية تُحفظ وتُشارَك بين كل صفحات البوابة عن طريق lang.js
+    // toggleLanguage() أصبحت معرَّفة داخل lang.js (window.toggleLanguage)، فلا حاجة لتعريفها هنا مرة أخرى
+
+    function applyLanguage(lang) {
+        const t = translations[lang];
+        document.getElementById('html-tag').setAttribute('dir', t.dir);
+        document.getElementById('html-tag').setAttribute('lang', lang);
+
+        document.getElementById('sub-header').innerText = t.subHeader;
+        document.getElementById('lang-text').innerText = t.langText;
+        document.getElementById('login-title').innerText = t.loginTitle;
+        document.getElementById('login-subtitle').innerText = t.loginSubtitle;
+        document.getElementById('tab-label-employee').innerText = t.tabEmployee;
+        document.getElementById('tab-label-company').innerText = t.tabCompany;
+        document.getElementById('lbl-username').innerText = t.lblUsername;
+        document.getElementById('lbl-password').innerText = t.lblPassword;
+        document.getElementById('lbl-company-name').innerText = t.lblCompanyName;
+        document.getElementById('lbl-company-username').innerText = t.lblCompanyUsername;
+        document.getElementById('lbl-company-password').innerText = t.lblCompanyPassword;
+        document.getElementById('btn-inner').innerText = t.btnInner;
+        document.getElementById('company-btn-inner').innerText = t.btnInner;
+        document.getElementById('footer-proj').innerText = t.footerProj;
+        
+        document.getElementById('message-id').className = "message-box";
+    }
+
+    // lang.js بيستدعي applyLanguage() تلقائيًا بمجرد ما الصفحة تحمّل، باستخدام آخر لغة محفوظة
+
+    // منطق تسجيل الدخول المشترك بين تبويب "موظف" وتبويب "شركة" - كلاهما
+    // يستخدم Supabase Auth الحقيقي بالإيميل وكلمة المرور (وليس مقارنة نصّية
+    // يدوية). إذا كان الدخول من تبويب الشركة، يتم أيضًا التأكد من أن اسم
+    // الشركة المُدخل مطابق لعمود company_name المحفوظ في البروفايل (إذا كان
+    // الأدمن قد أدخله) - وهذا مجرد تأكيد إضافي على أن هذا الحساب المشترك
+    // يخص هذه الشركة فعلًا، وليس بديلًا عن الإيميل وكلمة المرور.
+    async function performLogin({ email, password, companyNameTyped, msgBox, btnSubmit, btnInner, t }) {
+        msgBox.className = "message-box";
+        btnInner.innerText = t.btnLoading;
+        btnSubmit.disabled = true;
+
+        try {
+            const { data: authData, error: authError } = await supabaseClient.auth.signInWithPassword({
+                email: email.trim().toLowerCase(),
+                password: password
+            });
+
+            if (authError || !authData || !authData.user) {
+                msgBox.innerText = t.errFail;
+                msgBox.className = "message-box error";
+                btnInner.innerText = t.btnInner;
+                btnSubmit.disabled = false;
+                return;
+            }
+
+            // ملف الصلاحيات (profiles) بيتحمي بـ RLS: كل مستخدم يقدر يقرا صفّه بس.
+            const { data: profile, error: profileError } = await supabaseClient
+                .from('profiles')
+                .select('username, permissions, company_name, is_blocked, is_engineer, page_performance, page_summary, page_task, page_home, page_weekly_report, page_general_by_activity, page_contractor_submit')
+                .eq('id', authData.user.id)
+                .single();
+
+            if (profileError || !profile) {
+                console.error("Profile lookup failed:", profileError);
+                msgBox.innerText = t.errConn;
+                msgBox.className = "message-box error";
+                btnInner.innerText = t.btnInner;
+                btnSubmit.disabled = false;
+                await supabaseClient.auth.signOut();
+                return;
+            }
+
+            // تحقق اسم الشركة (تاب الشركة فقط) - لو company_name متسجل على
+            // الحساب ومختلف عن اللي اتكتب، نرفض الدخول ونعمل logout فورًا.
+            if (companyNameTyped !== undefined) {
+                const savedCompany = (profile.company_name || '').trim().toLowerCase();
+                const typedCompany = (companyNameTyped || '').trim().toLowerCase();
+                if (savedCompany && savedCompany !== typedCompany) {
+                    msgBox.innerText = t.errCompanyMismatch;
+                    msgBox.className = "message-box error";
+                    btnInner.innerText = t.btnInner;
+                    btnSubmit.disabled = false;
+                    await supabaseClient.auth.signOut();
+                    return;
+                }
+            }
+
+            // حساب دوره (وده كمان بيرفض حساب محظور - is_blocked - بدل ما نديله
+            // توجيه أصلاً وهو مالوش صلاحية حتى يوصل لصفحة "ماعندكش صلاحية").
+            const role = computeUserRole(profile);
+            if (role === 'blocked') {
+                msgBox.innerText = t.errBlocked;
+                msgBox.className = "message-box error";
+                btnInner.innerText = t.btnInner;
+                btnSubmit.disabled = false;
+                await supabaseClient.auth.signOut();
+                return;
+            }
+
+            msgBox.innerText = t.succOk;
+            msgBox.className = "message-box success";
+            // ملحوظة أمنية: لا يتم تخزين أي شيء يدويًا في localStorage بعد الآن -
+            // يحتفظ Supabase Auth بجلسة موقّعة (JWT) بنفسه، وتُعيد باقي الصفحات
+            // التحقق من الصلاحيات من السيرفر في كل مرة (auth-guard.js).
+            // أصبح التوجيه فعليًا حسب صلاحيات المستخدم الحقيقية (نفس منطق
+            // auth-guard.js) بدلًا من التوجيه إلى home.html ثابتة حتى لو لم يكن
+            // لديه صلاحية عليها - وهو ما كان يؤدي مباشرة إلى رسالة "ليست لديك
+            // صلاحية" فور تسجيل الدخول، إذا لم يكن دوره يشمل صلاحية الصفحة الرئيسية.
+            const landingPage = firstAccessiblePage(profile, role) || 'index.html';
+            setTimeout(() => { window.location.href = landingPage === 'index.html' ? landingPage : 'pages/' + landingPage; }, 1000);
+        } catch (err) {
+            console.error("Login Error:", err);
+            msgBox.innerText = t.errConn;
+            msgBox.className = "message-box error";
+            btnInner.innerText = t.btnInner;
+            btnSubmit.disabled = false;
+        }
+    }
+
+    async function handleLogin(event) {
+        event.preventDefault();
+        const t = translations[window.getCurrentLang()];
+        await performLogin({
+            email: document.getElementById('username').value,
+            password: document.getElementById('password').value.trim(),
+            companyNameTyped: undefined, // مفيش تحقق اسم شركة في تاب الموظف
+            msgBox: document.getElementById('message-id'),
+            btnSubmit: document.getElementById('btn-submit'),
+            btnInner: document.getElementById('btn-inner'),
+            t: t
+        });
+    }
+
+    async function handleCompanyLogin(event) {
+        event.preventDefault();
+        const t = translations[window.getCurrentLang()];
+        await performLogin({
+            email: document.getElementById('company-username').value,
+            password: document.getElementById('company-password').value.trim(),
+            companyNameTyped: document.getElementById('company-name').value,
+            msgBox: document.getElementById('message-id'),
+            btnSubmit: document.getElementById('company-btn-submit'),
+            btnInner: document.getElementById('company-btn-inner'),
+            t: t
+        });
+    }
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,25 @@
+{
+	"folders": [
+		{
+			"path": "sql"
+		},
+		{
+			"path": "supabase"
+		},
+		{
+			"path": "docs"
+		},
+		{
+			"path": "pages"
+		},
+		{
+			"path": "shared"
+		},
+		{
+			"path": "images"
+		}
+	],
+	"settings": {
+		"liveServer.settings.multiRootWorkspaceName": "pages"
+	}
+}

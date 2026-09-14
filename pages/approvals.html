@@ -1,0 +1,1493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>طلبات الموافقة - MDCEO</title>
+        <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <script>
+      document.write('<script src="../shared/cache-buster.js?v=' + Date.now() + '"><' + '/script>');
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;800;900&family=Tajawal:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+      document.write('<script src="../shared/auth-guard.js?v=' + Date.now() + '"><' + '/script>');
+      document.write('<script src="../shared/notify.js?v=' + Date.now() + '"><' + '/script>');
+      document.write('<script src="../shared/lang.js?v=' + Date.now() + '"><' + '/script>');
+    </script>
+    <style>
+        :root {
+            --primary: #1e40af;
+            --primary-hover: #1d4ed8;
+            --bg-main: #f8fafc;
+            --bg-card: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--bg-main);
+            color: var(--text-main);
+            direction: rtl;
+        }
+
+        .header {
+            background: var(--primary);
+            color: #fff;
+            padding: 18px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            font-size: 22px;
+            font-weight: 700;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin: 16px 24px 0;
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .nav-container {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 16px;
+            background: var(--bg-card);
+            padding: 14px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .nav-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 15px;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .nav-badge {
+            position: absolute;
+            top: -6px;
+            right: -6px;
+            background: #ef4444;
+            color: #fff;
+            font-size: 11px;
+            font-weight: 700;
+            min-width: 18px;
+            height: 18px;
+            border-radius: 999px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 0 4px;
+            line-height: 1;
+        }
+
+        .nav-btn:hover {
+            background: #eff6ff;
+            color: var(--primary);
+        }
+
+        .nav-btn.active {
+            background: var(--primary);
+            color: #fff;
+            box-shadow: 0 2px 8px -2px rgba(30, 64, 175, 0.45);
+        }
+
+        .nav-btn:active {
+            transform: scale(0.96);
+        }
+
+        .translate-btn {
+            background: #eff6ff;
+            color: var(--primary);
+            border: none;
+            cursor: pointer;
+            font-family: inherit;
+        }
+
+        .nav-btn.logout-btn {
+            margin-inline-start: auto;
+            background: rgba(239, 68, 68, 0.12);
+            color: #ef4444;
+        }
+        .nav-btn.logout-btn:hover {
+            background: rgba(239, 68, 68, 0.22);
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .tab-btn {
+            padding: 10px 18px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: #fff;
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+
+        .tab-btn.active {
+            background: var(--primary);
+            color: #fff;
+            border-color: var(--primary);
+        }
+
+        .request-card {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 18px 20px;
+            margin-bottom: 14px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            border-right: 5px solid var(--warning);
+        }
+
+        .request-card.approved { border-right-color: var(--success); }
+        .request-card.rejected { border-right-color: var(--danger); }
+
+        .request-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .request-title {
+            font-weight: 700;
+            font-size: 16px;
+            color: var(--text-main);
+        }
+
+        .request-meta {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-top: 4px;
+            line-height: 1.6;
+        }
+
+        .classification-line {
+            font-size: 13px;
+            font-weight: 700;
+            margin-top: 6px;
+            padding: 6px 10px;
+            border-radius: 6px;
+            background: #eff6ff;
+            color: var(--primary);
+            display: inline-block;
+        }
+
+        .classification-line.missing {
+            background: #fef2f2;
+            color: var(--danger);
+        }
+
+        .status-pill {
+            font-size: 12px;
+            font-weight: 700;
+            padding: 3px 10px;
+            border-radius: 999px;
+            text-transform: uppercase;
+        }
+
+        .status-pill.pending { background: #fef3c7; color: #b45309; }
+        .status-pill.approved { background: #d1fae5; color: #047857; }
+        .status-pill.rejected { background: #fee2e2; color: #b91c1c; }
+
+        .actions {
+            margin-top: 12px;
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 13px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-view { background: #6366f1; color: #fff; }
+        .btn-approve { background: var(--success); color: #fff; }
+        .btn-reject { background: var(--danger); color: #fff; }
+
+        .btn-review { background: #8b5cf6; color: #fff; }
+
+        .review-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.55);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .review-overlay.active { display: flex; }
+
+        .review-modal {
+            background: #fff;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 820px;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.25);
+        }
+
+        .review-modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 18px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .review-modal-title {
+            font-weight: 700;
+            font-size: 15px;
+        }
+
+        .review-modal-close {
+            background: #f1f5f9;
+            border: none;
+            border-radius: 6px;
+            width: 30px;
+            height: 30px;
+            cursor: pointer;
+            font-size: 15px;
+            color: var(--text-muted);
+        }
+        .review-modal-close:hover { background: #e2e8f0; }
+
+        .review-modal-body {
+            flex: 1;
+            overflow: auto;
+            padding: 0;
+            background: #f1f5f9;
+            min-height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .review-modal-body iframe {
+            width: 100%;
+            height: 70vh;
+            border: none;
+            background: #fff;
+        }
+
+        .review-fallback {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-muted);
+        }
+
+        .review-modal-footer {
+            padding: 12px 18px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 40px 0;
+        }
+
+        
+        .req-card {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 18px 20px;
+            margin-bottom: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            border-right: 5px solid var(--warning);
+        }
+        .req-top { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 8px; }
+        .req-title { font-weight: 700; font-size: 16px; }
+        .req-meta { font-size: 13px; color: var(--text-muted); margin-top: 4px; line-height: 1.9; }
+        .code-pill {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 26px; height: 26px; border-radius: 6px;
+            background: var(--primary); color: #fff; font-weight: 800; font-size: 13px;
+        }
+        .actions-row { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+
+        .lock-overlay {
+            display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.55);
+            align-items: center; justify-content: center; z-index: 9999;
+        }
+        .lock-overlay.active { display: flex; }
+        .lock-modal { background: #fff; padding: 26px; border-radius: 14px; max-width: 340px; width: 90%; text-align: center; }
+        .spinner {
+            width: 34px; height: 34px; border: 4px solid #eff6ff; border-top-color: var(--primary);
+            border-radius: 50%; margin: 0 auto 14px; animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        
+        ::-webkit-scrollbar { width: 10px; height: 10px; }
+        ::-webkit-scrollbar-track { background: var(--bg-main); }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 999px;
+            border: 2px solid var(--bg-main);
+        }
+        ::-webkit-scrollbar-thumb:hover { background: var(--primary); }
+        * { scrollbar-width: thin; scrollbar-color: #cbd5e1 var(--bg-main); }
+
+        .header {
+            animation: header-fade-in 0.5s ease;
+        }
+        .nav-container {
+            animation: header-fade-in 0.6s ease;
+        }
+        @keyframes header-fade-in {
+            from { opacity: 0; transform: translateY(-8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+    
+        
+        .header {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            gap: 14px !important;
+            position: relative !important;
+        }
+        .mdceo-mark {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 900;
+            letter-spacing: 1.2px;
+            padding-inline-end: 14px;
+            margin-inline-end: 4px;
+            border-inline-end: 1px solid rgba(255,255,255,0.32);
+            white-space: nowrap;
+        }
+        .mdceo-mark i {
+            color: #93c5fd;
+            font-size: 0.95em;
+            animation: mdceo-icon-pulse 3s ease-in-out infinite;
+        }
+        @keyframes mdceo-icon-pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.15) rotate(-4deg); }
+        }
+        .nav-container {
+            display: flex !important;
+            justify-content: center !important;
+            flex-wrap: wrap !important;
+            gap: 8px !important;
+        }
+        .nav-btn {
+            border-radius: 999px !important;
+            font-weight: 600 !important;
+            transition: background 0.18s ease, color 0.18s ease, transform 0.12s ease, box-shadow 0.18s ease !important;
+            border: 1px solid transparent !important;
+        }
+        .nav-btn:hover { transform: translateY(-1px); }
+        .nav-btn:active { transform: scale(0.96); }
+        .nav-btn.active {
+            box-shadow: 0 4px 12px -3px rgba(30,64,175,0.5) !important;
+        }
+
+    </style>
+    <link rel="stylesheet" href="../shared/design-system.css?v=3">
+    <script src="../shared/nav-toggle.js?v=1" defer></script>
+</head>
+<body>
+
+<div class="header">
+    <span class="mdceo-mark"><i class="fa-solid fa-drafting-compass"></i>MDCEO</span>
+    <i class="fa-solid fa-clipboard-check"></i> <span data-i18n="pageTitle">طلبات الموافقة على الملفات المرفوعة</span>
+</div>
+
+<div class="nav-container">
+    <a href="home.html" class="nav-btn">
+        <i class="fa-solid fa-house"></i> <span data-i18n="navHome">الرئيسية</span>
+    </a>
+    <a href="summary.html" class="nav-btn">
+        <i class="fa-solid fa-chart-column"></i> <span data-i18n="navSummary">الملخص</span>
+    </a>
+    <a href="task-list.html" class="nav-btn">
+        <i class="fa-solid fa-list-check"></i> <span data-i18n="navTasks">المهام</span>
+    </a>
+    <a href="general_by_activity.html" class="nav-btn">
+        <i class="fa-solid fa-layer-group"></i> <span data-i18n="navGeneral">عام</span>
+    </a>
+    <a href="approvals.html" class="nav-btn active">
+        <i class="fa-solid fa-clipboard-check"></i> <span data-i18n="navApprovals">طلبات الموافقة</span>
+        <span id="pendingNavBadge" class="nav-badge">0</span>
+    </a>
+    <a href="team_overview.html" class="nav-btn">
+        <i class="fa-solid fa-users"></i> <span data-i18n="navTeam">نظرة عامة على الموظفين</span>
+    </a>
+    <a href="engineer-review.html" class="nav-btn">
+        <i class="fa-solid fa-user-check"></i> <span data-i18n="navEngineerReview">مراجعة المهندس</span>
+    </a>
+    <a href="contractor-submit.html" class="nav-btn">
+        <i class="fa-solid fa-file-arrow-up"></i> <span data-i18n="navContractorSubmit">رفع طلب مقاول</span>
+    </a>
+    <a href="performance.html" class="nav-btn">
+        <i class="fa-solid fa-chart-column"></i> <span data-i18n="navDashboard">لوحة التحكم</span>
+    </a>
+    <a href="weekly_report.html" class="nav-btn"><i class="fa-solid fa-file-lines"></i> <span data-i18n="navReport">التقرير الأسبوعي</span></a>
+    <a href="weekly_report_view.html" class="nav-btn"><i class="fa-solid fa-eye"></i> <span data-i18n="navReportView">عرض التقرير</span></a>
+    <button onclick="toggleLanguage()" class="nav-btn translate-btn">
+        <i class="fa-solid fa-language"></i> <span id="lang-btn-text">English</span>
+    </button>
+    <button onclick="logoutUser()" class="nav-btn logout-btn" title="Logout">
+        <i class="fa-solid fa-right-from-bracket"></i> <span data-i18n="navLogout">تسجيل الخروج</span>
+    </button>
+</div>
+
+<div class="review-overlay" id="reviewOverlay">
+    <div class="review-modal">
+        <div class="review-modal-header">
+            <span class="review-modal-title" id="reviewModalTitle">Review</span>
+            <button class="review-modal-close" onclick="closeReviewModal()">✕</button>
+        </div>
+        <div class="review-modal-body" id="reviewModalBody"></div>
+        <div class="review-modal-footer" id="reviewModalFooter"></div>
+    </div>
+</div>
+
+<div class="container">
+    <div class="tabs">
+        <button class="tab-btn active" id="tab-pending" onclick="setTab('pending')" data-i18n="tabPending">قيد المراجعة</button>
+        <button class="tab-btn" id="tab-approved" onclick="setTab('approved')" data-i18n="tabApproved">تمت الموافقة</button>
+        <button class="tab-btn" id="tab-rejected" onclick="setTab('rejected')" data-i18n="tabRejected">مرفوضة</button>
+        <button class="tab-btn" id="tab-contractor" onclick="setTab('contractor')" data-i18n="tabContractor">
+            طلبات المقاولين
+            <span id="contractorNavBadge" class="nav-badge" style="position:static; display:inline-flex; margin-inline-start:6px;">0</span>
+        </button>
+        <button class="tab-btn" id="tab-final" onclick="setTab('final')" data-i18n="tabFinal" style="display:none;">
+            <i class="fa-solid fa-stamp"></i> الموافقة النهائية
+            <span id="finalNavBadge" class="nav-badge" style="position:static; display:inline-flex; margin-inline-start:6px;">0</span>
+        </button>
+    </div>
+
+    <div id="list"></div>
+</div>
+
+<div class="lock-overlay" id="lockOverlay">
+    <div class="lock-modal">
+        <div class="spinner"></div>
+        <div id="lockMsg" style="font-weight:700;"></div>
+    </div>
+</div>
+
+<script>
+const SUPABASE_URL = "https://uhhtvpxtpayovbtmnstz.supabase.co";
+const SUPABASE_KEY = "sb_publishable_QsS0UhLBORy6mOaBDgW62g_9OacC3oO";
+// auth-guard.js is loaded before this script and owns the authenticated client.
+// Never fall back to a separate client: that can lose the verified session.
+const supabaseClient = window.__guardClient;
+if (!supabaseClient) {
+    throw new Error('Authenticated Supabase client is unavailable. Please sign in again.');
+}
+const GOOGLE_SCRIPT_UPLOAD_URL = "https://script.google.com/macros/s/AKfycbxP9S7qbgK888SHhCejIGZUx-wXN7pFtJ0OHbFvAUV9ARbtfxtI1_KwUNaU3c-LTubKnw/exec";
+
+const ATTACHMENTS_BUCKET = "task-attachments";
+
+let currentLang = (typeof window.getCurrentLang === 'function') ? window.getCurrentLang() : 'ar';
+
+const dictionary = {
+    ar: {
+        navReportView: "عرض التقرير",
+        pageTitle: "طلبات الموافقة على الملفات المرفوعة",
+        tabPending: "قيد المراجعة",
+        tabApproved: "تمت الموافقة",
+        tabRejected: "مرفوضة",
+        tabContractor: "طلبات المقاولين",
+        noContractorPending: "لا يوجد ريكوستات جديدة من المقاولين بانتظار المراجعة.",
+        contractorNo: "رقم الريكوست",
+        contractorTitle: "العنوان",
+        contractorName: "المقاول",
+        companyLabel: "الشركة",
+        engineerAssigned: "المهندس المختص",
+        engineerOverride: "تغيير المهندس (اختياري)",
+        notesLabel: "ملاحظات المقاول",
+        statusPendingAdmin: "بانتظار مراجعة الأدمن",
+        statusPendingEngineer: "بانتظار مراجعة المهندس",
+        statusCompleted: "تم الاعتماد",
+        statusRejectedAdmin: "مرفوض من الأدمن",
+        statusRejectedEngineer: "مرفوض من المهندس",
+        confirmApproveContractor: "تأكيد توجيه الطلب إلى المهندس المختار؟",
+        confirmRejectContractor: "تأكيد رفض هذا الطلب؟",
+        errApproveContractor: "فشل توجيه الطلب إلى المهندس.",
+        errRejectContractor: "فشل رفض الطلب.",
+        loading: "جاري التحميل...",
+        loadError: "حدث خطأ أثناء تحميل الطلبات.",
+        noPending: "لا يوجد طلبات معلّقة.",
+        noApproved: "لا يوجد طلبات تمت الموافقة عليها.",
+        noRejected: "لا يوجد طلبات مرفوضة.",
+        taskNo: "رقم التاسك",
+        employee: "الموظف",
+        discipline: "التخصص",
+        activity: "النشاط",
+        revision: "المراجعة",
+        fileLabel: "الملف",
+        requestedAt: "تاريخ الطلب",
+        reviewedAt: "تمت المراجعة",
+        viewFile: "عرض الملف",
+        approve: "موافقة",
+        reject: "رفض",
+        statusPending: "قيد المراجعة",
+        statusApproved: "تمت الموافقة",
+        statusRejected: "مرفوض",
+        missingClassification: "⚠️ تصنيف ناقص - راجع قبل الموافقة",
+        attachmentTag: "📎 مرفق إضافي",
+        download: "تنزيل",
+        confirmApprove: "تأكيد الموافقة على ملف",
+        confirmApproveEnd: "وتحديث الرابط الرسمي؟",
+        confirmApproveMissingClassification: "تنبيه: التصنيف (Discipline/Activity) ناقص لهذا الطلب. هل تريد الموافقة رغم ذلك؟",
+        confirmReject: "تأكيد رفض هذا الملف؟",
+        errUpdateRow: "تعذر تحديد الصف المطلوب تحديثه في جدول submittals.",
+        errUpdateLink: "فشل تحديث الرابط الرسمي.",
+        errUpdateStatusAfterLink: "تم تحديث الرابط الرسمي، لكن فشل تحديث حالة الطلب.",
+        errReject: "فشل رفض الطلب.",
+        review: "مراجعة",
+        reviewModalTitle: "معاينة الملف",
+        reviewNoPreview: "معاينة مباشرة غير متاحة لنوع الملف ده. تقدر تفتحه في تاب جديد.",
+        reviewOpenInNewTab: "فتح الملف",
+        reviewClose: "إغلاق",
+        approvingInProgress: "جاري رفع الملف لجوجل درايف واعتماده...",
+        errDriveUpload: "فشل رفع الملف على جوجل درايف. حاول مرة أخرى."
+    },
+    en: {
+        navReportView: "View Report",
+        pageTitle: "Uploaded Files Approval Requests",
+        tabPending: "Pending",
+        tabApproved: "Approved",
+        tabRejected: "Rejected",
+        tabContractor: "Contractor Requests",
+        noContractorPending: "No new contractor requests awaiting review.",
+        contractorNo: "Submittal No.",
+        contractorTitle: "Title",
+        contractorName: "Contractor",
+        companyLabel: "Company",
+        engineerAssigned: "Responsible Engineer",
+        engineerOverride: "Change engineer (optional)",
+        notesLabel: "Contractor notes",
+        statusPendingAdmin: "Awaiting admin review",
+        statusPendingEngineer: "Awaiting engineer review",
+        statusCompleted: "Approved",
+        statusRejectedAdmin: "Rejected by admin",
+        statusRejectedEngineer: "Rejected by engineer",
+        confirmApproveContractor: "Confirm routing this request to the chosen engineer?",
+        confirmRejectContractor: "Confirm rejecting this request?",
+        errApproveContractor: "Failed to route the request to the engineer.",
+        errRejectContractor: "Failed to reject the request.",
+        loading: "Loading...",
+        loadError: "An error occurred while loading the requests.",
+        noPending: "No pending requests.",
+        noApproved: "No approved requests.",
+        noRejected: "No rejected requests.",
+        taskNo: "Task No.",
+        employee: "Employee",
+        discipline: "Discipline",
+        activity: "Activity",
+        revision: "Revision",
+        fileLabel: "File",
+        requestedAt: "Requested at",
+        reviewedAt: "Reviewed at",
+        viewFile: "View File",
+        approve: "Approve",
+        reject: "Reject",
+        statusPending: "Pending",
+        statusApproved: "Approved",
+        statusRejected: "Rejected",
+        missingClassification: "⚠️ Missing classification - review before approving",
+        attachmentTag: "📎 Extra Attachment",
+        download: "Download",
+        confirmApprove: "Confirm approving the file",
+        confirmApproveEnd: "and updating the official link?",
+        confirmApproveMissingClassification: "Warning: Discipline/Activity classification is missing for this request. Approve anyway?",
+        confirmReject: "Confirm rejecting this file?",
+        errUpdateRow: "Could not determine which row to update in the submittals table.",
+        errUpdateLink: "Failed to update the official link.",
+        errUpdateStatusAfterLink: "The official link was updated, but updating the request status failed.",
+        errReject: "Failed to reject the request.",
+        review: "Review",
+        reviewModalTitle: "File Preview",
+        reviewNoPreview: "Live preview isn't available for this file type. You can open it in a new tab instead.",
+        reviewOpenInNewTab: "Open File",
+        reviewClose: "Close",
+        approvingInProgress: "Uploading the file to Google Drive and approving...",
+        errDriveUpload: "Failed to upload the file to Google Drive. Please try again."
+    }
+};
+window.registerDictionary(dictionary);
+
+window.onLanguageChanged = function (lang) {
+    currentLang = lang;
+    render();
+};
+
+let currentTab = "pending";
+let requests = [];
+
+async function loadRequests() {
+    document.getElementById('list').innerHTML = `<div class="empty-state">${dictionary[currentLang].loading}</div>`;
+    const { data: rows, error } = await supabaseClient
+        .from('upload_requests')
+        .select('*')
+        .order('requested_at', { ascending: false });
+
+    if (error) {
+        console.error(error);
+        document.getElementById('list').innerHTML = `<div class="empty-state">${dictionary[currentLang].loadError}</div>`;
+        return;
+    }
+    requests = rows || [];
+    render();
+}
+
+function setTab(tab) {
+    currentTab = tab;
+    ['pending', 'approved', 'rejected', 'contractor', 'final'].forEach(t => {
+        document.getElementById(`tab-${t}`).classList.toggle('active', t === tab);
+    });
+    render();
+}
+
+document.addEventListener('authguard:ready', function () {
+    if (window.currentUserRole === 'super_admin') {
+        document.getElementById('tab-final').style.display = '';
+        finalLoadRequests();
+    }
+});
+
+function escapeHtml(str) {
+    return String(str == null ? "" : str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+}
+
+function escapeForJsAttr(str) {
+    return String(str == null ? "" : str)
+        .replace(/\\/g, "\\\\")
+        .replace(/\r\n/g, " ")
+        .replace(/[\r\n]/g, " ")
+        .replace(/\t/g, " ")
+        .replace(/'/g, "\\'")
+        .replace(/"/g, "&quot;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+}
+
+function isClassificationMissing(r) {
+    return !r.discipline || !r.discipline.toString().trim() || !r.activity || !r.activity.toString().trim();
+}
+
+function render() {
+    if (currentTab === 'contractor') { renderContractorTab(); return; }
+    if (currentTab === 'final') { renderFinalTab(); return; }
+    let filtered = requests.filter(r => r.status === currentTab);
+    let listEl = document.getElementById('list');
+    let t = dictionary[currentLang];
+
+    if (filtered.length === 0) {
+        let emptyMsg = currentTab === 'pending' ? t.noPending : currentTab === 'approved' ? t.noApproved : t.noRejected;
+        listEl.innerHTML = `<div class="empty-state">${emptyMsg}</div>`;
+        return;
+    }
+
+    listEl.innerHTML = filtered.map(r => {
+        let missing = isClassificationMissing(r);
+        let classificationHtml = missing
+            ? `<span class="classification-line missing">${t.missingClassification}</span>`
+            : `<span class="classification-line">${t.discipline}: ${escapeHtml(r.discipline)} &nbsp;›&nbsp; ${t.activity}: ${escapeHtml(r.activity)}</span>`;
+        let isAttachment = !r.column_target;
+        let attachmentHtml = isAttachment
+            ? `<span class="classification-line" style="background:#f1f5f9; color:var(--text-muted); margin-inline-start:6px;">${t.attachmentTag}</span>`
+            : '';
+
+        let viewActionHtml = `<button class="btn btn-review" onclick="reviewRequest(${r.id})"><i class="fa-solid fa-eye"></i> ${t.review}</button><button class="btn btn-review" onclick="downloadApprovedFile(${r.id})"><i class="fa-solid fa-download"></i> ${t.download}</button>`;
+
+        return `
+        <div class="request-card ${r.status}">
+            <div class="request-top">
+                <div>
+                    <div class="request-title">${escapeHtml(r.task_title || r.task_key)}</div>
+                    <div>${classificationHtml}${attachmentHtml}</div>
+                    <div class="request-meta">
+                        ${t.taskNo}: ${escapeHtml(r.raw_no || '-')} &nbsp;|&nbsp;
+                        ${t.employee}: ${escapeHtml(r.employee || '-')} &nbsp;|&nbsp;
+                        ${t.revision}: ${escapeHtml(r.revision_name)}<br>
+                        ${t.fileLabel}: ${escapeHtml(r.file_name || '-')} &nbsp;|&nbsp;
+                        ${t.requestedAt}: ${new Date(r.requested_at).toLocaleString(currentLang === 'ar' ? 'ar-EG' : 'en-US')}
+                        ${r.reviewed_at ? `<br>${t.reviewedAt}: ${new Date(r.reviewed_at).toLocaleString(currentLang === 'ar' ? 'ar-EG' : 'en-US')}` : ''}
+                    </div>
+                </div>
+                <span class="status-pill ${r.status}">${r.status === 'pending' ? t.statusPending : r.status === 'approved' ? t.statusApproved : t.statusRejected}</span>
+            </div>
+            <div class="actions">
+                ${viewActionHtml}
+                ${r.status === 'pending' ? `
+                    <button class="btn btn-approve" onclick="approveRequest(${r.id})"><i class="fa-solid fa-check"></i> ${t.approve}</button>
+                    <button class="btn btn-reject" onclick="rejectRequest(${r.id})"><i class="fa-solid fa-xmark"></i> ${t.reject}</button>
+                ` : ''}
+            </div>
+        </div>
+    `;
+    }).join('');
+}
+
+function getFileExtensionApv(filename) {
+    let parts = (filename || "").toString().trim().split(".");
+    return parts.length > 1 ? parts.pop().toLowerCase() : "";
+}
+
+function getReviewEmbedSrc(fileName, fileLink) {
+    let driveMatch = (fileLink || "").match(/drive\.google\.com\/file\/d\/([^/]+)/);
+    if (driveMatch) {
+        return `https://drive.google.com/file/d/${driveMatch[1]}/preview`;
+    }
+    let ext = getFileExtensionApv(fileName);
+    if (ext === 'pdf') {
+        return fileLink;
+    }
+    return null;
+}
+
+async function resolveFileLinkForDisplay(fileLink) {
+    if (!fileLink || fileLink.indexOf('drive.google.com') !== -1) return fileLink;
+    return await window.getAttachmentSignedUrl(fileLink, ATTACHMENTS_BUCKET, 3600);
+}
+
+async function reviewRequest(id) {
+    let req = requests.find(r => r.id === id);
+    if (!req) return;
+    let t = dictionary[currentLang];
+
+    document.getElementById('reviewModalTitle').textContent = `${t.reviewModalTitle}: ${req.file_name || ''}`;
+
+    let displayLink = await resolveFileLinkForDisplay(req.file_link);
+    let embedSrc = getReviewEmbedSrc(req.file_name, displayLink);
+    let bodyEl = document.getElementById('reviewModalBody');
+
+    if (embedSrc) {
+        bodyEl.innerHTML = `<iframe src="${embedSrc}"></iframe>`;
+    } else {
+        bodyEl.innerHTML = `
+            <div class="review-fallback">
+                <div style="font-size:40px; margin-bottom:10px;">📄</div>
+                <div>${t.reviewNoPreview}</div>
+            </div>
+        `;
+    }
+
+    document.getElementById('reviewModalFooter').innerHTML = `
+        <a class="btn btn-view" href="${displayLink}" target="_blank"><i class="fa-solid fa-up-right-from-square"></i> ${t.reviewOpenInNewTab}</a>
+        <button class="btn" style="background:#e2e8f0; color:var(--text-main);" onclick="closeReviewModal()">${t.reviewClose}</button>
+    `;
+
+    document.getElementById('reviewOverlay').classList.add('active');
+}
+
+function reviewAttachment(id) { reviewRequest(id); }
+
+async function downloadApprovedFile(id) {
+    const { data, error } = await supabaseClient.functions.invoke('temporary-download', {
+        body: { source_table: 'upload_requests', request_id: id }
+    });
+    if (error || !data?.url) {
+        notify.error(data?.error || 'تعذر إنشاء رابط تنزيل مؤقت.');
+        return;
+    }
+    window.location.assign(data.url);
+}
+
+function closeReviewModal() {
+    document.getElementById('reviewOverlay').classList.remove('active');
+    document.getElementById('reviewModalBody').innerHTML = '';
+}
+
+function extractStoragePath(publicUrl) {
+    let marker = `/storage/v1/object/public/${ATTACHMENTS_BUCKET}/`;
+    let idx = (publicUrl || "").indexOf(marker);
+    if (idx === -1) return publicUrl || null;
+    return decodeURIComponent(publicUrl.substring(idx + marker.length));
+}
+
+function blobToBase64(blob) {
+    return new Promise((resolve, reject) => {
+        let reader = new FileReader();
+        reader.onload = () => resolve(reader.result.split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+    });
+}
+
+async function uploadAttachmentToDrive(req) {
+    let fetchLink = await resolveFileLinkForDisplay(req.file_link);
+    let response = await fetch(fetchLink);
+    if (!response.ok) throw new Error("تعذر تحميل الملف من التخزين المؤقت.");
+    let blob = await response.blob();
+    let base64 = await blobToBase64(blob);
+
+    let uploadResponse = await fetch(GOOGLE_SCRIPT_UPLOAD_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain" },
+        body: JSON.stringify({
+            filename: req.file_name,
+            mimeType: blob.type || "application/octet-stream",
+            data: base64,
+            taskNo: req.task_key,
+            revName: req.revision_name,
+            notify: false,
+            taskTitle: req.task_title,
+            employee: req.employee,
+            discipline: req.discipline,
+            activity: req.activity
+        })
+    });
+
+    let result = await uploadResponse.json();
+    if (!result.url) throw new Error(result.error || "فشل رفع الملف على جوجل درايف.");
+    return result.url;
+}
+
+async function deleteFromAttachmentsStorage(publicUrl) {
+    let path = extractStoragePath(publicUrl);
+    if (!path) return;
+    try {
+        await supabaseClient.storage.from(ATTACHMENTS_BUCKET).remove([path]);
+    } catch (e) {
+        console.warn('Could not clean up storage file:', e);
+    }
+}
+
+async function approveRequest(id) {
+    let req = requests.find(r => r.id === id);
+    if (!req) return;
+    let t = dictionary[currentLang];
+
+    if (isClassificationMissing(req)) {
+        if (!(await notify.confirm(t.confirmApproveMissingClassification))) return;
+    } else {
+        if (!(await notify.confirm(`${t.confirmApprove} "${req.file_name}" ${t.confirmApproveEnd}`))) return;
+    }
+
+    let originalStorageUrl = req.file_link;
+    let listEl = document.getElementById('list');
+
+    let finalFileLink = req.file_link;
+    if (!req.column_target) {
+        closeReviewModal();
+        listEl.style.opacity = '0.6';
+        try {
+            finalFileLink = await uploadAttachmentToDrive(req);
+        } catch (e) {
+            console.error(e);
+            notify.error(t.errDriveUpload);
+            listEl.style.opacity = '1';
+            return;
+        }
+    }
+
+    if (req.column_target) {
+        // column_target is one of: link, link_1, link_2, link_3
+        // Derive the matching suffix so we also stamp the code + received_on
+        // for that same revision slot - previously only the file link was
+        // saved here, which is why the reviewer's code never showed up on
+        // the submittals table and had to be typed in again by hand.
+        let suffix = req.column_target === 'link' ? '' : req.column_target.replace('link', '');
+        let today = new Date().toISOString().slice(0, 10);
+        let submittalPayload = { [req.column_target]: finalFileLink };
+        submittalPayload['code' + suffix] = req.code || null;
+        submittalPayload['received_on' + suffix] = today;
+
+        let updateQuery = supabaseClient
+            .from('submittals')
+            .update(submittalPayload);
+
+        if (req.raw_no && req.raw_no !== '-') {
+            updateQuery = updateQuery.eq('no', req.raw_no);
+        } else if (req.task_title) {
+            updateQuery = updateQuery.eq('title', req.task_title);
+        } else {
+            notify.error(t.errUpdateRow);
+            listEl.style.opacity = '1';
+            return;
+        }
+
+        const { error: updateError } = await updateQuery;
+        if (updateError) {
+            console.error(updateError);
+            notify.error(t.errUpdateLink);
+            listEl.style.opacity = '1';
+            return;
+        }
+    }
+
+    const { error: statusError } = await supabaseClient
+        .from('upload_requests')
+        .update({ status: 'approved', reviewed_at: new Date().toISOString(), file_link: finalFileLink })
+        .eq('id', id);
+
+    if (statusError) {
+        console.error(statusError);
+        notify.error(t.errUpdateStatusAfterLink);
+        listEl.style.opacity = '1';
+        return;
+    }
+
+    if (!req.column_target) {
+        deleteFromAttachmentsStorage(originalStorageUrl);
+    }
+
+    listEl.style.opacity = '1';
+    loadRequests();
+}
+
+async function rejectRequest(id) {
+    let req = requests.find(r => r.id === id);
+    let t = dictionary[currentLang];
+    if (!(await notify.confirm(t.confirmReject))) return;
+
+    const { error } = await supabaseClient
+        .from('upload_requests')
+        .update({ status: 'rejected', reviewed_at: new Date().toISOString() })
+        .eq('id', id);
+
+    if (error) {
+        console.error(error);
+        notify.error(t.errReject);
+        return;
+    }
+
+    if (req && !req.column_target) {
+        deleteFromAttachmentsStorage(req.file_link);
+    }
+
+    closeReviewModal();
+    loadRequests();
+}
+
+const FINAL_CODE_LABELS = { A: 'Approved', B: 'Approved as Noted', C: 'Rejected' };
+const FINAL_REVISION_SLOTS = ['', '_1', '_2', '_3'];
+
+let finalRequests = [];
+
+function finalOpenLock(msg) {
+    document.getElementById('lockMsg').textContent = msg;
+    document.getElementById('lockOverlay').classList.add('active');
+}
+function finalCloseLock() {
+    document.getElementById('lockOverlay').classList.remove('active');
+}
+
+function finalSlotLabel(slot) {
+    return 'R0' + (slot === '' ? '0' : slot.replace('_', ''));
+}
+
+async function finalLoadRequests() {
+    const { data, error } = await supabaseClient
+        .from('contractor_requests')
+        .select('*')
+        .eq('status', 'pending_final_admin')
+        .order('engineer_reviewed_at', { ascending: true });
+
+    if (error) {
+        console.error('finalLoadRequests error:', error);
+        finalRequests = [];
+    } else {
+        finalRequests = data || [];
+    }
+
+    let badge = document.getElementById('finalNavBadge');
+    if (badge) {
+        badge.textContent = finalRequests.length;
+        badge.style.display = finalRequests.length > 0 ? 'inline-flex' : 'none';
+    }
+    if (currentTab === 'final') render();
+}
+
+function renderFinalTab() {
+    let listEl = document.getElementById('list');
+
+    if (finalRequests.length === 0) {
+        listEl.innerHTML = `<div class="empty-state">مفيش ريكوستات محتاجة موافقتك النهائية دلوقتي.</div>`;
+        return;
+    }
+
+    listEl.innerHTML = finalRequests.map(r => `
+        <div class="req-card">
+            <div class="req-top">
+                <div>
+                    <div class="req-title">${escapeHtml(r.title)}${r.submittal_no ? ' - ' + escapeHtml(r.submittal_no) : ''}</div>
+                    <div class="req-meta">
+                        القسم: ${escapeHtml(r.discipline)} &nbsp;|&nbsp; المهندس: ${escapeHtml(r.engineer_username || '-')} &nbsp;|&nbsp; المقاول: ${escapeHtml(r.contractor_name || r.contractor_username || '-')}<br>
+                        تاريخ إرسال المهندس: ${r.engineer_reviewed_at ? new Date(r.engineer_reviewed_at).toLocaleString() : '-'}<br>
+                        الكود: <span class="code-pill">${escapeHtml(r.code || '-')}</span> ${escapeHtml(FINAL_CODE_LABELS[r.code] || '')}
+                        ${r.engineer_comment ? `<br>تعليق المهندس: ${escapeHtml(r.engineer_comment)}` : ''}
+                    </div>
+                </div>
+            </div>
+            <div class="actions-row">
+                <button class="btn btn-view" onclick="finalReviewRequest(${r.id})">
+                    <i class="fa-solid fa-eye"></i> معاينة الملف
+                </button>
+                <button class="btn btn-reject" onclick="finalRejectRequest(${r.id})">
+                    <i class="fa-solid fa-xmark"></i> رفض ورجّعه للمهندس
+                </button>
+                <button class="btn btn-approve" onclick="finalApproveRequest(${r.id})">
+                    <i class="fa-solid fa-check-double"></i> اعتماد نهائي وإرسال لجوجل درايف
+                </button>
+            </div>
+        </div>
+    `).join('');
+}
+
+async function finalReviewRequest(id) {
+    let req = finalRequests.find(r => r.id === id);
+    if (!req) return;
+
+    let fileLink = req.final_file_link || req.file_link;
+    document.getElementById('reviewModalTitle').textContent = `معاينة: ${req.title || ''}`;
+    let displayLink = await resolveFileLinkForDisplay(fileLink);
+    let bodyEl = document.getElementById('reviewModalBody');
+
+    if (displayLink) {
+        bodyEl.innerHTML = `<iframe src="${displayLink}"></iframe>`;
+    } else {
+        bodyEl.innerHTML = `<div class="review-fallback">مفيش نسخة متاحة للمعاينة.</div>`;
+    }
+
+    document.getElementById('reviewModalFooter').innerHTML = `
+        <a class="btn btn-view" href="${displayLink}" target="_blank"><i class="fa-solid fa-up-right-from-square"></i> فتح في تاب جديد</a>
+        <button class="btn" style="background:#e2e8f0; color:var(--text-main);" onclick="closeReviewModal()">إغلاق</button>
+    `;
+
+    document.getElementById('reviewOverlay').classList.add('active');
+}
+
+async function finalApproveRequest(id) {
+    let req = finalRequests.find(r => r.id === id);
+    if (!req) return;
+    if (!(await notify.confirm('تأكيد الاعتماد النهائي وإرسال الملف على جوجل درايف؟'))) return;
+
+    finalOpenLock('جاري الاعتماد...');
+    try {
+        let today = new Date().toISOString().slice(0, 10);
+        let newSubmittalId, linkColumn;
+
+        let existing = null;
+        if (req.submittal_no) {
+            const { data: existingRows, error: findError } = await supabaseClient
+                .from('submittals')
+                .select('*')
+                .eq('no', req.submittal_no)
+                .limit(1);
+            if (findError) throw findError;
+            existing = (existingRows && existingRows[0]) ? existingRows[0] : null;
+        }
+
+        if (existing) {
+            let freeSlot = FINAL_REVISION_SLOTS.find(slot => !existing['submitted_on' + slot]);
+            if (freeSlot === undefined) {
+                const { data: inserted, error: insErr } = await supabaseClient
+                    .from('submittals')
+                    .insert({
+                        no: req.submittal_no, title: req.title, discipline: req.discipline,
+                        activity: req.activity || null, rev: 'R00',
+                        action_by: req.engineer_username || null,
+                        submitted_on: today, received_on: today, code: req.code
+                    }).select();
+                if (insErr) throw insErr;
+                newSubmittalId = inserted[0].id;
+                linkColumn = 'link';
+            } else {
+                let payload = { rev: finalSlotLabel(freeSlot) };
+                payload['submitted_on' + freeSlot] = today;
+                payload['received_on' + freeSlot] = today;
+                payload['code' + freeSlot] = req.code;
+                const { error: updErr } = await supabaseClient
+                    .from('submittals')
+                    .update(payload)
+                    .eq('id', existing.id);
+                if (updErr) throw updErr;
+                newSubmittalId = existing.id;
+                linkColumn = 'link' + freeSlot;
+            }
+        } else {
+            const { data: inserted, error: insErr } = await supabaseClient
+                .from('submittals')
+                .insert({
+                    no: req.submittal_no || null, title: req.title, discipline: req.discipline,
+                    activity: req.activity || null, rev: 'R00',
+                    action_by: req.engineer_username || null,
+                    submitted_on: today, received_on: today, code: req.code
+                }).select();
+            if (insErr) throw insErr;
+            newSubmittalId = inserted[0].id;
+            linkColumn = 'link';
+        }
+
+        const { error: updateError } = await supabaseClient
+            .from('contractor_requests')
+            .update({
+                status: 'completed',
+                created_submittal_id: newSubmittalId,
+                drive_status: 'pending',
+                admin_final_reviewed_by: window.currentUsername || null,
+                admin_final_reviewed_at: new Date().toISOString()
+            })
+            .eq('id', id);
+        if (updateError) throw updateError;
+
+        finalRequests = finalRequests.filter(r => r.id !== id);
+        renderFinalTab();
+
+        finalOpenLock('جاري رفع الملف على جوجل درايف...');
+        let driveUploadOk = await finalPushFileToDriveInBackground(req, newSubmittalId, linkColumn, id);
+        finalCloseLock();
+
+        if (!driveUploadOk) {
+            notify.error('تم الاعتماد، لكن حصل خطأ أثناء رفع الملف على جوجل درايف. راجع الطلب وحاول تاني.');
+        }
+    } catch (err) {
+        console.error('finalApproveRequest error:', err);
+        notify.error(err.message || 'حدث خطأ أثناء الاعتماد.');
+        finalCloseLock();
+    }
+}
+
+async function finalPushFileToDriveInBackground(req, newSubmittalId, linkColumn, requestId) {
+    try {
+        let fileLinkToUpload = req.final_file_link || req.file_link;
+        let fetchLink = await resolveFileLinkForDisplay(fileLinkToUpload);
+        let response = await fetch(fetchLink);
+        if (!response.ok) throw new Error('تعذر تحميل الملف النهائي من التخزين المؤقت.');
+        let blob = await response.blob();
+        let base64 = await blobToBase64(blob);
+
+        let uploadResponse = await fetch(GOOGLE_SCRIPT_UPLOAD_URL, {
+            method: "POST",
+            headers: { "Content-Type": "text/plain" },
+            body: JSON.stringify({
+                filename: req.file_name,
+                mimeType: blob.type || "application/pdf",
+                data: base64,
+                taskNo: req.submittal_no || req.title,
+                revName: "Original",
+                notify: false,
+                taskTitle: req.title,
+                employee: req.engineer_username,
+                discipline: req.discipline,
+                activity: req.activity
+            })
+        });
+        let result = await uploadResponse.json();
+        if (!result.url) throw new Error(result.error || 'فشل رفع الملف على جوجل درايف.');
+        let driveUrl = result.url;
+
+        const { error: submittalUpdateError } = await supabaseClient
+            .from('submittals')
+            .update({ [linkColumn]: driveUrl })
+            .eq('id', newSubmittalId);
+        if (submittalUpdateError) console.error('Could not update submittals link column:', submittalUpdateError);
+
+        const { error: reqUpdateError } = await supabaseClient
+            .from('contractor_requests')
+            .update({ file_link: driveUrl, drive_status: 'done' })
+            .eq('id', requestId);
+        if (reqUpdateError) console.error('Could not update contractor_requests.file_link:', reqUpdateError);
+
+        deleteFromAttachmentsStorage(req.file_link);
+        if (req.final_file_link) deleteFromAttachmentsStorage(req.final_file_link);
+        return true;
+    } catch (err) {
+        console.error('Background Drive upload failed:', err);
+        await supabaseClient
+            .from('contractor_requests')
+            .update({ drive_status: 'failed' })
+            .eq('id', requestId);
+        return false;
+    }
+}
+
+async function finalRejectRequest(id) {
+    let req = finalRequests.find(r => r.id === id);
+    if (!req) return;
+
+    let note = await notify.prompt('يرجى كتابة سبب الرفض ليصل إلى المهندس:');
+    if (note === null) return;
+    note = note.trim();
+    if (!note) { notify.error('يجب كتابة سبب الرفض.'); return; }
+
+    finalOpenLock('جاري الإرسال للمهندس...');
+    try {
+        const { error } = await supabaseClient
+            .from('contractor_requests')
+            .update({
+                status: 'pending_engineer',
+                admin_final_note: note,
+                final_file_link: null,
+                admin_final_reviewed_by: window.currentUsername || null,
+                admin_final_reviewed_at: new Date().toISOString()
+            })
+            .eq('id', id);
+        if (error) throw error;
+
+        finalRequests = finalRequests.filter(r => r.id !== id);
+        renderFinalTab();
+    } catch (err) {
+        console.error('finalRejectRequest error:', err);
+        notify.error(err.message || 'حدث خطأ أثناء الرفض.');
+    } finally {
+        finalCloseLock();
+    }
+}
+
+window.loadFinalApprovalRequests = finalLoadRequests;
+
+let contractorRequests = [];
+let contractorEngineers = [];
+
+async function loadContractorEngineers() {
+    try {
+        const { data: rows, error } = await supabaseClient
+            .from('profiles')
+            .select('id, username')
+            .eq('is_engineer', true);
+        if (error) throw error;
+        contractorEngineers = rows || [];
+        contractorEngineers.sort((a, b) => (a.username || '').localeCompare(b.username || ''));
+    } catch (err) {
+        console.error('Error loading engineers:', err);
+    }
+}
+
+async function loadContractorRequests() {
+    try {
+        const { data: rows, error } = await supabaseClient
+            .from('contractor_requests')
+            .select('*')
+            .order('requested_at', { ascending: false });
+        if (error) throw error;
+        contractorRequests = rows || [];
+
+        let pendingCount = contractorRequests.filter(r => r.status === 'pending_admin').length;
+        let badge = document.getElementById('contractorNavBadge');
+        if (badge) {
+            badge.textContent = pendingCount > 99 ? '99+' : String(pendingCount);
+            badge.style.display = pendingCount > 0 ? 'inline-flex' : 'none';
+        }
+
+        if (currentTab === 'contractor') render();
+    } catch (err) {
+        console.error('Error loading contractor requests:', err);
+    }
+}
+
+function contractorStatusLabel(status, t) {
+    switch (status) {
+        case 'pending_admin': return t.statusPendingAdmin;
+        case 'pending_engineer': return t.statusPendingEngineer;
+        case 'completed': return t.statusCompleted;
+        case 'rejected_admin': return t.statusRejectedAdmin;
+        case 'rejected_engineer': return t.statusRejectedEngineer;
+        default: return status;
+    }
+}
+
+function renderContractorTab() {
+    let listEl = document.getElementById('list');
+    let t = dictionary[currentLang];
+
+    if (contractorRequests.length === 0) {
+        listEl.innerHTML = `<div class="empty-state">${t.noContractorPending}</div>`;
+        return;
+    }
+
+    listEl.innerHTML = contractorRequests.map(r => {
+        let engineerOptions = contractorEngineers.map(e =>
+            `<option value="${escapeHtml(e.id)}" ${e.id === r.engineer_id ? 'selected' : ''}>${escapeHtml(e.username)}</option>`
+        ).join('');
+
+        let isPending = r.status === 'pending_admin';
+        let statusClass = isPending ? 'pending' : (r.status === 'completed' ? 'approved' : (r.status.indexOf('rejected') !== -1 ? 'rejected' : 'pending'));
+
+        return `
+        <div class="request-card ${statusClass}">
+            <div class="request-top">
+                <div>
+                    <div class="request-title">${escapeHtml(r.title)}${r.submittal_no ? ' - ' + escapeHtml(r.submittal_no) : ''}</div>
+                    <span class="classification-line">${t.discipline}: ${escapeHtml(r.discipline)}${r.activity ? ` &nbsp;›&nbsp; ${t.activity}: ${escapeHtml(r.activity)}` : ''}</span>
+                    <div class="request-meta">
+                        ${t.contractorName}: ${escapeHtml(r.contractor_username || '-')} &nbsp;|&nbsp;
+                        ${t.companyLabel}: ${escapeHtml(r.company_name || '-')} &nbsp;|&nbsp;
+                        ${t.fileLabel}: ${escapeHtml(r.file_name || '-')} &nbsp;|&nbsp;
+                        ${t.requestedAt}: ${new Date(r.requested_at).toLocaleString(currentLang === 'ar' ? 'ar-EG' : 'en-US')}
+                    </div>
+                    ${r.notes ? `<div class="request-meta"><b>${t.notesLabel}:</b> ${escapeHtml(r.notes)}</div>` : ''}
+                    <div class="request-meta" style="margin-top:8px;">
+                        <b>${t.engineerOverride}:</b>
+                        <select id="eng-override-${r.id}" ${isPending ? '' : 'disabled'} style="padding:4px 8px; border-radius:6px; border:1px solid var(--border);">
+                            ${engineerOptions}
+                        </select>
+                    </div>
+                </div>
+                <span class="status-pill ${statusClass}">${contractorStatusLabel(r.status, t)}</span>
+            </div>
+            <div class="actions">
+                <button class="btn btn-review" onclick="reviewContractorRequest(${r.id})"><i class="fa-solid fa-eye"></i> ${t.review}</button>
+                ${isPending ? `
+                    <button class="btn btn-approve" onclick="approveContractorRequest(${r.id})"><i class="fa-solid fa-check"></i> ${t.approve}</button>
+                    <button class="btn btn-reject" onclick="rejectContractorRequest(${r.id})"><i class="fa-solid fa-xmark"></i> ${t.reject}</button>
+                ` : ''}
+            </div>
+        </div>
+        `;
+    }).join('');
+}
+
+async function reviewContractorRequest(id) {
+    let req = contractorRequests.find(r => r.id === id);
+    if (!req) return;
+    let t = dictionary[currentLang];
+
+    document.getElementById('reviewModalTitle').textContent = `${t.reviewModalTitle}: ${req.file_name || ''}`;
+
+    let displayLink = await resolveFileLinkForDisplay(req.file_link);
+    let embedSrc = getReviewEmbedSrc(req.file_name, displayLink);
+    let bodyEl = document.getElementById('reviewModalBody');
+
+    if (embedSrc) {
+        bodyEl.innerHTML = `<iframe src="${embedSrc}"></iframe>`;
+    } else {
+        bodyEl.innerHTML = `
+            <div class="review-fallback">
+                <div style="font-size:40px; margin-bottom:10px;">📄</div>
+                <div>${t.reviewNoPreview}</div>
+            </div>
+        `;
+    }
+
+    document.getElementById('reviewModalFooter').innerHTML = `
+        <a class="btn btn-view" href="${displayLink}" target="_blank"><i class="fa-solid fa-up-right-from-square"></i> ${t.reviewOpenInNewTab}</a>
+        <button class="btn" style="background:#e2e8f0; color:var(--text-main);" onclick="closeReviewModal()">${t.reviewClose}</button>
+    `;
+
+    document.getElementById('reviewOverlay').classList.add('active');
+}
+
+async function approveContractorRequest(id) {
+    let req = contractorRequests.find(r => r.id === id);
+    if (!req) return;
+    let t = dictionary[currentLang];
+
+    if (!(await notify.confirm(t.confirmApproveContractor))) return;
+
+    let overrideSelect = document.getElementById(`eng-override-${id}`);
+    let chosenEngineerId = overrideSelect ? overrideSelect.value : req.engineer_id;
+    let chosenEngineer = contractorEngineers.find(e => e.id === chosenEngineerId);
+
+    const { error } = await supabaseClient
+        .from('contractor_requests')
+        .update({
+            status: 'pending_engineer',
+            engineer_id: chosenEngineerId,
+            engineer_username: chosenEngineer ? chosenEngineer.username : req.engineer_username,
+            admin_reviewed_at: new Date().toISOString(),
+            admin_reviewed_by: window.currentUsername || null
+        })
+        .eq('id', id);
+
+    if (error) {
+        console.error(error);
+        notify.error(t.errApproveContractor);
+        return;
+    }
+
+    closeReviewModal();
+    loadContractorRequests();
+}
+
+async function rejectContractorRequest(id) {
+    let t = dictionary[currentLang];
+    if (!(await notify.confirm(t.confirmRejectContractor))) return;
+
+    const { error } = await supabaseClient
+        .from('contractor_requests')
+        .update({
+            status: 'rejected_admin',
+            admin_reviewed_at: new Date().toISOString(),
+            admin_reviewed_by: window.currentUsername || null
+        })
+        .eq('id', id);
+
+    if (error) {
+        console.error(error);
+        notify.error(t.errRejectContractor);
+        return;
+    }
+
+    closeReviewModal();
+    loadContractorRequests();
+}
+
+loadRequests();
+loadContractorEngineers().then(loadContractorRequests);
+</script>
+</body>
+</html>

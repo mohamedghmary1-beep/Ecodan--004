@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>إدارة الصلاحيات - MDCEO</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <script>
+      document.write('<script src="../shared/cache-buster.js?v=' + Date.now() + '"><' + '/script>');
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;800;900&family=Tajawal:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+      document.write('<script src="../shared/auth-guard.js?v=' + Date.now() + '"><' + '/script>');
+      document.write('<script src="../shared/lang.js?v=' + Date.now() + '"><' + '/script>');
+    </script>
+    <style>
+        :root {
+            --primary: #1e40af;
+            --primary-hover: #1d4ed8;
+            --bg-main: #f8fafc;
+            --bg-card: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+        }
+        body { margin: 0; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--bg-main); color: var(--text-main); direction: rtl; }
+        .header { background: var(--primary); color: #fff; padding: 18px 24px; display:flex; align-items:center; justify-content:center; gap:12px; font-size:22px; font-weight:700; box-shadow:0 2px 4px rgba(0,0,0,0.1); position:relative; }
+        .nav-container { display:flex; justify-content:center; flex-wrap:wrap; gap:16px; background:var(--bg-card); padding:14px; box-shadow:0 1px 3px rgba(0,0,0,0.05); border-bottom:1px solid var(--border); }
+        .nav-btn { display:inline-flex; align-items:center; gap:8px; padding:10px 20px; color:var(--text-muted); text-decoration:none; font-weight:600; font-size:15px; border-radius:999px; border:1px solid transparent; transition:.18s; }
+        .nav-btn:hover { background:#eff6ff; color:var(--primary); transform:translateY(-1px); }
+        .nav-btn.active { background:var(--primary); color:#fff; box-shadow:0 4px 12px -3px rgba(30,64,175,0.5); }
+        .translate-btn { background:#eff6ff; color:var(--primary); border:none; cursor:pointer; font-family:inherit; }
+        .nav-btn.logout-btn { margin-inline-start:auto; background:rgba(239,68,68,0.12); color:#ef4444; }
+
+        .container { max-width: 1300px; margin: 0 auto; padding: 24px 16px 60px; }
+        .top-note { background:#eff6ff; border:1px solid #bfdbfe; color:#1e3a8a; border-radius:10px; padding:12px 16px; font-size:13.5px; margin-bottom:18px; line-height:1.7; }
+
+        .section-title { display:flex; align-items:center; gap:10px; font-size:17px; font-weight:800; margin:28px 0 12px; color:var(--text-main); }
+        .section-title .count-badge { background:#e2e8f0; color:var(--text-muted); font-size:12px; font-weight:700; padding:2px 10px; border-radius:999px; }
+
+        .search-box { position:relative; margin-bottom:12px; max-width:280px; }
+        .search-box input { width:100%; box-sizing:border-box; padding:9px 34px 9px 12px; border-radius:8px; border:1px solid var(--border); font-size:13.5px; font-family:inherit; }
+        .search-box i { position:absolute; inset-inline-end:12px; top:50%; transform:translateY(-50%); color:var(--text-muted); font-size:13px; }
+
+        table.perm-table { width:100%; border-collapse: collapse; background:var(--bg-card); border-radius:12px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,0.05); font-size:13.5px; }
+        table.perm-table th, table.perm-table td { padding:10px 8px; border-bottom:1px solid var(--border); text-align:center; }
+        table.perm-table th { background:#f1f5f9; font-weight:700; color:var(--text-main); white-space:nowrap; }
+        table.perm-table td:first-child, table.perm-table th:first-child { text-align:right; padding-inline-start:16px; position:sticky; right:0; background:inherit; white-space:nowrap; }
+        table.perm-table tbody tr:hover { background:#f8fafc; }
+        table.perm-table tbody tr.is-blocked-row { background:#fef2f2; }
+        table.perm-table tbody tr.is-blocked-row:hover { background:#fee2e2; }
+        .username-cell { font-weight:700; }
+
+        .status-badge { display:inline-block; font-size:10.5px; font-weight:800; padding:2px 8px; border-radius:999px; margin-inline-start:6px; vertical-align:middle; }
+        .status-badge.blocked { background:#fee2e2; color:#dc2626; }
+
+        select.role-select { padding:6px 8px; border-radius:6px; border:1px solid var(--border); font-size:13px; background:#fff; min-width:130px; }
+        input[type="checkbox"] { width:17px; height:17px; cursor:pointer; }
+        input[type="checkbox"]:disabled { opacity:.35; cursor:not-allowed; }
+        input.company-input { padding:7px 9px; border-radius:6px; border:1px solid var(--border); font-size:13px; font-family:inherit; width:160px; }
+
+        .access-preview-cell { text-align:right !important; min-width:220px; max-width:280px; white-space:normal !important; }
+        .access-chip { display:inline-block; background:#eff6ff; color:#1e40af; font-size:11px; font-weight:700; padding:2px 8px; border-radius:6px; margin:2px; }
+        .access-chip.none { background:#f1f5f9; color:var(--text-muted); }
+
+        .row-actions { display:flex; gap:6px; justify-content:center; flex-wrap:wrap; }
+        .btn-save, .btn-block, .btn-unblock, .btn-delete {
+            padding:6px 12px; border-radius:6px; border:none; font-weight:700; font-size:12px; cursor:pointer; white-space:nowrap;
+        }
+        .btn-save { background:var(--success); color:#fff; }
+        .btn-save:disabled { background:#94a3b8; cursor:not-allowed; }
+        .btn-save.saved { background:#059669; }
+        .btn-block { background:#fef3c7; color:#92400e; }
+        .btn-unblock { background:#dcfce7; color:#166534; }
+        .btn-delete { background:#fef2f2; color:#dc2626; }
+        .btn-delete:hover { background:#fee2e2; }
+
+        .empty-state { text-align:center; color:var(--text-muted); padding:40px 0; }
+        .table-wrap { overflow-x:auto; }
+
+        .add-user-card { background:var(--bg-card); border-radius:12px; box-shadow:0 1px 3px rgba(0,0,0,0.05); padding:18px 20px; margin-bottom:20px; }
+        .add-user-card h3 { margin:0 0 14px 0; font-size:16px; font-weight:700; display:flex; align-items:center; gap:8px; }
+        .add-user-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap:12px; align-items:end; }
+        .add-user-grid .field { display:flex; flex-direction:column; gap:5px; }
+        .add-user-grid label { font-size:12.5px; font-weight:600; color:var(--text-muted); }
+        .add-user-grid input, .add-user-grid select { padding:9px 10px; border-radius:8px; border:1px solid var(--border); font-size:13.5px; font-family:inherit; }
+        .add-user-grid input:focus, .add-user-grid select:focus { outline:none; border-color:var(--primary); box-shadow:0 0 0 3px rgba(37,99,235,0.1); }
+        .btn-add-user { padding:10px 20px; border-radius:8px; border:none; background:var(--primary); color:#fff; font-weight:700; cursor:pointer; font-size:13.5px; white-space:nowrap; }
+        .btn-add-user:hover { background:var(--primary-hover); }
+        .btn-add-user:disabled { background:#94a3b8; cursor:not-allowed; }
+        .field-inline-check { display:flex; align-items:center; gap:8px; flex-direction:row-reverse; justify-content:flex-end; padding-bottom:9px; }
+        .add-user-msg { margin-top:12px; padding:10px 14px; border-radius:8px; font-size:13px; display:none; }
+        .add-user-msg.success { display:block; background:#ecfdf5; color:#047857; border:1px solid #d1fae5; }
+        .add-user-msg.error { display:block; background:#fef2f2; color:#dc2626; border:1px solid #fecaca; }
+
+        .mdceo-mark {
+            display: inline-flex; align-items: center; gap: 8px; font-weight: 900; letter-spacing: 1.2px;
+            padding-inline-end: 14px; margin-inline-end: 4px; border-inline-end: 1px solid rgba(255,255,255,0.32); white-space: nowrap;
+        }
+        .mdceo-mark i { color: #93c5fd; font-size: 0.95em; }
+    </style>
+    <link rel="stylesheet" href="../shared/design-system.css?v=3">
+    <script src="../shared/nav-toggle.js?v=1" defer></script>
+</head>
+<body>
+
+<div class="header">
+    <span class="mdceo-mark"><i class="fa-solid fa-drafting-compass"></i>MDCEO</span>
+    <i class="fa-solid fa-user-shield"></i> <span data-i18n="pageTitle">إدارة صلاحيات المستخدمين</span>
+</div>
+
+<div class="nav-container">
+    <a href="home.html" class="nav-btn"><i class="fa-solid fa-house"></i> <span data-i18n="navHome">الرئيسية</span></a>
+    <a href="team_overview.html" class="nav-btn"><i class="fa-solid fa-users"></i> <span data-i18n="navTeam">نظرة عامة على الموظفين</span></a>
+    <a href="approvals.html" class="nav-btn"><i class="fa-solid fa-clipboard-check"></i> <span data-i18n="navApprovals">طلبات الموافقة</span></a>
+    <a href="permissions.html" class="nav-btn active"><i class="fa-solid fa-user-shield"></i> <span data-i18n="navPermissions">إدارة الصلاحيات</span></a>
+    <button onclick="toggleLanguage()" class="nav-btn translate-btn">
+        <i class="fa-solid fa-language"></i> <span id="lang-btn-text">English</span>
+    </button>
+    <button onclick="logoutUser()" class="nav-btn logout-btn">
+        <i class="fa-solid fa-right-from-bracket"></i> <span data-i18n="navLogout">تسجيل الخروج</span>
+    </button>
+</div>
+
+<div class="container">
+    <div class="top-note" data-i18n="topNote">
+        غيّر دور أي مستخدم، أو أي صفحة يشوفها، أو احظره/احذفه من هنا مباشرة. عمود "الصفحات اللي هيشوفها فعليًا" بيتحدّث فورًا وإنت بتغيّر أي اختيار - قبل ما تدوس حفظ - عشان تتأكد من الأثر الحقيقي. الحفظ لكل صف على حدة. ملاحظة: "طلبات الموافقة" مقفولة تلقائيًا على أي دور غير "أدمن"/"أدمن أعلى" - مفيش عمود منفصل ليها.
+    </div>
+
+    <div class="add-user-card">
+        <h3><i class="fa-solid fa-user-plus"></i> <span data-i18n="addUserTitle">إضافة مستخدم جديد (مهندس / مقاول / موظف)</span></h3>
+        <form id="addUserForm" onsubmit="handleAddUser(event)">
+            <div class="add-user-grid">
+                <div class="field">
+                    <label data-i18n="fUsername">الاسم</label>
+                    <input type="text" id="new-username" required>
+                </div>
+                <div class="field">
+                    <label data-i18n="fEmail">الإيميل الحقيقي</label>
+                    <input type="email" id="new-email" required>
+                </div>
+                <div class="field">
+                    <label data-i18n="fPassword">كلمة المرور المبدئية</label>
+                    <input type="text" id="new-password" required minlength="6">
+                </div>
+                <div class="field">
+                    <label data-i18n="fRole">الدور</label>
+                    <select id="new-role" onchange="onNewRoleChange()"></select>
+                </div>
+                <div class="field" id="new-company-field" style="display:none;">
+                    <label data-i18n="fCompanyName">اسم الشركة</label>
+                    <input type="text" id="new-company-name">
+                </div>
+                <div class="field-inline-check" id="new-engineer-field">
+                    <input type="checkbox" id="new-is-engineer">
+                    <label data-i18n="fIsEngineer">مهندس؟</label>
+                </div>
+                <button type="submit" class="btn-add-user" id="addUserBtn">
+                    <i class="fa-solid fa-plus"></i> <span data-i18n="btnAddUser">إضافة</span>
+                </button>
+            </div>
+            <div class="add-user-msg" id="addUserMsg"></div>
+        </form>
+    </div>
+
+    <div class="section-title">
+        <i class="fa-solid fa-users-gear"></i>
+        <span data-i18n="employeesTitle">الموظفين والإداريين والمهندسين</span>
+        <span class="count-badge" id="employeesCount">0</span>
+    </div>
+    <div class="search-box">
+        <input type="text" id="employeeSearch" data-i18n-placeholder="searchPlaceholder" placeholder="ابحث بالاسم..." oninput="onSearchChange('employee')">
+        <i class="fa-solid fa-magnifying-glass"></i>
+    </div>
+    <div id="employeesTableWrap" class="table-wrap">
+        <div class="empty-state" data-i18n="loading">جاري التحميل...</div>
+    </div>
+
+    <div class="section-title">
+        <i class="fa-solid fa-helmet-safety"></i>
+        <span data-i18n="contractorsTitle">المقاولين (حسابات الشركات)</span>
+        <span class="count-badge" id="contractorsCount">0</span>
+    </div>
+    <div class="search-box">
+        <input type="text" id="contractorSearch" data-i18n-placeholder="searchPlaceholder" placeholder="ابحث بالاسم..." oninput="onSearchChange('contractor')">
+        <i class="fa-solid fa-magnifying-glass"></i>
+    </div>
+    <div id="contractorsTableWrap" class="table-wrap">
+        <div class="empty-state" data-i18n="loading">جاري التحميل...</div>
+    </div>
+</div>
+
+<script>
+const SUPABASE_URL = "https://uhhtvpxtpayovbtmnstz.supabase.co";
+const SUPABASE_KEY = "sb_publishable_QsS0UhLBORy6mOaBDgW62g_9OacC3oO";
+// FIX: كنا بننشئ عميل Supabase جديد هنا بدل ما نستخدم نفس العميل اللي
+// auth-guard.js عامله (window.__guardClient). ده كان بيسبب مشكلة: لما
+// guardUpload() بيطلب تأكيد كلمة السر (reauthPassword)، الجلسة الجديدة
+// كانت بتتحدّث جوه __guardClient بس، ومفيش مزامنة بترجع لـ supabaseClient
+// (اتنين instance منفصلين تمامًا) - فلما التوكن القديم يخلص، أي حفظ من
+// هنا كان بيفشل بـ "An error occurred while saving" رغم إن تأكيد كلمة
+// السر بينجح. الحل: نستخدم نفس العميل اللي auth-guard.js جهزه بالظبط.
+const supabaseClient = window.__guardClient;
+const CREATE_USER_FUNCTION_URL = `${SUPABASE_URL}/functions/v1/create-user`;
+const DELETE_USER_FUNCTION_URL = `${SUPABASE_URL}/functions/v1/delete-user`;
+
+// SECURITY: كل البيانات النصية اللي جايه من الـ DB (username, company_name)
+// لازم تتعقّم قبل ما تتحط جوه innerHTML - escapeHtml لعرضها كنص،
+// escapeForJsAttr لو هتتحط جوه onclick="...('...')" سترينج.
+function escapeHtml(str) {
+    return String(str == null ? "" : str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+}
+function escapeForJsAttr(str) {
+    return String(str == null ? "" : str)
+        .replace(/\\/g, "\\\\")
+        .replace(/[\r\n\t]/g, " ")
+        .replace(/'/g, "\\'")
+        .replace(/"/g, "&quot;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+}
+
+const ROLE_OPTIONS = [
+    { value: 'administrator', ar: 'أدمن أعلى (كل الصلاحيات)', en: 'Super Admin (everything)' },
+    { value: 'admin', ar: 'أدمن عادي', en: 'Admin' },
+    { value: 'limited', ar: 'صلاحية محدودة', en: 'Limited' },
+    { value: 'no_files', ar: 'بدون ملفات', en: 'No Files' },
+    { value: 'contractor', ar: 'مقاول', en: 'Contractor' }
+];
+
+const PAGE_FLAGS = [
+    { col: 'page_home', ar: 'الرئيسية', en: 'Home' },
+    { col: 'page_summary', ar: 'الملخص', en: 'Summary' },
+    { col: 'page_task', ar: 'المهام', en: 'Tasks' },
+    { col: 'page_performance', ar: 'لوحة التحكم', en: 'Dashboard' },
+    { col: 'page_weekly_report', ar: 'التقرير الأسبوعي', en: 'Weekly Report' },
+    { col: 'page_general_by_activity', ar: 'عام', en: 'General' }
+];
+
+// صفحات خاصة مالهاش checkbox مباشر - بتتحسب تلقائيًا حسب الدور، بس
+// بتتعرض في عمود "المعاينة" عشان الأدمن يشوف الصورة كاملة.
+const SPECIAL_PAGES = {
+    approvals: { ar: 'طلبات الموافقة', en: 'Approvals' },
+    contractorSubmit: { ar: 'رفع طلب (المقاول)', en: 'Contractor Submit' },
+    engineerReview: { ar: 'مراجعة المهندس', en: 'Engineer Review' },
+    superAdminOnly: { ar: 'صفحات الإدارة العليا (الفريق / الاعتماد النهائي / الصلاحيات)', en: 'Super-admin pages (Team / Final Approval / Permissions)' }
+};
+
+const dictionary = {
+    ar: {
+        pageTitle: "إدارة صلاحيات المستخدمين",
+        navPermissions: "إدارة الصلاحيات",
+        topNote: "غيّر دور أي مستخدم، أو أي صفحة يشوفها، أو احظره/احذفه من هنا مباشرة. عمود \"الصفحات اللي هيشوفها فعليًا\" بيتحدّث فورًا وإنت بتغيّر أي اختيار - قبل ما تدوس حفظ - عشان تتأكد من الأثر الحقيقي. الحفظ لكل صف على حدة. ملاحظة: \"طلبات الموافقة\" مقفولة تلقائيًا على أي دور غير \"أدمن\"/\"أدمن أعلى\" - مفيش عمود منفصل ليها.",
+        loading: "جاري التحميل...",
+        loadError: "حصل خطأ أثناء تحميل المستخدمين.",
+        searchPlaceholder: "ابحث بالاسم...",
+        employeesTitle: "الموظفين والإداريين والمهندسين",
+        contractorsTitle: "المقاولين (حسابات الشركات)",
+        noEmployees: "مفيش موظفين مطابقين.",
+        noContractors: "مفيش حسابات مقاولين مطابقة.",
+        colUser: "المستخدم",
+        colRole: "الدور",
+        colEngineer: "مهندس",
+        colCompany: "اسم الشركة",
+        colAccess: "الصفحات اللي هيشوفها فعليًا",
+        colActions: "",
+        btnSave: "حفظ",
+        saved: "تم ✓",
+        errSave: "حصل خطأ أثناء الحفظ، حاول تاني.",
+        btnBlock: "حظر",
+        btnUnblock: "إلغاء الحظر",
+        btnDelete: "حذف",
+        blockedTag: "محظور",
+        confirmBlock: "متأكد إنك عايز تحظر {name}؟ هيتمنع من الدخول فورًا لحد ما تلغي الحظر.",
+        confirmUnblock: "تلغي حظر {name} وترجّعله دخوله؟",
+        confirmDelete: "متأكد إنك عايز تحذف {name}؟ الإجراء ده نهائي ومش هينفع يترجع - الحساب والبيانات المرتبطة بيه هيتشالوا.",
+        deleteSuccess: "تم حذف الحساب.",
+        deleteError: "حصل خطأ أثناء الحذف.",
+        blockError: "حصل خطأ أثناء تحديث الحالة.",
+        noAccess: "مفيش أي صفحة متاحة له دلوقتي",
+        addUserTitle: "إضافة مستخدم جديد (مهندس / مقاول / موظف)",
+        fUsername: "الاسم", fEmail: "الإيميل الحقيقي", fPassword: "كلمة المرور المبدئية",
+        fRole: "الدور", fCompanyName: "اسم الشركة", fIsEngineer: "مهندس؟",
+        btnAddUser: "إضافة", addingUser: "جاري الإضافة...",
+        addUserSuccess: "تم إنشاء الحساب بنجاح ✓", addUserError: "حصل خطأ أثناء إنشاء الحساب."
+    },
+    en: {
+        pageTitle: "User Permissions Management",
+        navPermissions: "Permissions",
+        topNote: "Change any user's role, which pages they see, or block/delete them directly from here. The \"pages they can actually see\" column updates live as you change any option - before you hit save - so you can check the real effect. Saving is per row. Note: \"Approvals\" is automatically restricted to \"Admin\"/\"Super Admin\" roles - there is no separate column for it.",
+        loading: "Loading...",
+        loadError: "An error occurred while loading users.",
+        searchPlaceholder: "Search by name...",
+        employeesTitle: "Employees, Admins & Engineers",
+        contractorsTitle: "Contractors (Company Accounts)",
+        noEmployees: "No matching employees.",
+        noContractors: "No matching contractor accounts.",
+        colUser: "User", colRole: "Role", colEngineer: "Engineer", colCompany: "Company Name",
+        colAccess: "Pages they can actually see", colActions: "",
+        btnSave: "Save", saved: "Saved ✓", errSave: "An error occurred while saving, please try again.",
+        btnBlock: "Block", btnUnblock: "Unblock", btnDelete: "Delete", blockedTag: "Blocked",
+        confirmBlock: "Block {name}? They will be signed out and denied access immediately until unblocked.",
+        confirmUnblock: "Unblock {name} and restore their access?",
+        confirmDelete: "Delete {name}? This is permanent and cannot be undone - the account and its data will be removed.",
+        deleteSuccess: "Account deleted.",
+        deleteError: "An error occurred while deleting.",
+        blockError: "An error occurred while updating status.",
+        noAccess: "No pages are currently accessible to them",
+        addUserTitle: "Add New User (Engineer / Contractor / Staff)",
+        fUsername: "Name", fEmail: "Real Email", fPassword: "Initial Password",
+        fRole: "Role", fCompanyName: "Company Name", fIsEngineer: "Engineer?",
+        btnAddUser: "Add", addingUser: "Adding...",
+        addUserSuccess: "Account created successfully ✓", addUserError: "An error occurred while creating the account."
+    }
+};
+window.registerDictionary(dictionary);
+window.onLanguageChanged = function () { render(); populateNewRoleSelect(); };
+
+let currentLang = (typeof window.getCurrentLang === 'function') ? window.getCurrentLang() : 'ar';
+let users = [];
+let employeeSearchTerm = '';
+let contractorSearchTerm = '';
+
+function onSearchChange(which) {
+    if (which === 'employee') employeeSearchTerm = document.getElementById('employeeSearch').value.trim().toLowerCase();
+    else contractorSearchTerm = document.getElementById('contractorSearch').value.trim().toLowerCase();
+    render();
+}
+
+function populateNewRoleSelect() {
+    let sel = document.getElementById('new-role');
+    if (!sel) return;
+    let prev = sel.value;
+    sel.innerHTML = ROLE_OPTIONS.map(r => `<option value="${r.value}">${r[currentLang]}</option>`).join('');
+    if (prev) sel.value = prev;
+    onNewRoleChange();
+}
+
+function onNewRoleChange() {
+    let role = document.getElementById('new-role').value;
+    document.getElementById('new-company-field').style.display = (role === 'contractor') ? 'flex' : 'none';
+    document.getElementById('new-engineer-field').style.display = (role === 'contractor') ? 'none' : 'flex';
+    if (role === 'contractor') document.getElementById('new-is-engineer').checked = false;
+}
+
+async function handleAddUser(event) {
+    event.preventDefault();
+    let t = dictionary[currentLang];
+    let msgEl = document.getElementById('addUserMsg');
+    let btn = document.getElementById('addUserBtn');
+    msgEl.className = 'add-user-msg';
+
+    let username = document.getElementById('new-username').value.trim();
+    let email = document.getElementById('new-email').value.trim();
+    let password = document.getElementById('new-password').value;
+    let role = document.getElementById('new-role').value;
+    let isEngineer = document.getElementById('new-is-engineer').checked;
+    let companyName = document.getElementById('new-company-name').value.trim();
+
+    if (!username || !email || !password) return;
+
+    btn.disabled = true;
+    let originalBtnHtml = btn.innerHTML;
+    btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> ${t.addingUser}`;
+
+    try {
+        let session = window.__guardSession || (await supabaseClient.auth.getSession()).data.session;
+        if (!session) throw new Error('No active session');
+
+        let response = await fetch(CREATE_USER_FUNCTION_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${session.access_token}`,
+                'apikey': SUPABASE_KEY
+            },
+            body: JSON.stringify({
+                username, email, password,
+                permissions: role,
+                is_engineer: role === 'contractor' ? false : isEngineer,
+                company_name: role === 'contractor' ? (companyName || null) : null
+            })
+        });
+        let result = await response.json();
+        if (!response.ok || result.error) throw new Error(result.error || 'Unknown error');
+
+        msgEl.textContent = t.addUserSuccess;
+        msgEl.className = 'add-user-msg success';
+        document.getElementById('addUserForm').reset();
+        populateNewRoleSelect();
+        loadUsers();
+    } catch (err) {
+        console.error('Add user error:', err);
+        msgEl.textContent = (t.addUserError) + (err.message ? ' (' + err.message + ')' : '');
+        msgEl.className = 'add-user-msg error';
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalBtnHtml;
+    }
+}
+
+async function loadUsers() {
+    document.getElementById('employeesTableWrap').innerHTML = `<div class="empty-state">${dictionary[currentLang].loading}</div>`;
+    document.getElementById('contractorsTableWrap').innerHTML = `<div class="empty-state">${dictionary[currentLang].loading}</div>`;
+    try {
+        const { data, error } = await supabaseClient
+            .from('profiles')
+            .select('id, username, permissions, is_engineer, company_name, is_blocked, page_home, page_summary, page_task, page_performance, page_weekly_report, page_general_by_activity')
+            .order('username', { ascending: true });
+        if (error) throw error;
+        users = data || [];
+        render();
+    } catch (err) {
+        console.error(err);
+        let msg = `<div class="empty-state">${dictionary[currentLang].loadError}</div>`;
+        document.getElementById('employeesTableWrap').innerHTML = msg;
+        document.getElementById('contractorsTableWrap').innerHTML = msg;
+    }
+}
+
+// نفس ترتيب المنطق بالظبط اللي في auth-guard.js (pageIsAllowed) - هنا
+// بس لغرض المعاينة/العرض في الجدول، مش للتحقق الفعلي (ده شغل auth-guard.js
+// + RLS على السيرفر، مش الصفحة دي).
+function computeAccess(role, isEngineer, flags) {
+    let pages = [];
+    if (role === 'administrator') {
+        pages.push(SPECIAL_PAGES.superAdminOnly, SPECIAL_PAGES.approvals);
+        PAGE_FLAGS.forEach(p => pages.push(p));
+        pages.push(SPECIAL_PAGES.engineerReview);
+        return pages;
+    }
+    if (role === 'contractor') {
+        return [SPECIAL_PAGES.contractorSubmit];
+    }
+    if (role === 'admin') pages.push(SPECIAL_PAGES.approvals);
+    PAGE_FLAGS.forEach(p => {
+        if ((flags[p.col] || '').toString().trim().toLowerCase() === 'yes') pages.push(p);
+    });
+    if (isEngineer) pages.push(SPECIAL_PAGES.engineerReview);
+    return pages;
+}
+
+function renderAccessChips(pages) {
+    let t = dictionary[currentLang];
+    if (pages.length === 0) return `<span class="access-chip none">${t.noAccess}</span>`;
+    return pages.map(p => `<span class="access-chip">${p[currentLang]}</span>`).join('');
+}
+
+// بيتقرا حالة الكنترولز الحيّة من الصف نفسه (مش من `users` array القديمة)
+// عشان المعاينة تتحدّث فورًا وإنت لسه بتغيّر حاجة قبل الحفظ.
+function onRowChange(userId) {
+    let roleSel = document.getElementById(`role-${userId}`);
+    if (!roleSel) return; // صف مقاول - مفيهوش role select أصلاً
+    let role = roleSel.value;
+    let isEngineer = document.getElementById(`eng-${userId}`).checked;
+    let flags = {};
+    PAGE_FLAGS.forEach(p => {
+        let chk = document.getElementById(`chk-${p.col}-${userId}`);
+        flags[p.col] = chk && chk.checked ? 'yes' : 'no';
+    });
+
+    // تعطيل الشيكات اللي معندهاش معنى فعلي للدور الحالي: super admin
+    // بياخد كل حاجة أوتوماتيك (فمفيش داعي)، مقاول أصلاً ملوش صف هنا.
+    let disablePageFlags = (role === 'administrator');
+    PAGE_FLAGS.forEach(p => {
+        let chk = document.getElementById(`chk-${p.col}-${userId}`);
+        if (chk) chk.disabled = disablePageFlags;
+    });
+
+    let previewCell = document.getElementById(`preview-${userId}`);
+    if (previewCell) previewCell.innerHTML = renderAccessChips(computeAccess(role, isEngineer, flags));
+}
+
+function render() {
+    let t = dictionary[currentLang];
+
+    let employees = users.filter(u => (u.permissions || '').toLowerCase().trim() !== 'contractor');
+    let contractors = users.filter(u => (u.permissions || '').toLowerCase().trim() === 'contractor');
+
+    if (employeeSearchTerm) employees = employees.filter(u => (u.username || '').toLowerCase().includes(employeeSearchTerm));
+    if (contractorSearchTerm) contractors = contractors.filter(u => (u.username || '').toLowerCase().includes(contractorSearchTerm));
+
+    document.getElementById('employeesCount').textContent = employees.length;
+    document.getElementById('contractorsCount').textContent = contractors.length;
+
+    renderEmployeesTable(employees, t);
+    renderContractorsTable(contractors, t);
+}
+
+function roleOptionsHtml(selected) {
+    return ROLE_OPTIONS.map(r =>
+        `<option value="${r.value}" ${r.value === selected ? 'selected' : ''}>${r[currentLang]}</option>`
+    ).join('');
+}
+
+function renderEmployeesTable(employees, t) {
+    let wrap = document.getElementById('employeesTableWrap');
+    if (employees.length === 0) {
+        wrap.innerHTML = `<div class="empty-state">${t.noEmployees}</div>`;
+        return;
+    }
+
+    let pageHeaders = PAGE_FLAGS.map(p => `<th>${p[currentLang]}</th>`).join('');
+
+    let rows = employees.map(u => {
+        let pageCells = PAGE_FLAGS.map(p => {
+            let checked = (u[p.col] || '').toString().trim().toLowerCase() === 'yes';
+            return `<td><input type="checkbox" id="chk-${p.col}-${u.id}" ${checked ? 'checked' : ''} onchange="onRowChange('${u.id}')"></td>`;
+        }).join('');
+
+        let blockedBadge = u.is_blocked ? `<span class="status-badge blocked">${t.blockedTag}</span>` : '';
+        let blockBtn = u.is_blocked
+            ? `<button class="btn-unblock" onclick="toggleBlock('${u.id}', false, '${escapeForJsAttr(u.username)}')">${t.btnUnblock}</button>`
+            : `<button class="btn-block" onclick="toggleBlock('${u.id}', true, '${escapeForJsAttr(u.username)}')">${t.btnBlock}</button>`;
+
+        return `
+        <tr data-user-id="${u.id}" class="${u.is_blocked ? 'is-blocked-row' : ''}">
+            <td class="username-cell">${escapeHtml(u.username)}${blockedBadge}</td>
+            <td><select class="role-select" id="role-${u.id}" onchange="onRowChange('${u.id}')">${roleOptionsHtml(u.permissions)}</select></td>
+            <td><input type="checkbox" id="eng-${u.id}" ${u.is_engineer ? 'checked' : ''} onchange="onRowChange('${u.id}')"></td>
+            ${pageCells}
+            <td class="access-preview-cell" id="preview-${u.id}"></td>
+            <td>
+                <div class="row-actions">
+                    <button class="btn-save" id="save-${u.id}" onclick="saveEmployee('${u.id}')">${t.btnSave}</button>
+                    ${blockBtn}
+                    <button class="btn-delete" onclick="deleteUser('${u.id}', '${escapeForJsAttr(u.username)}')">${t.btnDelete}</button>
+                </div>
+            </td>
+        </tr>`;
+    }).join('');
+
+    wrap.innerHTML = `
+    <table class="perm-table">
+        <thead>
+            <tr>
+                <th>${t.colUser}</th>
+                <th>${t.colRole}</th>
+                <th>${t.colEngineer}</th>
+                ${pageHeaders}
+                <th>${t.colAccess}</th>
+                <th>${t.colActions}</th>
+            </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+    </table>`;
+
+    employees.forEach(u => onRowChange(u.id));
+}
+
+function renderContractorsTable(contractors, t) {
+    let wrap = document.getElementById('contractorsTableWrap');
+    if (contractors.length === 0) {
+        wrap.innerHTML = `<div class="empty-state">${t.noContractors}</div>`;
+        return;
+    }
+
+    let rows = contractors.map(u => {
+        let blockedBadge = u.is_blocked ? `<span class="status-badge blocked">${t.blockedTag}</span>` : '';
+        let blockBtn = u.is_blocked
+            ? `<button class="btn-unblock" onclick="toggleBlock('${u.id}', false, '${escapeForJsAttr(u.username)}')">${t.btnUnblock}</button>`
+            : `<button class="btn-block" onclick="toggleBlock('${u.id}', true, '${escapeForJsAttr(u.username)}')">${t.btnBlock}</button>`;
+
+        return `
+        <tr data-user-id="${u.id}" class="${u.is_blocked ? 'is-blocked-row' : ''}">
+            <td class="username-cell">${escapeHtml(u.username)}${blockedBadge}</td>
+            <td><input type="text" class="company-input" id="company-${u.id}" value="${escapeHtml(u.company_name || '')}"></td>
+            <td class="access-preview-cell">${renderAccessChips([SPECIAL_PAGES.contractorSubmit])}</td>
+            <td>
+                <div class="row-actions">
+                    <button class="btn-save" id="save-${u.id}" onclick="saveContractor('${u.id}')">${t.btnSave}</button>
+                    ${blockBtn}
+                    <button class="btn-delete" onclick="deleteUser('${u.id}', '${escapeForJsAttr(u.username)}')">${t.btnDelete}</button>
+                </div>
+            </td>
+        </tr>`;
+    }).join('');
+
+    wrap.innerHTML = `
+    <table class="perm-table">
+        <thead>
+            <tr>
+                <th>${t.colUser}</th>
+                <th>${t.colCompany}</th>
+                <th>${t.colAccess}</th>
+                <th>${t.colActions}</th>
+            </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+    </table>`;
+}
+
+function saveEmployee(userId) {
+    window.guardUpload(async function () {
+        let t = dictionary[currentLang];
+        let btn = document.getElementById(`save-${userId}`);
+        btn.disabled = true;
+        btn.classList.remove('saved');
+        btn.textContent = '...';
+
+        let payload = {
+            permissions: document.getElementById(`role-${userId}`).value,
+            is_engineer: document.getElementById(`eng-${userId}`).checked
+        };
+        PAGE_FLAGS.forEach(p => {
+            payload[p.col] = document.getElementById(`chk-${p.col}-${userId}`).checked ? 'yes' : 'no';
+        });
+
+        try {
+            const { error } = await supabaseClient.from('profiles').update(payload).eq('id', userId);
+            if (error) throw error;
+            btn.disabled = false;
+            btn.classList.add('saved');
+            btn.textContent = t.saved;
+            setTimeout(() => loadUsers(), 900); // إعادة تحميل - يهم لو الدور اتغيّر لـ contractor فينتقل الصف للجدول التاني
+        } catch (err) {
+            console.error(err);
+            alert(t.errSave + (err.message ? " (" + err.message + ")" : ""));
+            btn.disabled = false;
+            btn.textContent = t.btnSave;
+        }
+    });
+}
+
+function saveContractor(userId) {
+    window.guardUpload(async function () {
+        let t = dictionary[currentLang];
+        let btn = document.getElementById(`save-${userId}`);
+        btn.disabled = true;
+        btn.classList.remove('saved');
+        btn.textContent = '...';
+
+        let payload = {
+            company_name: document.getElementById(`company-${userId}`).value.trim() || null
+        };
+
+        try {
+            const { error } = await supabaseClient.from('profiles').update(payload).eq('id', userId);
+            if (error) throw error;
+            btn.disabled = false;
+            btn.classList.add('saved');
+            btn.textContent = t.saved;
+            setTimeout(() => { btn.classList.remove('saved'); btn.textContent = t.btnSave; }, 2000);
+        } catch (err) {
+            console.error(err);
+            alert(t.errSave + (err.message ? " (" + err.message + ")" : ""));
+            btn.disabled = false;
+            btn.textContent = t.btnSave;
+        }
+    });
+}
+
+function toggleBlock(userId, blockedValue, username) {
+    let t = dictionary[currentLang];
+    let confirmMsg = (blockedValue ? t.confirmBlock : t.confirmUnblock).replace('{name}', username);
+    if (!confirm(confirmMsg)) return;
+
+    window.guardUpload(async function () {
+        try {
+            const { error } = await supabaseClient.from('profiles').update({ is_blocked: blockedValue }).eq('id', userId);
+            if (error) throw error;
+            loadUsers();
+        } catch (err) {
+            console.error(err);
+            alert(t.blockError + (err.message ? " (" + err.message + ")" : ""));
+        }
+    });
+}
+
+function deleteUser(userId, username) {
+    let t = dictionary[currentLang];
+    if (!confirm(t.confirmDelete.replace('{name}', username))) return;
+
+    window.guardUpload(async function () {
+        try {
+            let session = window.__guardSession || (await supabaseClient.auth.getSession()).data.session;
+            if (!session) throw new Error('No active session');
+
+            let response = await fetch(DELETE_USER_FUNCTION_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session.access_token}`,
+                    'apikey': SUPABASE_KEY
+                },
+                body: JSON.stringify({ userId })
+            });
+            let result = await response.json();
+            if (!response.ok || result.error) throw new Error(result.error || 'Unknown error');
+            loadUsers();
+        } catch (err) {
+            console.error('Delete user error:', err);
+            alert(t.deleteError + (err.message ? ' (' + err.message + ')' : ''));
+        }
+    });
+}
+
+document.addEventListener('authguard:ready', function () {
+    populateNewRoleSelect();
+    loadUsers();
+});
+</script>
+
+</body>
+</html>
