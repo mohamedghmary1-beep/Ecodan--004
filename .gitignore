@@ -5,6 +5,5 @@ local-secrets/*.json
 # متغيرات البيئة المحلية
 .env
 .env.local
-
 # Supabase CLI local linkage metadata
 supabase/.temp/
