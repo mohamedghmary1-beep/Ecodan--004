@@ -311,6 +311,60 @@ button:hover, .btn:hover, input[type="submit"]:hover { transform: translateY(-1p
 table { border-color: var(--border); }
 th { letter-spacing: .02em; }
 td, th { vertical-align: middle; }
+
+/* ---- Lightweight page motion and account welcome ---- */
+body.mdceo-page-ready {
+    animation: mdceo-page-enter .28s ease-out both;
+}
+body.mdceo-page-leaving {
+    animation: mdceo-page-leave .16s ease-in both;
+    pointer-events: none;
+}
+@keyframes mdceo-page-enter {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+@keyframes mdceo-page-leave {
+    from { opacity: 1; transform: translateY(0); }
+    to { opacity: 0; transform: translateY(-5px); }
+}
+.mdceo-welcome-toast {
+    position: fixed;
+    top: 22px;
+    inset-inline-end: 24px;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    max-width: min(360px, calc(100vw - 32px));
+    padding: 13px 17px;
+    color: #fff;
+    background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+    border: 1px solid rgba(255, 255, 255, .25);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+    animation: mdceo-welcome-in .42s cubic-bezier(.2, .8, .2, 1) both;
+}
+.mdceo-welcome-toast.is-hiding { animation: mdceo-welcome-out .3s ease-in both; }
+.mdceo-welcome-toast i { font-size: 20px; color: #fef3c7; }
+.mdceo-welcome-toast strong, .mdceo-welcome-toast span { display: block; }
+.mdceo-welcome-toast strong { font-size: 14px; }
+.mdceo-welcome-toast span { margin-top: 1px; font-size: 12px; opacity: .86; }
+@keyframes mdceo-welcome-in {
+    from { opacity: 0; transform: translateY(-12px) scale(.97); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes mdceo-welcome-out {
+    to { opacity: 0; transform: translateY(-8px) scale(.98); }
+}
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
 @media (max-width: 780px) {
     .wrap, .container, .dashboard-container { padding-inline: 16px !important; }
     .panel, .card, .summary-card, .request-card, .task-card { border-radius: var(--radius-md) !important; }

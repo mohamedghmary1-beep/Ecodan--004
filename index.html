@@ -773,7 +773,12 @@
             // لديه صلاحية عليها - وهو ما كان يؤدي مباشرة إلى رسالة "ليست لديك
             // صلاحية" فور تسجيل الدخول، إذا لم يكن دوره يشمل صلاحية الصفحة الرئيسية.
             const landingPage = firstAccessiblePage(profile, role) || 'index.html';
-            setTimeout(() => { window.location.href = landingPage === 'index.html' ? landingPage : 'pages/' + landingPage; }, 1000);
+            setTimeout(() => {
+                document.body.classList.add('mdceo-page-leaving');
+                setTimeout(() => {
+                    window.location.href = landingPage === 'index.html' ? landingPage : 'pages/' + landingPage;
+                }, 165);
+            }, 1000);
         } catch (err) {
             console.error("Login Error:", err);
             msgBox.innerText = t.errConn;

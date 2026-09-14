@@ -136,6 +136,48 @@
     function reveal() {
         const el = document.getElementById('authguard-hide-style');
         if (el) el.remove();
+        document.body.classList.add('mdceo-page-ready');
+    }
+
+    function showWelcome(username, userId) {
+        const storageKey = `mdceo-welcomed-${userId}`;
+        try {
+            if (sessionStorage.getItem(storageKey)) return;
+            sessionStorage.setItem(storageKey, '1');
+        } catch (e) { /* private browsing can deny storage; still show once */ }
+
+        const arabic = document.documentElement.dir === 'rtl' || document.documentElement.lang === 'ar';
+        const label = (username || (arabic ? 'مستخدم MDCEO' : 'MDCEO user')).trim();
+        const toast = document.createElement('div');
+        toast.className = 'mdceo-welcome-toast';
+        toast.setAttribute('role', 'status');
+        toast.innerHTML = '<i class="fa-solid fa-hand-sparkles" aria-hidden="true"></i>';
+        const content = document.createElement('div');
+        const title = document.createElement('strong');
+        title.textContent = arabic ? `أهلاً وسهلاً، ${label}` : `Welcome, ${label}`;
+        const note = document.createElement('span');
+        note.textContent = arabic ? 'مرحبًا بك في حسابك على MDCEO' : 'Welcome to your MDCEO account';
+        content.append(title, note);
+        toast.appendChild(content);
+        document.body.appendChild(toast);
+        window.setTimeout(function () {
+            toast.classList.add('is-hiding');
+            window.setTimeout(function () { toast.remove(); }, 300);
+        }, 3600);
+    }
+
+    function setupPageTransitions() {
+        document.addEventListener('click', function (event) {
+            const link = event.target.closest('a[href]');
+            if (!link || event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+            if (link.target && link.target !== '_self' || link.hasAttribute('download')) return;
+            const destination = new URL(link.href, window.location.href);
+            if (destination.origin !== window.location.origin || destination.pathname === window.location.pathname) return;
+            if (!destination.pathname.endsWith('.html') && !destination.pathname.endsWith('/')) return;
+            event.preventDefault();
+            document.body.classList.add('mdceo-page-leaving');
+            window.setTimeout(function () { window.location.assign(destination.href); }, 165);
+        });
     }
 
     // Figures out where "the page he came from" actually is, so the
@@ -370,6 +412,8 @@
 
         reveal();
         injectAccountMenu(profile.username, session.user.email);
+        showWelcome(profile.username, session.user.id);
+        setupPageTransitions();
 
         document.dispatchEvent(new CustomEvent('authguard:ready', { detail: { role, profile } }));
 
@@ -411,6 +455,7 @@
     }
 
     window.logoutUser = function () {
+        try { sessionStorage.removeItem(`mdceo-welcomed-${window.__guardSession?.user?.id}`); } catch (e) { /* ignore */ }
         guardClient.auth.signOut().finally(function () {
             window.location.href = '../index.html';
         });
