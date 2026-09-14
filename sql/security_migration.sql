@@ -25,8 +25,19 @@ create table if not exists public.profiles (
     page_home text default 'no',
     page_weekly_report text default 'no',
     page_general_by_activity text default 'no',
+    page_contractor_submit text default 'no',
+    is_engineer boolean not null default false,
+    company_name text,
+    is_blocked boolean not null default false,
     created_at timestamptz default now()
 );
+
+-- Keep existing installations compatible with the profile fields used by the
+-- access guard.  These are no-ops where the columns already exist.
+alter table public.profiles add column if not exists page_contractor_submit text default 'no';
+alter table public.profiles add column if not exists is_engineer boolean not null default false;
+alter table public.profiles add column if not exists company_name text;
+alter table public.profiles add column if not exists is_blocked boolean not null default false;
 
 alter table public.profiles enable row level security;
 
@@ -38,7 +49,9 @@ returns boolean
 language sql stable security definer set search_path = public as $$
     select exists (
         select 1 from public.profiles
-        where id = auth.uid() and lower(coalesce(permissions,'')) = 'administrator'
+        where id = auth.uid()
+          and coalesce(is_blocked, false) = false
+          and lower(coalesce(permissions,'')) = 'administrator'
     );
 $$;
 
@@ -50,15 +63,29 @@ language sql stable security definer set search_path = public as $$
     select exists (
         select 1 from public.profiles
         where id = auth.uid()
+          and coalesce(is_blocked, false) = false
           and lower(coalesce(permissions,'admin')) in ('administrator','admin')
+    );
+$$;
+
+-- Use this in every RLS policy that permits a signed-in user.  UI blocking is
+-- not a security boundary: a previously issued JWT must also be rejected.
+create or replace function public.is_active_user()
+returns boolean
+language sql stable security definer set search_path = public as $$
+    select exists (
+        select 1 from public.profiles
+        where id = auth.uid() and coalesce(is_blocked, false) = false
     );
 $$;
 
 -- SECURITY DEFINER helpers must not be executable by anonymous callers.
 revoke all on function public.is_admin() from public;
 revoke all on function public.can_edit() from public;
+revoke all on function public.is_active_user() from public;
 grant execute on function public.is_admin() to authenticated;
 grant execute on function public.can_edit() to authenticated;
+grant execute on function public.is_active_user() to authenticated;
 
 drop policy if exists "profiles_select_own_or_admin" on public.profiles;
 create policy "profiles_select_own_or_admin" on public.profiles
@@ -122,7 +149,7 @@ alter table public.contractor_requests enable row level security;
 
 drop policy if exists "submittals_select_auth" on public.submittals;
 create policy "submittals_select_auth" on public.submittals
-    for select using (auth.role() = 'authenticated');
+    for select using (auth.role() = 'authenticated' and public.is_active_user());
 drop policy if exists "submittals_write_editors" on public.submittals;
 create policy "submittals_write_editors" on public.submittals
     for all using (public.can_edit()) with check (public.can_edit());
@@ -138,21 +165,21 @@ create policy "upload_requests_admin_only" on public.upload_requests
 
 drop policy if exists "project_performance_select_auth" on public.project_performance;
 create policy "project_performance_select_auth" on public.project_performance
-    for select using (auth.role() = 'authenticated');
+    for select using (auth.role() = 'authenticated' and public.is_active_user());
 drop policy if exists "project_performance_write_editors" on public.project_performance;
 create policy "project_performance_write_editors" on public.project_performance
     for all using (public.can_edit()) with check (public.can_edit());
 
 drop policy if exists "weekly_reports_select_auth" on public.weekly_reports;
 create policy "weekly_reports_select_auth" on public.weekly_reports
-    for select using (auth.role() = 'authenticated');
+    for select using (auth.role() = 'authenticated' and public.is_active_user());
 drop policy if exists "weekly_reports_write_editors" on public.weekly_reports;
 create policy "weekly_reports_write_editors" on public.weekly_reports
     for all using (public.can_edit()) with check (public.can_edit());
 
 drop policy if exists "printed_reports_select_auth" on public.printed_reports;
 create policy "printed_reports_select_auth" on public.printed_reports
-    for select using (auth.role() = 'authenticated');
+    for select using (auth.role() = 'authenticated' and public.is_active_user());
 drop policy if exists "printed_reports_insert_editors" on public.printed_reports;
 create policy "printed_reports_insert_editors" on public.printed_reports
     for insert with check (public.can_edit());
@@ -167,15 +194,25 @@ drop policy if exists "contractor_requests_update_engineer_or_admin" on public.c
 drop policy if exists "contractor_requests_delete_admin_only" on public.contractor_requests;
 create policy "contractor_requests_select_participants" on public.contractor_requests
     for select using (
-        public.is_admin() or contractor_id = auth.uid() or engineer_id = auth.uid()
+        public.is_active_user()
+        and (public.is_admin() or contractor_id = auth.uid() or engineer_id = auth.uid())
     );
 create policy "contractor_requests_insert_contractor" on public.contractor_requests
-    for insert with check (public.is_admin() or contractor_id = auth.uid());
+    for insert with check (
+        public.is_active_user()
+        and (public.is_admin() or contractor_id = auth.uid())
+    );
 create policy "contractor_requests_update_engineer_or_admin" on public.contractor_requests
-    for update using (public.is_admin() or engineer_id = auth.uid())
-    with check (public.is_admin() or engineer_id = auth.uid());
+    for update using (
+        public.is_active_user()
+        and (public.is_admin() or engineer_id = auth.uid())
+    )
+    with check (
+        public.is_active_user()
+        and (public.is_admin() or engineer_id = auth.uid())
+    );
 create policy "contractor_requests_delete_admin_only" on public.contractor_requests
-    for delete using (public.is_admin());
+    for delete using (public.is_active_user() and public.is_admin());
 
 -- ---------------------------------------------------------------------
 -- STEP 4 - Storage: task-attachments bucket, currently PUBLIC.
@@ -190,11 +227,19 @@ update storage.buckets set public = false where id = 'task-attachments';
 
 drop policy if exists "attachments_select_auth" on storage.objects;
 create policy "attachments_select_auth" on storage.objects
-    for select using (bucket_id = 'task-attachments' and auth.role() = 'authenticated');
+    for select using (
+        bucket_id = 'task-attachments'
+        and auth.role() = 'authenticated'
+        and public.is_active_user()
+    );
 
 drop policy if exists "attachments_insert_auth" on storage.objects;
 create policy "attachments_insert_auth" on storage.objects
-    for insert with check (bucket_id = 'task-attachments' and auth.role() = 'authenticated');
+    for insert with check (
+        bucket_id = 'task-attachments'
+        and auth.role() = 'authenticated'
+        and public.is_active_user()
+    );
 
 drop policy if exists "attachments_delete_editors" on storage.objects;
 create policy "attachments_delete_editors" on storage.objects

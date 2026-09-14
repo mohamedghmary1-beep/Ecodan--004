@@ -9,7 +9,8 @@ create table if not exists public.temporary_access_tokens (
     request_id bigint not null,
     source_table text not null check (source_table in ('submittals', 'upload_requests', 'contractor_requests')),
     created_at timestamptz not null default now(),
-    expires_at timestamptz not null
+    expires_at timestamptz not null,
+    used_at timestamptz
 );
 
 alter table public.temporary_access_tokens enable row level security;
@@ -19,6 +20,8 @@ revoke all on public.temporary_access_tokens from anon, authenticated;
 -- version of this migration. Tokens are now scoped by source_table.
 alter table public.temporary_access_tokens
     add column if not exists source_table text;
+alter table public.temporary_access_tokens
+    add column if not exists used_at timestamptz;
 update public.temporary_access_tokens
     set source_table = 'contractor_requests'
     where source_table is null;
@@ -27,8 +30,12 @@ alter table public.temporary_access_tokens
 do $$
 declare fk record;
 begin
+    -- Remove only the legacy contractor_requests foreign key. Never remove
+    -- unrelated constraints that another migration may have added.
     for fk in select conname from pg_constraint
-        where conrelid = 'public.temporary_access_tokens'::regclass and contype = 'f'
+        where conrelid = 'public.temporary_access_tokens'::regclass
+          and contype = 'f'
+          and confrelid = 'public.contractor_requests'::regclass
     loop
         execute format('alter table public.temporary_access_tokens drop constraint %I', fk.conname);
     end loop;
