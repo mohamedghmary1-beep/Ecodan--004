@@ -515,6 +515,18 @@ async function loadReportsList() {
 let currentViewedReportId = null;
 let currentViewedReportNo = '';
 
+async function resolvePhotoUrls(list) {
+  const targets = (list || []).filter(p => p.path && !p.url);
+  if (!targets.length) return;
+  const { data, error } = await client.storage
+    .from('report-photos')
+    .createSignedUrls(targets.map(p => p.path), 6 * 60 * 60);
+  if (error) { console.error('createSignedUrls failed', error); return; }
+  const byPath = {};
+  (data || []).forEach(r => { if (r.signedUrl) byPath[r.path] = r.signedUrl; });
+  targets.forEach(p => { if (byPath[p.path]) p.url = byPath[p.path]; });
+}
+
 async function onSelectReport() {
   const id = document.getElementById('reportsSelect').value;
   const content = document.getElementById('reportContent');
@@ -525,6 +537,7 @@ async function onSelectReport() {
     if (error) throw error;
     currentViewedReportId = data.id;
     currentViewedReportNo = data.report_no || '';
+    await resolvePhotoUrls(data.photos || []);
     renderReport(data);
 
     // بيانات الأداء: لو التقرير ده فيه لقطة محفوظة وقت حفظه بنعرضها، ولو
@@ -732,7 +745,7 @@ function renderReport(data) {
       <div class="photo-grid">
         ${photos.map(p => `
           <div class="photo-block">
-            <img src="${p.dataUrl}">
+            <img src="${p.url || p.dataUrl || ''}">
             ${p.caption ? `<div class="photo-caption">${escapeHtml(p.caption)}</div>` : ''}
           </div>`).join('')}
       </div>`;
@@ -786,7 +799,7 @@ function buildPhotoPrintPagesHtml(photos) {
         <div class="photo-page-grid pv-count-${chunk.length}">
           ${chunk.map(p => `
             <div class="photo-block">
-              <img src="${p.dataUrl}">
+              <img src="${p.url || p.dataUrl || ''}">
               ${p.caption ? `<div class="photo-caption">${escapeHtml(p.caption)}</div>` : ''}
             </div>`).join('')}
         </div>
