@@ -1,0 +1,89 @@
+/* Shared screen identity. Report print layouts keep their own dimensions. */
+@media screen {
+  :root {
+    --primary: #002bff; --primary-hover: #007fff; --primary-dark: #0021c5;
+    --primary-light: #edf3ff; --bg-main: #f5f7fc; --bg-card: #fff;
+    --text-main: #14213d; --text-muted: #657491; --border: #dce5f4;
+    --exec-bg: #f5f7fc; --exec-text: #14213d; --exec-muted: #657491;
+    --exec-border: #dce5f4; --exec-blue: #002bff; --exec-gold: #002bff;
+    --radius-lg: 18px; --radius-md: 12px; --radius-sm: 8px;
+    --shadow-sm: 0 3px 14px #193c7806; --shadow-md: 0 10px 30px #193c7810;
+  }
+  body { min-height: 100dvh; }
+  body:not(:has(.nav-container)) { padding-inline-start: 0 !important; }
+  *, *::before, *::after { box-sizing: border-box; }
+  body .header, body .topbar {
+    background: #fffffff2 !important; border-bottom-color: var(--border);
+    color: var(--text-main) !important; min-height: 76px;
+  }
+  .mdceo-mark { color: var(--primary) !important; }
+  body .nav-container { border-inline-end-color: var(--border); }
+  .nav-brand-copy strong, .nav-brand-icon { color: var(--primary); }
+  .nav-brand-icon { background: var(--primary-light); }
+  .nav-container .nav-btn.active {
+    color: var(--primary) !important; background: var(--primary-light) !important;
+    border-color: #dce6ff !important;
+  }
+  .nav-container .nav-btn.active i { color: var(--primary); }
+  .nav-container .nav-btn:hover { background: #f0f5ff !important; }
+  .wrap, .container, .dashboard-container, .command { min-width: 0; }
+  .card, .panel, .box, .request-card, .task-card, .kpi-card, .stat-card,
+  .summary-card, .project-card, .employee-card, .pcard, .edit-panel-inner {
+    border-color: var(--border) !important; border-radius: 16px !important;
+    box-shadow: var(--shadow-sm) !important;
+  }
+  .container > .card { padding: clamp(20px, 3vw, 32px); }
+  .card h2, .panel h2, .section-title { color: var(--primary); }
+  .card h2 { line-height: 1.5; }
+  button, .btn, input[type="submit"] { border-radius: 10px; }
+  button:disabled, .btn:disabled { cursor: not-allowed; opacity: .6; transform: none !important; }
+  .btn-primary, button.primary, .btn-submit, .view-file-btn {
+    background: var(--primary) !important; color: #fff !important;
+  }
+  :is(.btn-primary, button.primary, .btn-submit, .view-file-btn):hover:not(:disabled) {
+    background: var(--primary-hover) !important;
+  }
+  .top-actions { gap: 8px; flex-wrap: wrap; padding: 16px 24px; }
+  .top-btn { background: #fff; color: var(--text-main); border: 1px solid var(--border); }
+  .form-group { min-width: 0; }
+  .form-group label { display: block; color: var(--text-main); font-weight: 600; margin-bottom: 8px; }
+  .form-group :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea) {
+    width: 100%; padding: 11px 13px; border-color: var(--border);
+  }
+  textarea { line-height: 1.65; resize: vertical; }
+  input[type="file"]::file-selector-button {
+    border: 0; border-radius: 7px; padding: 8px 12px; margin-inline-end: 12px;
+    background: var(--primary-light); color: var(--primary); cursor: pointer; font: inherit;
+  }
+  :is(input, select, textarea, button, a):focus-visible {
+    outline: 3px solid #007fff55 !important; outline-offset: 3px;
+  }
+  body:not(.performance-page):not(.register-page) table {
+    width: 100%; font-variant-numeric: tabular-nums;
+  }
+  body:not(.performance-page):not(.register-page) th {
+    background: #edf3ff !important; color: #26457d !important; white-space: nowrap;
+  }
+  body:not(.performance-page):not(.register-page) tbody tr:nth-child(even) td {
+    background-color: #fafcff;
+  }
+  body:not(.performance-page):not(.register-page) tbody tr:hover td { background-color: #f0f5ff; }
+  .table-wrap, .table-scroll, .table-container {
+    max-width: 100%; overflow-x: auto; overscroll-behavior-inline: contain;
+  }
+  .modal-content { max-width: calc(100vw - 32px); border-radius: 18px; }
+  dialog { max-width: calc(100vw - 32px); border: 1px solid var(--border); }
+  dialog::backdrop { background: #14213d66; backdrop-filter: blur(3px); }
+  .company-welcome, .company-field-value { border-radius: 12px; }
+  .field-hint, .card .sub { line-height: 1.7; }
+  .performance-page .report-card, .register-panel { border-color: #dce5f4; }
+  @media (max-width: 780px) {
+    body .header, body .topbar { min-height: 64px; gap: 8px !important; flex-wrap: wrap; }
+    .container > .card { padding: 20px 16px; }
+    .form-row { flex-direction: column; gap: 16px; }
+    .form-row > .form-group { width: 100%; flex-basis: auto !important; }
+    .top-actions { padding: 12px 16px; }
+    .top-actions .top-btn { flex: 1 1 auto; }
+    body:not(.performance-page):not(.register-page) :is(td, th) { padding: 11px 12px; }
+  }
+}
