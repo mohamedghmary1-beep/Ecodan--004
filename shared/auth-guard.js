@@ -103,7 +103,7 @@
     // الترتيب هنا بيمثل أولوية منطقية بس (مين الأنسب كصفحة هبوط)، مش قايمة
     // صلاحيات - كل صفحة لسه بتتفحص بـ pageIsAllowed() الحقيقية قبل ما تترشح.
     const REDIRECT_PRIORITY_PAGES = [
-        'home.html', 'task-list.html', 'summary.html', 'performance.html',
+        'home.html', 'task-list.html', 'summary.html', 'performance.html', 'issue-risk-register.html',
         'general_by_activity.html', 'weekly_report.html', 'weekly_report_view.html',
         'approvals.html', 'team_overview.html', 'engineer-review.html',
         'contractor-submit.html', 'permissions.html'
@@ -248,6 +248,9 @@
             return contractorFlag === 'yes';
         }
         if (role === 'contractor') return false;
+        if (pageName === 'issue-risk-register.html' || pageName === 'issue-risk-editor.html') {
+            return profile.page_register === 'yes';
+        }
 
         // Engineer review page: gated on the is_engineer flag, not on role,
         // so it layers on top of whatever normal role the engineer already has.
@@ -380,6 +383,12 @@
                 reveal();
             }
             return;
+        }
+
+        // Optional module permission: older deployments keep working before its migration.
+        {
+            const registerProfile = await guardClient.from('profiles').select('page_register').eq('id', session.user.id).maybeSingle();
+            if (!registerProfile.error) profile.page_register = registerProfile.data?.page_register;
         }
 
         const rawPerm = (profile.permissions || '').trim().toLowerCase();

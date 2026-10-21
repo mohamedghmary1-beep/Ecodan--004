@@ -124,11 +124,6 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
-            animation: brand-bg-zoom 18s ease-in-out infinite alternate;
-        }
-        @keyframes brand-bg-zoom {
-            from { transform: scale(1); }
-            to { transform: scale(1.08); }
         }
 
         .brand-overlay {
@@ -136,24 +131,6 @@
             inset: 0;
             background:
                 linear-gradient(160deg, rgba(15,23,42,0.94) 0%, rgba(30,64,175,0.55) 55%, rgba(15,23,42,0.9) 100%);
-        }
-
-        /* توهج/انبعاث ناعم متحرك خلف اسم الشركة */
-        .brand-glow {
-            position: absolute;
-            width: 520px;
-            height: 520px;
-            border-radius: 50%;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: radial-gradient(circle, rgba(96,165,250,0.4), transparent 70%);
-            animation: glow-pulse 5s ease-in-out infinite;
-            pointer-events: none;
-        }
-        @keyframes glow-pulse {
-            0%, 100% { opacity: 0.45; transform: translate(-50%, -50%) scale(0.9); }
-            50% { opacity: 0.85; transform: translate(-50%, -50%) scale(1.18); }
         }
 
         .brand-content {
@@ -172,38 +149,10 @@
         }
 
         .brand-logo {
-            font-size: 46px;
-            font-weight: 900;
-            letter-spacing: 2px;
-            margin-bottom: 6px;
+            margin-bottom: 22px;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 16px;
-            text-shadow: 0 4px 20px rgba(0,0,0,0.3);
-        }
-        .brand-logo i {
-            font-size: 38px;
-            color: #93c5fd;
-            animation: icon-pulse 3s ease-in-out infinite;
-        }
-        @keyframes icon-pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.15) rotate(-4deg); }
-        }
-
-        .brand-underline {
-            width: 100px;
-            height: 3px;
-            margin: 14px auto 22px;
-            border-radius: 999px;
-            background: linear-gradient(90deg, transparent, #93c5fd, transparent);
-            background-size: 200% 100%;
-            animation: underline-sweep 2.4s linear infinite;
-        }
-        @keyframes underline-sweep {
-            0% { background-position: 200% 0; }
-            100% { background-position: -200% 0; }
         }
 
         .brand-subtitle {
@@ -420,15 +369,14 @@
             .split-screen { flex-direction: column; }
             .brand-panel { flex: 0 0 auto; min-height: 220px; max-height: 260px; }
             .brand-content { padding: 24px; }
-            .brand-logo { font-size: 30px; }
-            .brand-glow { width: 300px; height: 300px; }
             .brand-tagline { display: none; }
             .form-panel { flex: 1 1 auto; min-height: auto; padding: 32px 22px 44px; }
             .lang-container { top: 16px; }
         }
     </style>
     <link rel="stylesheet" href="./shared/design-system.css?v=3">
-    <script src="./shared/nav-toggle.js?v=1" defer></script>
+    <link rel="stylesheet" href="./shared/apple-ui.css?v=5">
+    <link rel="stylesheet" href="./shared/login.css?v=1">
 </head>
 <body>
 
@@ -443,10 +391,10 @@
     <div class="brand-panel">
         <img class="brand-bg" src="./images/spark-building .jpeg" alt="ECODAN Offices - Spark Project">
         <div class="brand-overlay"></div>
-        <div class="brand-glow"></div>
         <div class="brand-content">
-            <div class="brand-logo"><i class="fa-solid fa-drafting-compass"></i> MDCEO</div>
-            <div class="brand-underline"></div>
+            <div class="brand-logo">
+                <img class="brand-logo-image" src="./images/WhatsApp Image 2025-11-24 at 10.33.58 AM.jpeg" alt="MDCEO">
+            </div>
             <p id="sub-header" class="brand-subtitle">Management &amp; Document Control System</p>
             <div class="brand-tagline">ECODAN Offices Complex — SPARK Project</div>
         </div>
@@ -566,7 +514,7 @@
         'general_by_activity.html': 'page_general_by_activity'
     };
     const REDIRECT_PRIORITY_PAGES = [
-        'home.html', 'task-list.html', 'summary.html', 'performance.html',
+        'home.html', 'task-list.html', 'summary.html', 'performance.html', 'issue-risk-register.html',
         'general_by_activity.html', 'weekly_report.html', 'weekly_report_view.html',
         'approvals.html', 'team_overview.html', 'engineer-review.html',
         'contractor-submit.html', 'permissions.html'
@@ -591,6 +539,9 @@
             return (profile.page_contractor_submit || '').toString().trim().toLowerCase() === 'yes';
         }
         if (role === 'contractor') return false;
+        if (pageName === 'issue-risk-register.html' || pageName === 'issue-risk-editor.html') {
+            return profile.page_register === 'yes';
+        }
         if (ENGINEER_ONLY_PAGES.includes(pageName)) return !!profile.is_engineer;
         if (ADMIN_AND_SUPER_ADMIN_PAGES.includes(pageName)) return role === 'admin' || role === 'super_admin';
         if (ADMIN_ONLY_PAGES.includes(pageName)) return false;
@@ -735,6 +686,10 @@
                 await supabaseClient.auth.signOut();
                 return;
             }
+
+            // Optional register permission keeps older schemas compatible during deployment.
+            const registerProfile = await supabaseClient.from('profiles').select('page_register').eq('id', authData.user.id).maybeSingle();
+            if (!registerProfile.error) profile.page_register = registerProfile.data?.page_register;
 
             // تحقق اسم الشركة (تاب الشركة فقط) - لو company_name متسجل على
             // الحساب ومختلف عن اللي اتكتب، نرفض الدخول ونعمل logout فورًا.

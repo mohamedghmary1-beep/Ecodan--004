@@ -109,7 +109,8 @@
         .mdceo-mark i { color: #93c5fd; font-size: 0.95em; }
     </style>
     <link rel="stylesheet" href="../shared/design-system.css?v=3">
-    <script src="../shared/nav-toggle.js?v=1" defer></script>
+    <script src="../shared/nav-toggle.js?v=3" defer></script>
+<link rel="stylesheet" href="../shared/apple-ui.css?v=5">
 </head>
 <body>
 
@@ -423,6 +424,13 @@ async function loadUsers() {
             .order('username', { ascending: true });
         if (error) throw error;
         users = data || [];
+        // The optional column is added by the register migration. Do not break older installs.
+        const registerFlags = await supabaseClient.from('profiles').select('id,page_register');
+        if (!registerFlags.error) {
+            if (!PAGE_FLAGS.some(p => p.col === 'page_register')) PAGE_FLAGS.push({ col: 'page_register', ar: 'المخاطر والمشكلات', en: 'Issues & Risks' });
+            const flags = new Map((registerFlags.data || []).map(p => [p.id, p.page_register]));
+            users.forEach(user => { user.page_register = flags.get(user.id) || 'no'; });
+        }
         render();
     } catch (err) {
         console.error(err);
@@ -621,8 +629,9 @@ function saveEmployee(userId) {
         });
 
         try {
-            const { error } = await supabaseClient.from('profiles').update(payload).eq('id', userId);
+            const { data: savedProfile, error } = await supabaseClient.from('profiles').update(payload).eq('id', userId).select('id' + (Object.hasOwn(payload, 'page_register') ? ',page_register' : '')).single();
             if (error) throw error;
+            if (!savedProfile || savedProfile.id !== userId || (Object.hasOwn(payload, 'page_register') && savedProfile.page_register !== payload.page_register)) throw new Error('Permission changes were not confirmed by the database. Refresh and try again.');
             btn.disabled = false;
             btn.classList.add('saved');
             btn.textContent = t.saved;

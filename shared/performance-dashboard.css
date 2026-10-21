@@ -1,0 +1,113 @@
+/* Performance report only. Live Chart.js canvases are retained for screen and PDF. */
+.performance-page{--report-blue:#002bff;--report-accent:#007fff;--report-text:#14213d;--report-border:#e2e8f0;background:#f5f7fb!important}
+.performance-page #dashboard{width:calc(100% - 40px);max-width:1160px;margin:20px auto 32px;font:12px/1.4 Arial,'Segoe UI',sans-serif;color:var(--report-text)}
+.performance-page .report-header{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:0 4px 12px;margin-bottom:12px;border-bottom:3px solid #d9e5ff}
+.performance-page .report-brand{display:flex;align-items:center;gap:10px;color:var(--report-blue)}
+.performance-page .report-brand img{width:48px;height:40px;object-fit:contain}
+.performance-page .report-brand strong{font-size:27px;letter-spacing:-1px}
+.performance-page .report-identity{text-align:right}
+.performance-page .report-identity h1{font-size:20px!important;font-weight:700!important;letter-spacing:-.4px;margin:0 0 5px;color:var(--report-blue)}
+.performance-page .report-identity p{margin:0;color:#596579;font-size:10px}
+.performance-page .report-meta-separator{padding:0 7px}
+.performance-page .report-card{padding:12px!important;border:1px solid #dce5f4!important;border-radius:10px!important;background:white!important;box-shadow:0 1px 6px #1a48a509!important;min-width:0;break-inside:avoid}
+.performance-page .report-card-title,.performance-page .pa-heading h2{display:flex;align-items:center;gap:8px;font:600 14px/1.3 Arial,sans-serif!important;color:var(--report-blue);margin:0 0 10px;padding:0;border:0}
+.performance-page .report-title-icon{display:inline-flex;align-items:center;justify-content:center;flex:0 0 24px;width:24px;height:24px;border-radius:5px;background:var(--report-blue);color:white}
+.performance-page .report-title-icon svg{width:18px;height:18px}
+.performance-page .planned-actual-panel{display:block;margin-bottom:12px}
+.performance-page .pa-heading{margin:0;padding:0;border:0}
+.performance-page .pa-chart{position:relative;width:100%;height:235px;margin:0 auto 10px;min-width:0}
+.performance-page canvas{max-width:100%;display:block}
+.performance-page .pa-chart,.performance-page .chart-box{position:relative;min-width:0}
+.performance-page .pa-chart>canvas,.performance-page .chart-box>canvas{position:absolute;inset:0;width:100%!important;height:100%!important;max-height:100%!important}
+.performance-page .pa-tables{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px}
+.performance-page .pa-table-wrap{min-width:0;border:1px solid var(--report-border);border-radius:6px;overflow:hidden}
+.performance-page .pa-table-wrap[hidden]{display:none}
+.performance-page .pa-table{width:100%;border-collapse:collapse;table-layout:fixed;font:11px/1.3 Arial,sans-serif;font-variant-numeric:tabular-nums}
+.performance-page .pa-table caption{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+.performance-page .pa-table th,.performance-page .pa-table td{text-align:right;padding:5px 8px;border-bottom:1px solid #e6ebf2;white-space:nowrap}
+.performance-page .pa-table th:first-child,.performance-page .pa-table td:first-child{text-align:left;width:30%}
+.performance-page .pa-table th{background:#eaf0ff!important;color:var(--report-blue)!important;font-weight:600}
+.performance-page .pa-table td:nth-child(2){color:#07875c}.performance-page .pa-table td:nth-child(3){color:var(--report-blue)}
+.performance-page .pa-table tbody tr:nth-child(even){background:#f7f9fc}
+.performance-page .pa-table tbody tr:last-child td{border-bottom:0}
+.performance-page .pa-positive{color:#178354}.performance-page .pa-negative{color:#d63543}
+.performance-page .report-grid{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:12px;align-items:start}
+.performance-page .report-column{display:flex;flex-direction:column;gap:10px;min-width:0}
+.performance-page .report-card .row-label{font-size:11px;margin-bottom:4px}
+.performance-page .bar-wrap{gap:8px;margin-bottom:9px}
+.performance-page .bar-track{height:13px;border-radius:3px;background:#edf2f9}
+.performance-page .bar-fill{background:#ff6646;border-radius:3px 0 0 3px}
+.performance-page .date-fill{background:linear-gradient(90deg,#3152ff,#6888ff)}
+.performance-page .bar-value{font-size:10px;font-weight:700;min-width:105px;text-align:right;font-variant-numeric:tabular-nums}
+.performance-page .dates-card .bar-value{min-width:75px}
+.performance-page .dates-card{margin-top:0}
+.performance-page .contract-card #valChangeOrder{font-size:11px;margin:0!important}
+.performance-page .perf-row{margin:0 0 8px;justify-content:space-evenly}
+.performance-page .perf-row .chart-box{width:90px!important;height:90px!important}
+.performance-page .gauge-label{font-size:10px;margin-top:3px}.performance-page .gauge-label.actual{color:#002bff}.performance-page .gauge-label.planned{color:#07875c}
+.performance-page .performance-card .section-title{font-size:10px;margin:8px 0 5px!important;border-bottom:1px solid #e6ebf2;padding-bottom:4px}
+.performance-page .manpower-box{display:grid;grid-template-columns:1fr 1fr;gap:3px 8px;align-items:center}
+.performance-page .manpower-box label{font-size:10px;margin:0!important}
+.performance-page .manpower-input{font-size:11px;padding:3px;margin:0;background:#f7f9fd;border-radius:4px}
+.performance-page .screen-detail{display:none}
+.performance-page .spi-card .chart-box{width:135px!important;height:72px!important}
+.performance-page .spi-value{font-size:23px;font-weight:700;color:#14213d;white-space:nowrap}
+.performance-page .analytics-card .chart-fill{height:220px;min-height:0!important;flex:none}
+.performance-page .cash-grid{grid-template-columns:1fr 1fr;gap:8px;flex:none!important;align-content:start!important}
+.performance-page .cash-col{gap:6px}
+.performance-page .cash-item{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:5px;font-size:9px}
+.performance-page .cash-item .lbl{min-width:0;font-size:9px;color:#344764;line-height:1.25}
+.performance-page .cash-item .box{min-width:0;padding:6px 4px;font-size:10px;white-space:nowrap;text-align:center;background:#f8faff!important;border-radius:5px!important;box-shadow:none!important}
+.performance-page .cash-item .box.negative{color:#cc2b39;border-color:#f3b5ba!important;background:#fff7f7!important}
+.performance-page .topbar .btn-print{display:inline-flex;align-items:center;gap:8px;background:#002bff!important;color:white!important;border:0;border-radius:10px;padding:11px 22px;font-size:14px;font-weight:700;box-shadow:0 3px 12px #002bff30;cursor:pointer}
+.performance-page .topbar .btn-print i{color:inherit!important}
+.performance-page .topbar .btn-print:hover{background:#007fff!important}
+@media screen{
+ /* A backdrop filter on the top bar would anchor its fixed sidebar over the report. */
+ .performance-page>.topbar{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+}
+@media screen and (max-width:760px){
+ .performance-page #dashboard{width:calc(100% - 24px);margin:12px auto}
+ .performance-page .report-grid,.performance-page .pa-tables{grid-template-columns:1fr}
+ .performance-page .report-header{align-items:flex-start}.performance-page .report-brand strong{font-size:20px}
+ .performance-page .report-brand img{width:32px;height:32px}
+ .performance-page .report-identity h1{font-size:15px!important}.performance-page .report-identity p{font-size:9px}
+ .performance-page .report-meta-separator{display:none}.performance-page .report-identity p span{display:block}
+ .performance-page .pa-chart{height:220px}.performance-page .pa-table{font-size:11px}
+}
+@media screen and (max-width:480px){
+ .performance-page .cash-grid{grid-template-columns:1fr}
+ .performance-page .cash-item .lbl{font-size:11px}.performance-page .cash-item .box{font-size:12px}
+}
+@media print{
+ @page{size:A4 portrait;margin:8mm}
+ html:has(body.performance-page),body.performance-page{width:auto!important;min-height:0!important;height:auto!important;margin:0!important;padding:0!important;background:white!important;overflow:visible!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+ .performance-page>.topbar,.performance-page>.header,.performance-page>.nav-container,.performance-page>#navToggleBtn,.performance-page>#loadingMsg,.performance-page>#editPanel,.performance-page .no-print,.performance-page .mdceo-welcome-toast{display:none!important}
+ .performance-page #dashboard{width:100%!important;max-width:100%!important;margin:0!important;padding:0!important;font-size:10px;line-height:1.25}
+ .performance-page .report-header{padding:0 0 7px;margin-bottom:7px;gap:8px}
+ .performance-page .report-brand img{width:32px;height:30px}.performance-page .report-brand strong{font-size:23px}
+ .performance-page .report-identity h1{font-size:15px!important}.performance-page .report-identity p{font-size:8px}
+ .performance-page .report-card{padding:8px!important;border-radius:6px!important;box-shadow:none!important;break-inside:avoid;page-break-inside:avoid}
+ .performance-page .report-card-title,.performance-page .pa-heading h2{font-size:11px!important;gap:6px;margin-bottom:6px}
+ .performance-page .report-title-icon{width:19px;height:19px;flex-basis:19px}.performance-page .report-title-icon svg{width:14px;height:14px}
+ .performance-page .planned-actual-panel{margin-bottom:8px}
+ .performance-page .pa-chart{width:100%;height:170px;margin-bottom:6px}
+ .performance-page .pa-tables{grid-template-columns:1fr 1fr!important;gap:8px}
+ .performance-page .pa-table{font-size:9px;line-height:1.25}
+ .performance-page .pa-table td,.performance-page .pa-table th{padding:3px 5px;font-size:9px}
+ .performance-page .pa-table tr{break-inside:avoid;page-break-inside:avoid}.performance-page .pa-table thead{display:table-header-group}
+ .performance-page .report-grid{grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr)!important;gap:8px}
+ .performance-page .report-column{gap:7px}
+ .performance-page .report-card .row-label{font-size:9px;margin-bottom:3px}
+ .performance-page .bar-track{height:11px}.performance-page .bar-wrap{gap:6px;margin-bottom:6px}
+ .performance-page .bar-value{font-size:9px;min-width:94px}.performance-page .dates-card .bar-value{min-width:63px}
+ .performance-page .contract-card #valChangeOrder{font-size:9px}
+ .performance-page .perf-row .chart-box{width:68px!important;height:68px!important}
+ .performance-page .gauge-label{font-size:9px}.performance-page .perf-row{margin-bottom:4px}
+ .performance-page .performance-card .section-title{font-size:9px;margin:5px 0!important}
+ .performance-page .manpower-box label{font-size:9px}.performance-page .manpower-input{font-size:9px;padding:2px}
+ .performance-page .spi-card .chart-box{width:113px!important;height:62px!important}.performance-page .spi-value{font-size:20px}
+ .performance-page .analytics-card .chart-fill{height:170px;min-height:0!important}
+ .performance-page .cash-grid{gap:6px}.performance-page .cash-col{gap:5px}
+ .performance-page .cash-item .lbl{font-size:8px}.performance-page .cash-item .box{font-size:9px;padding:5px 3px}
+}

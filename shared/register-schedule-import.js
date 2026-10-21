@@ -1,0 +1,24 @@
+(function(){
+ 'use strict';
+ const C=window.RegisterCore,$=id=>document.getElementById(id);let draft=null;
+ function date(v){if(v==null||String(v).trim()==='')return null;if(typeof v==='number')return new Date(Date.UTC(1899,11,30)+Math.round(v)*86400000).toISOString().slice(0,10);return C.parsePeriod(String(v).trim().replace(/\s+A$/i,''));}
+ function number(v){if(v==null||String(v).trim()==='')return null;const n=Number(String(v).replace(/,/g,''));if(!Number.isFinite(n))throw Error('Invalid numeric value: '+String(v).slice(0,30));return n;}
+ function parse(raw){const rows=[],stack=[];for(let i=1;i<raw.length;i++){let r=raw[i]||[];const continuation=typeof r[1]==='number';if(continuation){const previous=rows.at(-1);r=[(previous?.activity_id||'ROW')+'-CONT-'+(i+1),String(r[0]||'Continuation').trim(),...r.slice(1)];}const a=String(r[0]??''),b=String(r[1]??'').trim();if(!a.trim()&&!b)continue;
+   const level=continuation?(rows.at(-1)?.level||0):Math.floor((a.match(/^\s*/)?.[0].length||0)/2),kind=rows.length===0?'project':b?'activity':'wbs',split=a.trim().match(/^(\S+)\s{2,}(.+)$/),code=split?split[1]:a.trim();while(stack.length&&stack.at(-1).level>=level)stack.pop();const parent=continuation?rows.at(-1)?.parent_wbs_code||null:stack.at(-1)?.code||null;
+   for(const j of [4,5,6,7])if(r[j]!=null&&String(r[j]).trim()&&!date(r[j]))throw Error('Unrecognized date on row '+(i+1));
+   rows.push({row_no:i+1,kind,level,wbs_code:kind==='activity'?parent:code,parent_wbs_code:parent,activity_id:kind==='activity'?a.trim():null,name:b||(split?split[2]:code),original_duration:number(r[2]),remaining_duration:number(r[3]),bl_start:date(r[4]),bl_finish:date(r[5]),start_date:date(r[6]),finish_date:date(r[7]),start_is_actual:/\sA\s*$/i.test(String(r[6]??'')),finish_is_actual:/\sA\s*$/i.test(String(r[7]??'')),total_float:number(r[8]),physical_pct:number(r[9]),budgeted_cost:number(r[10]),planned_value:number(r[11]),earned_value:number(r[12]),schedule_pct:number(r[13]),performance_pct:number(r[14]),schedule_variance:number(r[15])});if(kind!=='activity')stack.push({code,level});
+  }if(!rows.some(r=>r.kind==='activity'))throw Error('No activities found in the PMS worksheet.');return rows;}
+ $('importScheduleAction').onclick=()=>{if(!window.canEditDashboard)return;if(Number($('projectSelect').value)!==1)return notify.error('The existing Primavera import is configured for ECODAN only.');$('scheduleImportDialog').showModal();};
+ $('closeScheduleImport').onclick=()=>$('scheduleImportDialog').close();
+ $('registerScheduleFile').onchange=async e=>{draft=null;$('registerImportSubmit').disabled=true;try{const file=e.target.files[0];if(!file)return;if(file.size>20*1024*1024)throw Error('Workbook must be 20 MB or smaller.');if(!window.XLSX)throw Error('Spreadsheet library unavailable.');const book=XLSX.read(await file.arrayBuffer(),{type:'array',cellDates:false});if(!book.Sheets.PMS)throw Error('A worksheet named PMS is required.');draft={name:file.name,rows:parse(XLSX.utils.sheet_to_json(book.Sheets.PMS,{header:1,raw:true,defval:null,blankrows:true}))};$('scheduleImportPreview').textContent=`${draft.rows.length} rows, ${draft.rows.filter(r=>r.kind==='activity').length} activities. Confirm the schedule data date before importing.`;$('registerImportSubmit').disabled=false;}catch(error){$('scheduleImportPreview').textContent=error.message;}};
+ $('scheduleImportForm').onsubmit=async e=>{e.preventDefault();if(!window.canEditDashboard||!draft)return;const client=window.__guardClient;let id=null;$('registerImportSubmit').disabled=true;
+  try{const result=await client.from('schedule_imports').insert({data_date:$('registerScheduleDate').value,file_name:draft.name,is_current:false}).select('id').single();if(result.error)throw result.error;id=result.data.id;
+   for(let offset=0;offset<draft.rows.length;offset+=500){const r=await client.from('schedule_activities').insert(draft.rows.slice(offset,offset+500).map(row=>({...row,import_id:id})));if(r.error)throw r.error;$('scheduleImportPreview').textContent=`Uploaded ${Math.min(offset+500,draft.rows.length)} / ${draft.rows.length} rows…`;}
+   const r=await client.rpc('activate_schedule_import',{new_import_id:id,expected_rows:draft.rows.length});if(r.error)throw r.error;id=null;$('scheduleImportPreview').textContent='Schedule import activated.';document.dispatchEvent(new CustomEvent('register:schedule-imported'));notify.success('Schedule imported.');
+  }catch(error){
+   // A lost activation response can follow a committed activation. Never delete a current import.
+   if(id)await client.from('schedule_imports').delete().eq('id',id).eq('is_current',false);
+   $('scheduleImportPreview').textContent='Import failed or could not be confirmed: '+error.message+' Reload to check the current schedule.';
+  }finally{$('registerImportSubmit').disabled=false;}
+ };
+})();

@@ -1,0 +1,284 @@
+@media screen {
+  body:has(#tasks) .container {
+    max-width: 1500px;
+    padding-top: 24px;
+  }
+
+  body:has(#tasks) .employee-toolbar {
+    gap: 18px;
+    padding: 14px 20px;
+    border: 1px solid #e9e9ed;
+    border-radius: 18px;
+    box-shadow: 0 2px 12px #00000004;
+  }
+
+  body:has(#tasks) .employee-toolbar-label {
+    color: #5d6472;
+    font-size: 11px;
+    letter-spacing: .08em;
+  }
+
+  body:has(#tasks) .employee {
+    border-color: #e5e7ed;
+    background: #fff;
+    color: #424b5d;
+  }
+
+  body:has(#tasks) .employee.active {
+    border-color: #dce7ff;
+    background: #eaf1ff;
+    color: #244f9e;
+    box-shadow: none;
+  }
+
+  body:has(#tasks) .employee.active .emp-open-badge {
+    background: #d8e5ff;
+    color: #244f9e;
+  }
+
+  body:has(#tasks) .content {
+    padding: 20px 0;
+  }
+
+  body:has(#tasks) .content > .card {
+    padding: 22px;
+    border-radius: 20px !important;
+  }
+
+  body:has(#tasks) .content > .card h2 {
+    margin-bottom: 12px;
+    font-size: 19px;
+  }
+
+  body:has(#tasks) .stats-bar {
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  body:has(#tasks) .stat-pill {
+    min-height: 34px;
+    padding: 6px 12px;
+    border: 0;
+    font-size: 12px;
+  }
+
+  body:has(#tasks) .filter-group {
+    gap: 4px;
+    margin: 14px 0;
+    background: #f3f5f8;
+    border-radius: 12px;
+    padding: 4px;
+  }
+
+  body:has(#tasks) .filter-group button {
+    min-height: 36px;
+    padding: 7px 14px;
+    border-radius: 9px;
+    color: #626a79;
+  }
+
+  body:has(#tasks) .filter-group button.active-filter {
+    background: #fff !important;
+    color: #244f9e !important;
+    border-color: transparent !important;
+    box-shadow: 0 1px 4px #17284a12 !important;
+  }
+
+  body:has(#tasks) .search-input {
+    min-height: 44px;
+    border-radius: 12px;
+    background: #f8f9fb;
+  }
+
+  body:has(#tasks) #tasks {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: stretch;
+    gap: 16px;
+  }
+
+  body:has(#tasks) #tasks > .task {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    padding: 15px;
+    border: 1px solid #e8eaf0;
+    border-radius: 18px;
+    border-top: 1px solid #e8eaf0;
+    background: #fff;
+    box-shadow: 0 3px 16px #17284a08;
+  }
+
+  body:has(#tasks) #tasks > .task:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 30px #17284a12;
+  }
+
+  body:has(#tasks) .task-header-row {
+    align-items: center;
+    margin-bottom: 7px;
+  }
+
+  body:has(#tasks) .task-activity {
+    max-width: 100%;
+    padding: 4px 9px;
+    overflow: hidden;
+    background: #eef3ff;
+    color: #315fc5;
+    font-size: 11px;
+    letter-spacing: .04em;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  body:has(#tasks) .title {
+    margin: 0 0 9px;
+    color: #222a38;
+    font-size: 14px;
+    line-height: 1.4;
+  }
+
+  body:has(#tasks) .meta-tags {
+    gap: 6px;
+    margin: 0 0 8px;
+  }
+
+  body:has(#tasks) .tag {
+    padding: 4px 8px;
+    border: 0;
+    background: #f3f5f8;
+    color: #596273;
+    font-size: 11px;
+    line-height: 1.3;
+  }
+
+  body:has(#tasks) .revision-header,
+  body:has(#tasks) .attachments-header,
+  body:has(#tasks) .link-btn,
+  body:has(#tasks) .attachment-chip,
+  body:has(#tasks) .inline-rev-file-label {
+    font-size: 12px;
+  }
+
+  body:has(#tasks) .revision-header,
+  body:has(#tasks) .attachments-header,
+  body:has(#tasks) .status-container {
+    line-height: 1.4;
+  }
+
+  body:has(#tasks) .code-tag,
+  body:has(#tasks) .status-badge {
+    min-height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+  }
+
+  body:has(#tasks) .revision-box {
+    margin-top: 8px;
+    padding: 10px 11px;
+    border: 1px solid #eceef2;
+    border-inline-start: 3px solid #dce5f5;
+    border-radius: 13px;
+    background: #fafbfc;
+  }
+
+  body:has(#tasks) .revision-box.is-pending {
+    border-color: #f4e4b8;
+    border-inline-start-color: #e9ae41;
+    background: #fffcf4;
+  }
+
+  body:has(#tasks) .inline-rev-upload {
+    padding: 10px;
+  }
+
+  body:has(#tasks) .inline-rev-upload .inline-rev-file-label {
+    min-height: 36px;
+    padding: 7px 13px;
+  }
+
+  body:has(#tasks) .inline-rev-upload .inline-rev-codes button {
+    min-height: 36px;
+    padding: 6px 0;
+    font-size: 13px;
+  }
+
+  body:has(#tasks) .inline-rev-upload .inline-rev-send {
+    min-height: 36px;
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+
+  body:has(#tasks) .inline-rev-upload .inline-rev-codes {
+    margin-bottom: 8px;
+  }
+
+  body:has(#tasks) .inline-rev-upload button,
+  body:has(#tasks) .revision-box .link-btn {
+    min-height: 36px;
+  }
+
+  body:has(#tasks) .revision-box .link-btn {
+    padding: 7px 12px;
+  }
+
+  body:has(#tasks) .attachments-box {
+    border-color: #e4e8ef;
+    border-radius: 13px;
+    background: #fafbfc;
+    padding: 11px 13px;
+  }
+
+  body:has(#tasks) .attachment-chip {
+    min-height: 32px;
+    padding: 5px 10px;
+  }
+
+  body:has(#tasks) .status-container {
+    justify-content: space-between;
+    margin-top: 11px;
+    padding-top: 9px;
+    border-color: #eff0f3;
+    color: #707887;
+    font-size: 12px;
+  }
+
+  body:has(#tasks) .status-badge {
+    padding: 4px 9px;
+  }
+
+  @media (max-width: 980px) {
+    body:has(#tasks) #tasks {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  @media (max-width: 780px) {
+    body:has(#tasks) .container {
+      padding: 18px 16px 36px;
+    }
+
+    body:has(#tasks) .employee-toolbar {
+      align-items: flex-start;
+      flex-direction: column;
+      gap: 8px;
+      padding: 14px;
+    }
+
+    body:has(#tasks) .sidebar {
+      width: 100%;
+      min-height: 38px;
+    }
+
+    body:has(#tasks) .content > .card {
+      padding: 18px;
+    }
+
+    body:has(#tasks) #tasks > .task {
+      padding: 13px;
+    }
+  }
+}

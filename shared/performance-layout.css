@@ -1,0 +1,67 @@
+/* Compact dashboard; each visual has its own bounded layout. */
+:is(#dashboard,#printDashboard) .grid-top{grid-template-columns:minmax(0,1fr) minmax(0,1.35fr) minmax(240px,.85fr);align-items:stretch;gap:12px}
+:is(#dashboard,#printDashboard) .panel{padding:16px!important;border-radius:14px!important}
+:is(#dashboard,#printDashboard) .project-dates{margin-top:20px}
+:is(#dashboard,#printDashboard) .planned-actual-row{display:block;min-height:0;flex:initial}
+:is(#dashboard,#printDashboard) .planned-actual-row .chart-box{height:280px;min-height:0}
+:is(#dashboard,#printDashboard) .weekly-panel .table-wrap{display:block;max-height:300px;overflow:auto}
+:is(#dashboard,#printDashboard) .weekly-panel table{font-size:11px}
+:is(#dashboard,#printDashboard) .weekly-panel th,:is(#dashboard,#printDashboard) .weekly-panel td{padding:8px 6px;white-space:nowrap}
+:is(#dashboard,#printDashboard) .grid-mid{gap:12px;align-items:start!important}
+:is(#dashboard,#printDashboard) .col-stack{gap:12px}
+:is(#dashboard,#printDashboard) .panel-fill{flex:initial}
+:is(#dashboard,#printDashboard) .legend-bar{gap:10px;font-size:10px;flex-wrap:wrap}
+@media screen{
+ :is(#dashboard,#printDashboard){max-width:1600px;margin:20px auto 32px}
+ :is(#dashboard,#printDashboard) .grid{padding-inline:20px}
+ :is(#dashboard,#printDashboard) h2.section-title{font-size:14px;line-height:1.4;margin-bottom:12px}
+ :is(#dashboard,#printDashboard) .grid-top>.panel{min-height:340px}
+ :is(#dashboard,#printDashboard) .grid-top>.panel:nth-child(2){justify-content:space-between}
+ :is(#dashboard,#printDashboard) .bar-value{font-size:11px;min-width:96px;font-variant-numeric:tabular-nums}
+ :is(#dashboard,#printDashboard) .bar-wrap{gap:8px;margin-bottom:12px}
+ :is(#dashboard,#printDashboard) .bar-track{height:16px}
+ :is(#dashboard,#printDashboard) .chart-header{min-height:38px}
+ :is(#dashboard,#printDashboard) .chart-title{font-size:13px}
+ :is(#dashboard,#printDashboard) .grid-mid .chart-fill{height:240px!important;min-height:240px!important;flex:none}
+ :is(#dashboard,#printDashboard) .cash-grid{gap:10px}
+ :is(#dashboard,#printDashboard) .cash-item .lbl{min-width:94px}
+ :is(#dashboard,#printDashboard) .cash-item .box{min-width:100px;font-size:12px}
+}
+.register-section{margin:24px 20px 32px}
+.register-heading{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:16px}
+.register-heading h2{margin:0;font-size:24px}.register-heading>span{color:var(--text-muted);font-size:13px}
+.register-eyebrow{font-size:10px;letter-spacing:2px;color:var(--primary);margin:0 0 5px}
+.register-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.register-card{background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:20px;min-width:0}
+.register-card-header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
+.register-card h3{margin:0;font-size:17px}.register-card button{cursor:pointer;padding:8px 14px;border:1px solid var(--border);background:var(--bg-card);color:var(--text-main);border-radius:20px}
+.register-card button.primary{background:var(--primary);color:#fff}
+.register-card .register-list{overflow:auto;max-height:420px}
+.register-item{border-top:1px solid var(--border);padding:14px 0}.register-item h4{margin:0 0 6px;overflow-wrap:anywhere}
+.register-item p{font-size:12px;margin:4px 0;white-space:pre-wrap;overflow-wrap:anywhere}
+.register-meta{color:var(--text-muted)}.register-message{font-size:12px;line-height:1.6;white-space:pre-wrap}
+.register-form{display:grid;grid-template-columns:1fr 1fr;gap:12px;border-top:1px solid var(--border);padding-top:16px;margin-bottom:20px}
+.register-form label{display:flex;flex-direction:column;gap:5px;font-size:12px}.register-form .wide{grid-column:1/-1}
+.register-form input,.register-form textarea,.register-form select{width:100%;box-sizing:border-box;padding:9px;font:inherit;border:1px solid var(--border);border-radius:8px;background:var(--bg-card);color:var(--text-main)}
+.register-form textarea{resize:vertical;min-height:70px}.register-form-actions{display:flex;gap:8px;grid-column:1/-1}
+@media(max-width:1200px){:is(#dashboard,#printDashboard) .grid-top{grid-template-columns:1fr 1fr}:is(#dashboard,#printDashboard) .weekly-panel{grid-column:1/-1}:is(#dashboard,#printDashboard) .weekly-panel .table-wrap{max-height:260px}}
+@media(max-width:700px){:is(#dashboard,#printDashboard) .grid-top,:is(#dashboard,#printDashboard) .grid-mid,.register-grid{grid-template-columns:1fr}.register-heading{align-items:flex-start;flex-direction:column}.register-section{margin-inline:16px}.register-form{grid-template-columns:1fr}:is(#dashboard,#printDashboard) .bar-value{min-width:88px;font-size:10px}}
+
+
+/* The print copy uses chart images, so Chart.js cannot overflow adjacent cards. */
+#performancePrintReport{display:none}
+
+
+
+
+/* Balanced two-row report: 280 + 8 + 400 = 688 px within A4 landscape. */
+
+@media screen and (min-width:1201px){
+ #dashboard>.grid-top{align-items:stretch}
+ #dashboard>.grid-top>.panel{min-height:350px}
+ #dashboard>.grid-top>.panel:nth-child(2) .planned-actual-row{display:flex;flex:1;min-height:0}
+ #dashboard>.grid-top>.panel:nth-child(2) .chart-box{height:auto;min-height:260px;flex:1}
+ #dashboard>.grid-top>.weekly-panel .table-wrap{max-height:300px}
+ #dashboard>.grid-mid{align-items:stretch!important}
+ #dashboard>.grid-mid>.col-stack:last-child>.panel{flex:1}
+}
