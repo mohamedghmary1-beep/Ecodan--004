@@ -7,3 +7,7 @@ local-secrets/*.json
 .env.local
 # Supabase CLI local linkage metadata
 supabase/.temp/
+
+# Personal editor workspace settings
+*.code-workspace
+.vscode/
