@@ -93,7 +93,7 @@
         }
         if (!document.querySelector('script[data-register-integration]')) {
             var registerScript = document.createElement('script');
-            registerScript.src = '../shared/register-integration.js?v=2';
+            registerScript.src = '../shared/register-integration.js?v=3';
             registerScript.dataset.registerIntegration = 'true';
             document.head.appendChild(registerScript);
         }

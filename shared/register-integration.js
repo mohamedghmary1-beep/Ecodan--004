@@ -1,7 +1,7 @@
 (function(){
  'use strict';
  const page=location.pathname.split('/').pop();
- if(!['general_by_activity.html','task-list.html'].includes(page))return;
+ if(!['issue-risk-register.html','task-list.html'].includes(page))return;
  let started=false;
  async function init(){if(started)return;started=true;
   try{
