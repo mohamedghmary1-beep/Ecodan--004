@@ -33,26 +33,17 @@
     '.wrap{padding:10px 20px 20px !important;max-width:100% !important;}';
   document.head.appendChild(style);
 
-  function reportReady() {
+  function reportReady(error) {
     try {
       var height = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight, 1);
-      window.parent.postMessage({ type: 'print-page-ready', height: height }, '*');
+      window.parent.postMessage({ type: 'print-page-ready', height: height, error: error || '' }, '*');
     } catch (e) { /* ignore */ }
   }
 
-  var debounceTimer;
-  function scheduleReport() {
-    clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(reportReady, 500);
-  }
-
-  document.addEventListener('DOMContentLoaded', function () {
-    var mo = new MutationObserver(scheduleReport);
-    mo.observe(document.body, { childList: true, subtree: true, attributes: true });
-    scheduleReport();
+  document.addEventListener('performance-dashboard-ready', function (event) {
+    reportReady(event.detail && event.detail.error);
   });
 
-  setTimeout(reportReady, 7000);
 })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -353,7 +344,7 @@
   .nav-btn.logout-btn:hover{background:rgba(239,68,68,0.45);}
 </style>
 <link href="../shared/design-system.css?v=3" rel="stylesheet"/>
-<script defer="" src="../shared/nav-toggle.js?v=3"></script>
+<script defer="" src="../shared/nav-toggle.js?v=4"></script>
 <link href="../shared/apple-ui.css?v=6" rel="stylesheet"/>
 <link href="../shared/performance-dashboard.css?v=2" rel="stylesheet"/>
 <link rel="stylesheet" href="../shared/mdceo-ui.css?v=1">
@@ -776,6 +767,7 @@ function toggleLanguage() {
 // (تُنهي الجلسة فعليًا عبر Supabase). لا تُعرَّف هنا نسخة محلية بديلة.
 
 let currentData = null;
+let dashboardLoadGeneration = 0;
 
 function weeklyRowTemplate(r) {
   r = r || { week: '', actual: '', plan: '' };
@@ -959,16 +951,21 @@ async function saveDashboard() {
   }
 }
 
-async function loadDashboard() {
+async function loadDashboard(snapshot) {
+  const loadGeneration = ++dashboardLoadGeneration;
   try {
-    const { data, error } = await client
-      .from('project_performance')
-      .select('*')
-      .eq('id', 1)
-      .single();
-
-    if (error) throw error;
+    let data = snapshot;
+    if (!data) {
+      const result = await client
+        .from('project_performance')
+        .select('*')
+        .eq('id', 1)
+        .single();
+      if (result.error) throw result.error;
+      data = result.data;
+    }
     if (!data) throw new Error('no data');
+    if (loadGeneration !== dashboardLoadGeneration) return;
 
     currentData = data;
     document.getElementById('reportProjectName').textContent = document.querySelector('.topbar-title-wrap h1').textContent.trim();
@@ -1021,10 +1018,15 @@ async function loadDashboard() {
     document.getElementById('cfVarAiEv').classList.toggle('negative', varAiEv < 0);
     document.getElementById('cfVarEvPv').classList.toggle('negative', varEvPv < 0);
     window.performanceDashboardReady = true;
+    document.dispatchEvent(new CustomEvent('performance-dashboard-ready'));
 
   } catch (e) {
+    if (loadGeneration !== dashboardLoadGeneration) return;
     document.getElementById('loadingMsg').textContent = 'Could not load dashboard data. Make sure the project_performance table has at least one row (id = 1).';
     console.error(e);
+    document.dispatchEvent(new CustomEvent('performance-dashboard-ready', {
+      detail: { error: e && e.message ? e.message : String(e) }
+    }));
   }
 }
 
@@ -1045,7 +1047,26 @@ window.addEventListener('beforeprint', () => {
 window.addEventListener('afterprint', () => {
   document.querySelectorAll('#dashboard canvas').forEach(canvas => Chart.getChart(canvas)?.resize());
 });
-loadDashboard();
+if (new URLSearchParams(location.search).get('snapshot') === '1') {
+  let snapshotReceived = false;
+  function receivePerformanceSnapshot(event) {
+    if (event.source !== window.parent || !event.data || event.data.type !== 'performance-print-snapshot') return;
+    snapshotReceived = true;
+    window.removeEventListener('message', receivePerformanceSnapshot);
+    clearTimeout(snapshotFallback);
+    const snapshot = event.data.snapshot;
+    loadDashboard(snapshot && Number(snapshot.id) === 1 ? snapshot : null);
+  }
+  window.addEventListener('message', receivePerformanceSnapshot);
+  const snapshotFallback = setTimeout(function () {
+    if (snapshotReceived) return;
+    snapshotReceived = true;
+    window.removeEventListener('message', receivePerformanceSnapshot);
+    loadDashboard();
+  }, 10000);
+} else {
+  loadDashboard();
+}
 </script>
 </body>
 </html>

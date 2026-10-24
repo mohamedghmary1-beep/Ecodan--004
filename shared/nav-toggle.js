@@ -84,6 +84,17 @@
     function init() {
         var nav = document.querySelector('.nav-container');
         if (!nav) return; // no nav on this page — nothing to toggle
+        var hasDashboardLink = Array.prototype.some.call(nav.querySelectorAll('a[href]'), function (link) {
+            return (link.getAttribute('href') || '').split(/[?#]/)[0].split('/').pop() === 'performance.html';
+        });
+        if (!hasDashboardLink) {
+            var dashboardLink = document.createElement('a');
+            dashboardLink.href = 'performance.html';
+            dashboardLink.className = 'nav-btn';
+            dashboardLink.innerHTML = '<i class="fa-solid fa-chart-column" aria-hidden="true"></i><span data-i18n="navDashboard">لوحة التحكم</span>';
+            var registerLink = nav.querySelector('a[href="issue-risk-register.html"]');
+            nav.insertBefore(dashboardLink, registerLink || null);
+        }
         if (!nav.querySelector('a[href="issue-risk-register.html"]')) {
             var registerLink = document.createElement('a');
             registerLink.href = 'issue-risk-register.html';
