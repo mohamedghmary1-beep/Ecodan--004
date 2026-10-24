@@ -1877,9 +1877,14 @@ async function embedExternalReportPage(iframe, wrap, body, readinessPromise) {
         throw new Error('Issue & Risks data access or setup failed');
       }
       const performanceState = contentWrap.querySelector('#loadingMsg');
-      if (wrap.classList.contains('performance-report-page') && performanceState && !performanceState.hidden) {
+      const performanceDashboard = contentWrap.querySelector('#dashboard');
+      const performanceIsLoading = performanceState && performanceState.style.display !== 'none';
+      const performanceDashboardIsHidden = !performanceDashboard || performanceDashboard.style.display === 'none';
+      if (wrap.classList.contains('performance-report-page') && (performanceIsLoading || performanceDashboardIsHidden)) {
         wrap.dataset.printError = 'performance data unavailable';
-        wrap.dataset.printErrorDetail = performanceState.textContent.trim();
+        wrap.dataset.printErrorDetail = performanceIsLoading
+          ? performanceState.textContent.trim()
+          : 'Dashboard did not finish rendering';
         throw new Error('Performance Dashboard data could not be loaded');
       }
       const requiredStylesheet = contentWrap.querySelector('link[href*="issue-risk-register.css"]');
