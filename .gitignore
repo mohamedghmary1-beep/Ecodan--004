@@ -11,3 +11,4 @@ supabase/.temp/
 # Personal editor workspace settings
 *.code-workspace
 .vscode/
+tmp/

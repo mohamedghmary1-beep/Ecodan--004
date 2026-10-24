@@ -23,7 +23,7 @@ The portal is buildless HTML/JavaScript with the existing Supabase client and ac
 
 The explicit `profiles.page_register = 'yes'` permission is required for register data access, including management accounts. It is never granted by the migration or inherited from Performance access. For additional project IDs, each user also needs an entry in `register_project_access(project_id,user_id)`. This references existing project/user IDs; it does not replicate either table. Task links currently belong to the legacy single ECODAN task space. Project 2+ cannot link project-1 tasks.
 
-Writes use the transactional `register_save` RPC with server validation, optimistic version checks, immutable code generation, server actor/timestamps and audit triggers. Direct REST writes/deletes on the three item tables are revoked. There is no permanent-delete button. Archive preserves history. Existing SPI/financial/progress formulas and source APIs are not changed.
+Single-record writes use the transactional `register_save` RPC with server validation, optimistic version checks, immutable code generation, server actor/timestamps and audit triggers. Direct REST writes/deletes on the three item tables remain revoked. Inline editing uses the additional migration described below; only managers can permanently delete a record, with confirmation and a retained audit snapshot. Archive preserves the searchable record and its history. Existing SPI/financial/progress formulas and source APIs are not changed.
 
 ## Screen behavior and data definitions
 
@@ -39,6 +39,29 @@ Writes use the transactional `register_save` RPC with server validation, optimis
 
 ## Editor and evidence
 
+### Inline Edit Data
+
+After the base migration, apply **`sql/issue_risk_inline_editor.sql`** in the same Supabase project. It is transactional and rerunnable. It adds no tables, sample records, project copies or progress copies. It provides the authenticated `register_save_changes` RPC and enables Realtime updates for the existing performance table when that publication is available. The implementation agent has not applied this migration to the live project.
+
+On `pages/issue-risk-register.html`, **Edit Data** beside **+ Add New** opens the editor inside the existing main area. It temporarily hides the dashboard, keeps its components in the DOM, locks the selected project and loads all project records, including archived records, the configured risk bands and `project_performance.weekly_table`. There is no new editor route, popup or modal. The existing single-record editor remains available through existing links.
+
+- Issues, risks and decisions have expandable forms with general and type-specific fields, close/reopen, archive/restore and manager-only staged deletion. Existing IDs and project IDs cannot be edited. Decision links must resolve to an issue/risk in the same project. Linked records cannot be deleted until links are removed; archiving remains available.
+- The editor exposes private attachments, comments and attributed history inline. Comments and attachments use their existing APIs and save independently through explicit buttons; new records must first be saved. Pending comments and selected uploads must be posted/uploaded or cleared before saving field changes. Deletion preserves audit snapshots and existing supporting data under their original keys; archive should be used when the record and evidence must remain searchable in the UI.
+- Only new or changed records are validated and submitted, so incomplete fields in untouched legacy records do not block unrelated edits. Record saves, confirmed deletions and optional progress changes commit in one database transaction. Existing per-record versions and a comparison with the original weekly data reject stale edits. Any validation/permission/conflict error rolls back the complete submission, leaves the form open and preserves drafts. Repeated Save clicks are disabled while saving. Decision approval controls synchronize with workflow status and closure date so KPIs use the same status definitions.
+- Progress rows reuse the existing `weekly_table`, preserve unrelated performance fields, accept percentages from 0 to 100 (or empty values), reject invalid/duplicate reporting dates and save in chronological order. Variance is derived as actual minus planned. There are no editable KPI counters. Engineers can edit their own records, but cannot approve decisions, archive, delete or edit shared progress; viewers cannot open edit mode or mutate data through the RPC.
+- Save Changes returns to the refreshed dashboard only after confirmed success. Cancel discards field drafts after confirmation. Navigation/unload warns about drafts, and rerendering preserves pending supporting-information controls. The Performance dashboard receives shared-progress changes through Realtime or on focus, while preserving its open edit form. The register refreshes from the same tables. New Weekly Report exports query saved records; frozen historical report snapshots remain unchanged.
+- Print hides the inline editor, includes saved data and charts, retains A4 Portrait and repeats table headers. Weekly-report register charts begin the section, followed by calculated KPIs and paginated rows. There is no editor state or editable KPI source in exported reports.
+
+### Inline verification
+
+Modified application files: `pages/issue-risk-register.html`, `shared/issue-risk-register.js`, `shared/issue-risk-register.css`, new `shared/register-inline-editor.js` and `shared/register-inline-editor.css`, `pages/performance.html`, `pages/weekly_report.html`, `shared/register-report-print.js` and `shared/register-report-print.css`. Deployment and tests: new `sql/issue_risk_inline_editor.sql`, `tests/register-inline-fixture.cjs`, `tests/register-inline-db.test.cjs`, `tests/register-inline-browser.test.cjs`, and this document.
+
+Install test-only dependencies with `npm install --prefix tmp/register-qa --no-audit --no-fund @electric-sql/pglite chart.js@4.4.4 playwright`. Run `node tests/register-core.test.cjs`, `node tests/register-inline-db.test.cjs` and `node tests/register-inline-browser.test.cjs`. The browser test requires Chrome (`REGISTER_CHROME` can override its executable path); `REGISTER_PGLITE_MODULE` and `REGISTER_PLAYWRIGHT_MODULE` can override module locations.
+
+`.gitignore` excludes `tmp/`, which contains only local test dependencies and generated QA files.
+
+These tests use an isolated PostgreSQL database, Supabase-style authenticated roles, the actual base/inline migrations, the actual register page and Chart.js 4.4.4. They cover migration reruns, atomic issue/risk/decision/progress updates, stale versions and progress, rollback, project isolation, input validation, read-only/engineer restrictions, denied direct writes, create/archive/delete/audit behavior, same-page UI, drafts, supporting comments, recalculated KPIs/charts, responsive layout and print exclusion. The generated PDF is a test artifact using fixture records, not production project data. Live authenticated Supabase CRUD, Storage transfer, Realtime delivery and a production Weekly Report smoke test remain deployment checks after applying the SQL.
+
 The dedicated editor includes general fields, risk assessment/mitigation/contingency, issue root cause/actions/evidence, decision requester/approver/dates/notes, links to existing tasks, comments and attributed change history. Type/project are locked after creation. Save before uploading evidence.
 
 Decision approvers must be active managers with explicit register permission and access to the decision's project. The server rejects assignments to disabled accounts or managers outside that project.
@@ -49,7 +72,7 @@ The default assessment is a configurable 5x5 probability × impact matrix: Low 1
 
 ## Integrations and notifications
 
-The shared existing sidebar gains Issues & Risks. Home, overview, performance and tasks gain project summary links once records exist; blank widgets stay hidden. Weekly report pages include a read-only register snapshot for reporting. A task link opens its existing task page and the responsible employee, rather than creating a second task workflow. No unrelated calculation functions are modified.
+The shared existing sidebar gains Issues & Risks. Home, overview, performance and tasks gain project summary links once records exist; blank widgets stay hidden. The weekly report's **Print Full Report** includes a read-only Issues & Risks page after Performance by default; its position can be changed in Report Pages Print Order. The weekly PDF uses separate A4 portrait pages for Performance and the register, includes the full item descriptions and archived records alongside KPI cards, charts and financial indicators, and stops with a fit warning rather than clipping or shrinking either page. Disable browser print headers/footers in the print dialog to suppress generated URLs and timestamps. The register snapshot hides interactive controls. A task link opens its existing task page and the responsible employee, rather than creating a second task workflow. No unrelated calculation functions are modified.
 
 Toast messages reuse `notify.js`. The new durable, per-user register inbox is separate because the existing website has no database-backed notification inbox. Assignment, critical-risk creation, decision requests and completed decisions create internal notifications transactionally. No emails or external messages are sent.
 

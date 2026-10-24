@@ -3,13 +3,16 @@
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Issue &amp; Risk Register | MDCEO</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-<link rel="stylesheet" href="../shared/design-system.css?v=3"><link rel="stylesheet" href="../shared/apple-ui.css?v=6"><link rel="stylesheet" href="../shared/issue-risk-register.css?v=2">
+<link rel="stylesheet" href="../shared/design-system.css?v=3"><link rel="stylesheet" href="../shared/apple-ui.css?v=6"><link rel="stylesheet" href="../shared/issue-risk-register.css?v=6">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="../shared/notify.js"></script><script src="../shared/auth-guard.js"></script>
 <script src="../shared/lang.js" defer></script><script src="../shared/nav-toggle.js?v=3" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" defer></script>
-<script src="../shared/register-core.js?v=1" defer></script><script src="../shared/issue-risk-register.js?v=2" defer></script>
+<script src="../shared/register-core.js?v=1" defer></script>
+<link rel="stylesheet" href="../shared/register-inline-editor.css?v=1">
+<script src="../shared/register-inline-editor.js?v=1" defer></script>
+<script src="../shared/issue-risk-register.js?v=7" defer></script>
 <script src="../shared/register-schedule-import.js?v=1" defer></script>
 <link rel="stylesheet" href="../shared/mdceo-ui.css?v=1">
 </head><body class="register-page">
@@ -25,7 +28,7 @@
   <section class="register-card"><div class="register-card-heading"><h2>Issue &amp; Risk Status Overview</h2><button id="clearBucket" type="button" class="no-print">All items</button></div><div class="register-status-layout"><div class="register-donut"><canvas id="registerStatusChart" role="img" aria-label="Mutually exclusive register status counts"></canvas><div class="register-donut-total"><strong id="statusTotal">0</strong><span>Total items</span></div></div><div id="statusLegend" class="register-status-legend"></div></div></section>
  </div>
  <section class="register-card register-table-section">
-  <div class="register-table-title"><h2>Issue &amp; Risk Register — Decisions Requested</h2><div class="register-actions no-print"><input type="search" id="registerSearch" placeholder="Search by title, ID, category or owner…" aria-label="Search register"><button id="toggleFilters" aria-expanded="false">Filter</button><a class="register-primary" id="addItem" href="issue-risk-editor.html" hidden>+ Add New</a></div></div>
+  <div class="register-table-title"><h2>Issue &amp; Risk Register — Decisions Requested</h2><div class="register-actions no-print"><input type="search" id="registerSearch" placeholder="Search by title, ID, category or owner…" aria-label="Search register"><button id="toggleFilters" aria-expanded="false">Filter</button><a class="register-primary" id="addItem" href="issue-risk-editor.html" hidden>+ Add New</a><button type="button" class="register-primary" id="editDataButton" hidden>Edit Data</button></div></div>
   <div class="register-tabs no-print" id="registerTabs" role="group" aria-label="Register type filters"></div>
   <div class="register-filter-panel no-print" id="filterPanel" hidden><label>Priority<select id="priorityFilter"><option value="">All priorities</option></select></label><label>Status<select id="statusFilter"><option value="">All statuses</option></select></label><label>Owner<select id="ownerFilter"><option value="">All owners</option></select></label><label>Category<select id="categoryFilter"><option value="">All categories</option></select></label><label class="register-check"><input type="checkbox" id="showArchived"> Archived records</label><button id="resetFilters">Reset filters</button></div>
   <div class="register-export-bar no-print"><span id="resultCount"></span><div><button id="exportExcel">Export Excel</button><button id="exportPdf">Print / PDF</button><button id="exportSummary">Executive summary</button></div></div>
@@ -35,6 +38,7 @@
  </section>
  <section class="register-financial-kpis" id="financialKpis" aria-label="Existing project financial and schedule indicators"></section>
  <p class="register-source" id="scheduleSource"></p>
+<section id="registerEditPanel" class="no-print" hidden aria-label="Edit project register data"></section>
 </main>
 <dialog id="registerDetails" class="register-dialog"><header><h2 id="detailsTitle">Item details</h2><button id="closeDetails" aria-label="Close details">Close</button></header><div id="detailsContent"></div></dialog>
 <dialog id="notificationDialog" class="register-dialog"><header><h2>Notifications</h2><button id="closeNotifications">Close</button></header><div id="notificationList"></div></dialog>

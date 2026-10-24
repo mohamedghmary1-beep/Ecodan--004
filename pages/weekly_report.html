@@ -254,15 +254,8 @@
   }
 
   #externalPagesContainer{display:none;}
-  /* Revealed the moment printFullReport() adds this class — BEFORE the print
-     dialog opens — so applyAutoPageSize() can measure each page's real,
-     laid-out height and shrink it to fit one sheet. Positioned off-screen
-     (not display:none) so the browser still lays it out normally, but the
-     user never sees it — it's also masked behind #printLoadingOverlay while
-     building. Width approximates one A4 page's printable area (210mm minus
-     2×10mm margins ≈ 718px) so the measured height matches what will
-     actually print. @media print below resets position so it prints in
-     place at full width. */
+  /* Keep the print DOM laid out off-screen so page sizing can be checked
+     before the print dialog opens. */
   body.printing-full-report #externalPagesContainer{
     display:block;position:absolute;left:-99999px;top:0;width:718px;
   }
@@ -298,10 +291,8 @@
   }
   .work-row-line .row-remove{align-self:center;}
 
-  /* ===== Natively-embedded Performance Dashboard (merged in directly, no
-     iframe — see loadPerformanceDashboard()/renderPerf* below). Everything
-     is scoped under .perf-embed so these class names (.panel, .grid, etc.)
-     never collide with this page's own identically-named classes above. ===== */
+  /* ===== Performance snapshot staging dashboard. The printed dashboard is
+     loaded from performance.html; these styles support snapshot preparation. ===== */
   .perf-embed{background:#fff;}
   .perf-embed .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
   .perf-embed .panel{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow-sm);padding:16px 18px;}
@@ -328,12 +319,8 @@
   .perf-embed .chart-box{height:260px;position:relative;}
   .perf-embed .chart-header{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;}
   .perf-embed .chart-title{flex:1;text-align:center;font-size:13px;font-weight:700;margin:0;color:var(--text-main);}
-  .perf-embed .chart-logo-slot{width:44px;height:44px;flex-shrink:0;border:1px dashed #cbd5e1;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--text-muted);background:#f8fafc;overflow:hidden;}
-  .perf-embed .chart-logo-slot.filled{border:none;background:#fff;padding:4px;box-shadow:0 1px 4px rgba(0,0,0,0.08);}
+  .perf-embed .chart-logo-slot{width:44px;height:44px;flex-shrink:0;border:1px dashed #cbd5e1;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--text-muted);background:#f8fafc;}
   .perf-embed .chart-logo-slot::after{content:'Logo';}
-  .perf-embed .chart-logo-slot.filled::after{content:none;}
-  .perf-embed .chart-logo-slot img{max-width:100%;max-height:100%;object-fit:contain;display:none;}
-  .perf-embed .chart-logo-slot img.has-src{display:block;}
   .perf-embed .spi-value{font-size:26px;font-weight:900;color:var(--text-main);}
   .perf-embed .cash-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
   .perf-embed .cash-col{display:flex;flex-direction:column;gap:8px;}
@@ -344,28 +331,133 @@
   .perf-embed .cash-item .lbl{min-width:130px;font-weight:700;color:var(--text-muted);}
   .perf-embed .loading{padding:40px;text-align:center;font-weight:700;color:var(--text-main);}
   .perf-embed h2.section-title{font-size:14px;font-weight:700;margin:0 0 10px 0;color:var(--primary);padding-bottom:6px;border-bottom:2px solid var(--primary-light);display:block;}
+  .register-report-page .register-main{padding:0!important;width:100%!important;max-width:none!important}
+  .register-report-page .no-print,.register-report-page .register-datebar,.register-report-page .register-message,.register-report-page .register-project-controls,.register-report-page .nav-container{display:none!important}
+  .register-report-page .register-kpis{grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;margin-bottom:5px}
+  .register-report-page .register-kpi{padding:5px}
+  .register-report-page .register-kpi{overflow:visible}
+  .register-report-page .register-kpi-title{font-size:8px}
+  .register-report-page .register-kpi-value{font-size:15px;margin-bottom:2px}
+  .register-report-page .register-kpi-trend{font-size:8px}
+  .register-report-page .register-analytics{grid-template-columns:1.4fr 1fr;gap:5px}
+  .register-report-page .register-chart{height:105px}
+  .register-report-page .register-status-layout{min-height:105px;gap:5px}
+  .register-report-page .register-donut{height:90px}
+  .register-report-page .register-status-legend button{padding:3px;font-size:7px;min-height:0}
+  .register-report-page .register-card{padding:6px 7px;margin-bottom:5px;box-shadow:none}
+  .register-report-page .register-card h2{font-size:9px!important;margin-bottom:4px}
+  .register-report-page .register-table-scroll{overflow:visible}
+  .register-report-page #registerTable{min-width:0;width:100%;table-layout:fixed;font-size:9px;line-height:1.15}
+  .register-report-page #registerTable th,.register-report-page #registerTable td{padding:3px 2px;font-size:9px;white-space:normal;overflow-wrap:anywhere}
+  .register-report-page #registerTable th:nth-child(1){width:7%!important}
+  .register-report-page #registerTable th:nth-child(2){width:8%!important}
+  .register-report-page #registerTable th:nth-child(3){width:39%!important}
+  .register-report-page #registerTable th:nth-child(4){width:8%!important}
+  .register-report-page #registerTable th:nth-child(5){width:7%!important}
+  .register-report-page #registerTable th:nth-child(6){width:8%!important}
+  .register-report-page #registerTable th:nth-child(7){width:9%!important}
+  .register-report-page #registerTable th:nth-child(8){width:8%!important}
+  .register-report-page #registerTable th:nth-child(9){width:6%!important}
+  .register-report-page .register-badge{font-size:8px;min-width:0;padding:1px 2px;white-space:normal}
+  .register-report-page .register-financial-kpis{grid-template-columns:repeat(6,minmax(0,1fr));gap:4px}
+  .register-report-page .register-financial-kpis .register-kpi{padding:5px 3px}
+  .register-report-page .register-financial-kpis .register-kpi-title,.register-report-page .register-financial-kpis p{font-size:8px}
+  .register-report-page .register-financial-kpis .register-kpi-value{font-size:12px}
+  .register-report-page .register-page-heading{margin-bottom:5px}
+  .register-report-page .register-page-heading h1{text-transform:uppercase}
+  .register-report-page .register-page-heading .register-subtitle,.register-report-page .register-eyebrow{font-size:8px;margin:2px 0}
+  .register-report-page h1{font-size:14px!important}
+  .register-report-page .register-source{font-size:8px;margin:3px 0}
+  .register-report-page .register-table-section{display:block!important}
+  .register-report-page #registerTable tr{break-inside:avoid;page-break-inside:avoid}
+  .register-report-page #registerTable thead{display:table-header-group}
+  .register-report-page #registerTable .register-item-description{display:block;margin-top:2px;color:#475569;font-weight:400}
+  .register-report-page #registerTable .register-item-description{white-space:pre-wrap;overflow-wrap:anywhere}
+  .register-report-page .register-chart-note{font-size:6px;margin:2px 0 0}
+  .register-report-page .register-card-heading{padding-bottom:3px;margin-bottom:4px}
+  .register-report-page .register-financial-kpis .register-kpi-title{line-height:1.1}
+  .register-report-page .register-financial-kpis p{margin:2px 0 0;line-height:1.1}
+  .register-report-page .register-archived-marker{font-size:8px;font-weight:700;color:#a16207}
+  .register-report-page .embedded-page-copy .register-brand{padding:0 0 5px!important;margin:0 0 5px!important;border-bottom:2px solid #adc6ff}
+  .register-report-page .embedded-page-copy .register-brand{height:auto!important;min-height:0!important;position:static!important;overflow:visible!important}
+  .register-report-page .embedded-page-copy .register-brand img{width:28px;height:25px}
+  .register-report-page .embedded-page-copy .register-brand strong{font-size:14px}
+  .register-report-page .embedded-page-copy .register-brand>span{font-size:7px}
 
   @media print{
-    @page{ size:A4 portrait; margin:10mm; }
+    @page{size:A4 portrait;margin:0}
+    html,body{margin:0!important;padding:0!important;background:#fff!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
     body{background:#fff;padding:0;}
     .topbar,.wrap,#printLoadingOverlay{display:none !important;}
     body.printing-full-report #externalPagesContainer{
       display:block !important;position:static;left:auto;top:auto;width:auto;
     }
-    .report-page{page-break-after:always;}
+    .report-page{box-sizing:border-box;width:210mm;min-height:297mm;padding:9mm;page-break-after:always;break-after:page;}
     .report-page:last-child{page-break-after:auto;}
-    /* Performance is deliberately scaled to the A4 content budget before the
-       dialog opens. Keep that dashboard together: a split here produces a
-       nearly-empty second sheet in Chromium's print preview. */
-    .report-page.performance-report-page{
-      height:277mm; overflow:hidden;
-      break-inside:avoid; page-break-inside:avoid;
-      break-after:page; page-break-after:always;
-    }
-    .performance-report-page .pf-page,
-    .performance-report-page .perf-embed{
-      break-inside:avoid; page-break-inside:avoid;
-    }
+  }
+  @media print{
+    .register-report-page .register-main{padding:0!important;width:100%!important;max-width:none!important}
+    .register-report-page .register-page-heading{margin-bottom:5px!important;padding-bottom:5px!important}
+    .register-report-page .register-eyebrow,.register-report-page .register-subtitle{font-size:8px!important;margin:2px 0}
+    .register-report-page h1{font-size:14px!important;text-transform:uppercase}
+    .register-report-page .register-kpis{grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;margin-bottom:5px}
+    .register-report-page .register-kpi{padding:5px}
+    .register-report-page .register-kpi-title{font-size:8px}
+    .register-report-page .register-kpi-value{font-size:15px;margin-bottom:2px}
+    .register-report-page .register-kpi-trend{font-size:6px}
+    .register-report-page .register-analytics{grid-template-columns:1.4fr 1fr!important;gap:5px}
+    .register-report-page .register-chart{height:105px!important}
+    .register-report-page .register-status-layout{min-height:105px!important;gap:5px}
+    .register-report-page .register-donut{height:90px!important}
+    .register-report-page .register-status-legend button{padding:3px!important;font-size:7px;min-height:0!important}
+    .register-report-page .register-card{padding:6px 7px;margin-bottom:5px;box-shadow:none}
+    .register-report-page .register-card h2{font-size:9px!important;margin-bottom:4px}
+    .register-report-page .register-table-scroll{overflow:visible!important}
+    .register-report-page #registerTable{min-width:0;width:100%;table-layout:fixed;font-size:7px;line-height:1.15}
+    .register-report-page #registerTable th,.register-report-page #registerTable td{padding:3px 2px;font-size:7px;white-space:normal;overflow-wrap:anywhere}
+    .register-report-page #registerTable th:nth-child(1){width:7%}
+    .register-report-page #registerTable th:nth-child(2){width:8%}
+    .register-report-page #registerTable th:nth-child(3){width:39%}
+    .register-report-page #registerTable th:nth-child(4){width:8%}
+    .register-report-page #registerTable th:nth-child(5){width:7%}
+    .register-report-page #registerTable th:nth-child(6){width:8%}
+    .register-report-page #registerTable th:nth-child(7){width:9%}
+    .register-report-page #registerTable th:nth-child(8){width:8%}
+    .register-report-page .register-badge{font-size:6px;min-width:0;padding:1px 2px;white-space:normal}
+    .register-report-page .register-financial-kpis{grid-template-columns:repeat(6,minmax(0,1fr));gap:4px}
+    .register-report-page .register-financial-kpis .register-kpi{padding:5px 3px}
+    .register-report-page .register-financial-kpis .register-kpi-title,.register-report-page .register-financial-kpis p{font-size:6px}
+    .register-report-page .register-financial-kpis .register-kpi-value{font-size:12px}
+    .register-report-page .register-source{font-size:6px;margin:3px 0}
+    .register-report-page .register-print-meta{display:block;font-size:7px}
+    .register-report-page .no-print,.register-report-page .register-datebar,.register-report-page .register-message,.register-report-page .register-project-controls,.register-report-page .nav-container{display:none!important}
+    .register-report-page .register-table-section{display:block!important}
+    .register-report-page #registerTable tr{break-inside:avoid;page-break-inside:avoid}
+    .register-report-page #registerTable thead{display:table-header-group}
+    .register-report-page #registerTable .register-item-description{display:block;margin-top:2px;color:#475569;font-weight:400}
+    .register-report-page .register-table-section{break-inside:auto;page-break-inside:auto}
+    .register-report-page .register-analytics,.register-report-page .register-kpis{display:grid!important}
+    .register-report-page .register-chart-note{font-size:8px;margin:2px 0 0}
+    .register-report-page .register-card-heading{padding-bottom:3px;margin-bottom:4px}
+    .register-report-page .register-table-title{margin-bottom:3px}
+    .register-report-page .register-print-meta{margin:2px 0}
+    .register-report-page .register-financial-kpis .register-kpi-title{line-height:1.1}
+    .register-report-page .register-financial-kpis p{margin:2px 0 0;line-height:1.1}
+    .register-report-page .register-kpi-trend{font-size:8px!important}
+    .register-report-page #registerTable,.register-report-page #registerTable th,.register-report-page #registerTable td{font-size:9px!important}
+    .register-report-page .register-badge{font-size:8px!important}
+    .register-report-page .register-financial-kpis .register-kpi-title,.register-report-page .register-financial-kpis p,.register-report-page .register-source,.register-report-page .register-chart-note{font-size:8px!important}
+    .register-report-page .register-table-section{break-inside:auto!important;page-break-inside:auto!important}
+    .register-report-page #registerTable th:nth-child(1){width:7%!important}
+    .register-report-page #registerTable th:nth-child(2){width:8%!important}
+    .register-report-page #registerTable th:nth-child(3){width:39%!important}
+    .register-report-page #registerTable th:nth-child(4){width:8%!important}
+    .register-report-page #registerTable th:nth-child(5){width:7%!important}
+    .register-report-page #registerTable th:nth-child(6){width:8%!important}
+    .register-report-page #registerTable th:nth-child(7){width:9%!important}
+    .register-report-page #registerTable th:nth-child(8){width:8%!important}
+    .register-report-page #registerTable th:nth-child(9){width:6%!important}
+    .report-page.performance-report-page,.report-page.register-report-page{break-inside:avoid;page-break-inside:avoid;break-after:page;page-break-after:always}
     /* When a section's content (Performance/Summary/Work) is taller than one
        page, let it flow onto extra pages instead of being clipped — and
        repeat the frame's border/padding on each of those pages so it still
@@ -379,6 +471,8 @@
     <script src="../shared/nav-toggle.js?v=3" defer></script>
 <link rel="stylesheet" href="../shared/apple-ui.css?v=6">
 <link rel="stylesheet" href="../shared/mdceo-ui.css?v=1">
+<link rel="stylesheet" href="../shared/register-report-print.css?v=3">
+<script src="../shared/register-report-print.js?v=3"></script>
 </head>
 <body>
 
@@ -505,11 +599,9 @@
 <!-- ===================== External live pages (loaded for print only) ===================== -->
 <div id="externalPagesContainer"></div>
 
-<!-- ===================== Natively-embedded Performance Dashboard =====================
-     Kept off-screen (not display:none) so its charts have real dimensions to draw
-     into — Chart.js can't size a canvas correctly inside a display:none ancestor.
-     Populated once by loadPerformanceDashboard() on page init; cloned straight into
-     the print output by printFullReport(), no iframe/external file needed. -->
+<!-- ===================== Performance snapshot staging =====================
+     Kept off-screen for snapshot loading/saving. The print report loads the
+     current Performance Dashboard page using the selected snapshot. -->
 <div id="perfEmbedSource" class="perf-embed" style="position:absolute;left:-9999px;top:0;width:1000px;">
   <div id="perfLoadingMsg" class="loading">Loading performance data...</div>
   <div id="perfDashboard" style="display:none;">
@@ -598,33 +690,17 @@
       <div style="display:flex;flex-direction:column;gap:14px;">
         <div class="panel">
           <div class="chart-header">
-            <div class="chart-logo-slot" title="Logo placeholder">
-              <img src="../images/WhatsApp Image 2025-11-24 at 10.33.58 AM.jpeg" alt="Company Logo"
-                   onload="this.classList.add('has-src'); this.parentElement.classList.add('filled');"
-                   onerror="this.classList.remove('has-src'); this.parentElement.classList.remove('filled');">
-            </div>
+            <div class="chart-logo-slot" title="Logo placeholder"></div>
             <div class="chart-title">Planned Value Cost(S-Curve)</div>
-            <div class="chart-logo-slot" title="Logo placeholder">
-              <img src="../images/afford.jpg" alt="Company Logo"
-                   onload="this.classList.add('has-src'); this.parentElement.classList.add('filled');"
-                   onerror="this.classList.remove('has-src'); this.parentElement.classList.remove('filled');">
-            </div>
+            <div class="chart-logo-slot" title="Logo placeholder"></div>
           </div>
           <div class="chart-box" style="height:280px;"><canvas id="perfScurveChart"></canvas></div>
         </div>
         <div class="panel">
           <div class="chart-header">
-            <div class="chart-logo-slot" title="Logo placeholder">
-              <img src="../images/WhatsApp Image 2025-11-24 at 10.33.58 AM.jpeg" alt="Company Logo"
-                   onload="this.classList.add('has-src'); this.parentElement.classList.add('filled');"
-                   onerror="this.classList.remove('has-src'); this.parentElement.classList.remove('filled');">
-            </div>
+            <div class="chart-logo-slot" title="Logo placeholder"></div>
             <div class="chart-title">Manpower Histogram -week-(Phase 1)</div>
-            <div class="chart-logo-slot" title="Logo placeholder">
-              <img src="../images/afford.jpg" alt="Company Logo"
-                   onload="this.classList.add('has-src'); this.parentElement.classList.add('filled');"
-                   onerror="this.classList.remove('has-src'); this.parentElement.classList.remove('filled');">
-            </div>
+            <div class="chart-logo-slot" title="Logo placeholder"></div>
           </div>
           <div class="chart-box" style="height:280px;"><canvas id="perfManpowerChart"></canvas></div>
         </div>
@@ -659,10 +735,9 @@ const SUPABASE_URL = "https://uhhtvpxtpayovbtmnstz.supabase.co";
 const SUPABASE_KEY = "sb_publishable_QsS0UhLBORy6mOaBDgW62g_9OacC3oO";
 const client = window.__guardClient;
 
-// ---------- Natively-embedded Performance Dashboard ----------
-// Loads the same data performance.html shows, straight into the hidden
-// #perfEmbedSource block above, using this page's own Supabase client.
-// No iframe, no separate file needed at print time.
+// ---------- Performance snapshot data ----------
+// Keep the live/saved performance snapshot available for report saving and
+// pass that exact snapshot to performance.html when building the print copy.
 function perfFmtNum(n, dec) {
   if (n === null || n === undefined) return '-';
   return Number(n).toLocaleString('en-US', { minimumFractionDigits: dec || 0, maximumFractionDigits: dec || 0 });
@@ -877,6 +952,10 @@ async function loadPerformanceDashboard() {
 let perfDashboardReadyPromise = loadPerformanceDashboard();
 
 
+let perfLiveData = null;
+let perfSnapshotData = null;
+let perfChartInstances = {}; // canvasId -> Chart.js instance
+
 window.registerDictionary({
   ar: {
     navReportView: 'عرض التقرير',
@@ -909,6 +988,7 @@ window.registerDictionary({
     captionPlaceholder: 'وصف الصورة',
     addPhoto: 'إضافة صورة',
     pageLabelPerformance: '📊 Performance Dashboard',
+    pageLabelRegister: '⚠️ Issues & Risks Register',
     pageLabelSummary: '📋 Submittals Summary',
     pageLabelWork: '📝 الأعمال والصور (هذا التقرير)',
     loadingReport: 'جاري التحميل...',
@@ -955,6 +1035,7 @@ window.registerDictionary({
     captionPlaceholder: 'Photo caption',
     addPhoto: 'Add Photo',
     pageLabelPerformance: '📊 Performance Dashboard',
+    pageLabelRegister: '⚠️ Issues & Risks Register',
     pageLabelSummary: '📋 Submittals Summary',
     pageLabelWork: '📝 Work & Photos (this report)',
     loadingReport: 'Loading...',
@@ -983,9 +1064,6 @@ let allReports = [];
 // Whenever a report is loaded, printed, or saved we prefer perfSnapshotData over
 // perfLiveData so old reports always show the numbers as they were *at save time*,
 // not whatever the live dashboard shows today.
-let perfLiveData = null;
-let perfSnapshotData = null;
-let perfChartInstances = {}; // canvasId -> Chart.js instance, so re-rendering can destroy+recreate safely
 
 // ---------- Permissions: page is open to everyone (any logged-in role); ----------
 // ---------- editing/saving/deleting requires re-entering YOUR OWN account ----------
@@ -1105,9 +1183,9 @@ function unlockEditMode() {
 }
 
 // ---------- Page order (for print) ----------
-let pageOrder = ['performance', 'work'];
+let pageOrder = ['performance', 'register', 'work'];
 function pageLabel(key) {
-  return { performance: T('pageLabelPerformance'), summary: T('pageLabelSummary'), work: T('pageLabelWork') }[key];
+  return { performance: T('pageLabelPerformance'), register: T('pageLabelRegister'), summary: T('pageLabelSummary'), work: T('pageLabelWork') }[key];
 }
 
 function renderPageOrderList() {
@@ -1353,7 +1431,7 @@ async function onSelectReport() {
     // today. Older reports saved before this feature existed simply won't
     // have a performance_snapshot yet, so they fall back to live data.
     perfSnapshotData = data.performance_snapshot || null;
-    await perfDashboardReadyPromise; // make sure the embed's DOM/canvases exist first
+    await perfDashboardReadyPromise;
     applyPerfData(perfSnapshotData || perfLiveData);
 
     document.getElementById('saveStatus').textContent = '';
@@ -1584,7 +1662,8 @@ function renderPrintCover() {
 // can't be re-shown or overridden by the embedded page's own later script/CSS.
 // Only usable when the parent can access the iframe's document directly (same-origin).
 function stripEmbeddedPageChrome(doc) {
-  const selectors = '.topbar, .header, .nav-container, .search-area-container, .translate-btn';
+  const keepRegisterBrand = doc.body?.classList.contains('register-print-embed');
+  const selectors = `.topbar, ${keepRegisterBrand ? '' : '.header, '}.nav-container, .search-area-container, .translate-btn`;
   doc.querySelectorAll(selectors).forEach(el => el.remove());
   const style = doc.createElement('style');
   style.textContent = `
@@ -1635,32 +1714,29 @@ function waitForIframeContentReady(doc, { checkIntervalMs = 400, stableChecksNee
 // directly (e.g. when the app is opened locally via file:// and each file is treated
 // as its own origin by the browser) — unlike contentDocument, which same-origin
 // restrictions can silently block.
-function waitForEmbeddedPageReadyMessage(iframe, timeoutMs = 8000) {
+function waitForEmbeddedPageReadyMessage(iframe, timeoutMs = 15000) {
   return new Promise(resolve => {
     let settled = false;
     function onMessage(e) {
       if (e.source === iframe.contentWindow && e.data && e.data.type === 'print-page-ready') {
-        finish(e.data.height || 0);
+        finish({ height: e.data.height || 0, error: e.data.error || '' });
       }
     }
-    function finish(height) {
+    function finish(result) {
       if (settled) return;
       settled = true;
       window.removeEventListener('message', onMessage);
-      resolve(height);
+      resolve(result);
     }
     window.addEventListener('message', onMessage);
-    setTimeout(() => finish(0), timeoutMs);
+    setTimeout(() => finish({ height: 0, error: 'timeout' }), timeoutMs);
   });
 }
 
 // ---------- Full print (dashboard + summary + this report) ----------
 
-// Approx. usable content height (px) inside one A4 page, after the @page
-// margins and the .pf-page frame's own border/padding/footer are accounted
-// for. Any report page whose real content is taller than this gets shrunk
-// down (see below) instead of being left to spill onto a second,
-// mostly-empty page.
+// The work and cover pages use a measured zoom when necessary; the register
+// and Performance Dashboard retain their readable sizes and may paginate.
 const A4_CONTENT_BUDGET = 1000;
 
 // We previously tried promoting overly-tall pages to A3 paper via a named
@@ -1675,6 +1751,7 @@ function applyAutoPageSize(wrap, measureEl) {
   measureEl.style.zoom = '';
   const h = Math.max(measureEl.scrollHeight, measureEl.offsetHeight, 1);
   console.log('[print-debug] applyAutoPageSize: measured height =', h, 'budget =', A4_CONTENT_BUDGET, 'element =', measureEl);
+  if (wrap.classList.contains('register-report-page') || wrap.classList.contains('performance-report-page')) return true;
   if (h > A4_CONTENT_BUDGET) {
     const scale = A4_CONTENT_BUDGET / h;
     measureEl.style.zoom = scale;
@@ -1750,12 +1827,21 @@ function bakeCanvasesIntoImages(doc, contentWrap) {
 // its own stylesheets, directly into this document as plain DOM nodes. Plain
 // DOM content prints reliably (this is the same technique already used for
 // the cover and "work" pages, which have always printed correctly).
-async function embedExternalReportPage(iframe, wrap, body) {
+async function embedExternalReportPage(iframe, wrap, body, readinessPromise) {
   try {
     // Ask the embedded page for its content height once it's done loading;
     // works even if same-origin DOM access were ever unavailable.
-    await waitForEmbeddedPageReadyMessage(iframe);
-
+    const readiness = await readinessPromise;
+    if (wrap.classList.contains('register-report-page') && readiness.error) {
+      wrap.dataset.printError = 'register data unavailable';
+      wrap.dataset.printErrorDetail = readiness.error;
+      throw new Error('Issue & Risks data access or setup failed');
+    }
+    if (wrap.classList.contains('performance-report-page') && readiness.error) {
+      wrap.dataset.printError = 'performance data unavailable';
+      wrap.dataset.printErrorDetail = readiness.error;
+      throw new Error('Performance data could not be loaded');
+    }
     let doc = null;
     try { doc = iframe.contentDocument; } catch (e) { /* cross-origin — shouldn't happen here */ }
 
@@ -1769,30 +1855,80 @@ async function embedExternalReportPage(iframe, wrap, body) {
       contentWrap.className = 'embedded-page-copy';
       // Bring over the embedded page's own stylesheets so its classes still
       // resolve correctly once its markup is moved into this document.
-      doc.querySelectorAll('link[rel="stylesheet"], style').forEach(node => {
-        contentWrap.appendChild(node.cloneNode(true));
-      });
-      contentWrap.appendChild(doc.body.cloneNode(true));
+      doc.querySelectorAll('link[rel="stylesheet"], style').forEach(node => contentWrap.appendChild(node.cloneNode(true)));
+      const clonedBody = doc.body.cloneNode(true);
+      contentWrap.appendChild(clonedBody);
+      if (wrap.classList.contains('performance-report-page')) {
+        const printStyle = document.createElement('style');
+        printStyle.textContent = '@media print{@page{size:A4 portrait;margin:0}}';
+        contentWrap.appendChild(printStyle);
+      }
+      if (wrap.classList.contains('register-report-page')) {
+        contentWrap.querySelector('.register-brand')?.classList.remove('header');
+        const registerTitle = contentWrap.querySelector('.register-page-heading h1');
+        if (registerTitle) registerTitle.textContent = 'ISSUE & RISK REGISTER — DECISIONS REQUESTED';
+      }
       bakeCanvasesIntoImages(doc, contentWrap);
       body.appendChild(contentWrap);
+      const registerState = contentWrap.querySelector('#registerState');
+      if (wrap.classList.contains('register-report-page') && registerState?.classList.contains('error')) {
+        wrap.dataset.printError = 'register data unavailable';
+        wrap.dataset.printErrorDetail = registerState.textContent.trim();
+        throw new Error('Issue & Risks data access or setup failed');
+      }
+      const performanceState = contentWrap.querySelector('#loadingMsg');
+      if (wrap.classList.contains('performance-report-page') && performanceState && !performanceState.hidden) {
+        wrap.dataset.printError = 'performance data unavailable';
+        wrap.dataset.printErrorDetail = performanceState.textContent.trim();
+        throw new Error('Performance Dashboard data could not be loaded');
+      }
+      const requiredStylesheet = contentWrap.querySelector('link[href*="issue-risk-register.css"]');
+      if (requiredStylesheet && !requiredStylesheet.sheet) {
+        await new Promise((resolve, reject) => {
+          let settled = false;
+          const finish = error => {
+            if (settled) return;
+            settled = true;
+            clearTimeout(timeout);
+            error ? reject(error) : resolve();
+          };
+          const timeout = setTimeout(() => finish(new Error('Embedded print stylesheet did not load')), 5000);
+          requiredStylesheet.addEventListener('load', () => finish(), { once: true });
+          requiredStylesheet.addEventListener('error', () => finish(new Error('Embedded print stylesheet failed to load')), { once: true });
+          if (requiredStylesheet.sheet) finish();
+        });
+      }
       iframe.remove();
 
       console.log('[print-debug] embedExternalReportPage: container display =', getComputedStyle(document.getElementById('externalPagesContainer')).display, '| contentWrap connected =', contentWrap.isConnected, '| contentWrap scrollHeight after attach =', contentWrap.scrollHeight);
 
-      // Measure the *copied* content now that it's actually laid out in this
-      // document, and promote this page to A3 if it doesn't fit one A4 page
-      // (see applyAutoPageSize above) — full-size text, nothing clipped,
-      // nothing shrunk, still one single page.
-      applyAutoPageSize(wrap, contentWrap);
+      applyAutoPageSize(wrap, contentWrap.querySelector('.register-page') || contentWrap);
       return;
     }
 
     // Cross-origin fallback (shouldn't be hit in this app, but keeps the page
-    // from being left completely empty if it ever is).
+    // from being left completely empty if it ever is; report the limitation
+    // instead of printing an iframe that Chromium may omit.
     iframe.style.width = '100%';
     iframe.style.border = 'none';
+    if (wrap.classList.contains('register-report-page')) {
+      wrap.dataset.printError = 'register data unavailable';
+      wrap.dataset.printFitError = 'embedded page is inaccessible';
+    } else if (wrap.classList.contains('performance-report-page')) {
+      wrap.dataset.printError = 'performance data unavailable';
+      wrap.dataset.printErrorDetail = readiness.error || 'Performance page could not be accessed';
+      wrap.dataset.printFitError = 'embedded page is inaccessible';
+    }
   } catch (e) {
     console.error('embedExternalReportPage failed', e);
+    if (wrap.matches('.register-report-page')) {
+      wrap.dataset.printError ||= 'page preparation failed';
+      wrap.dataset.printFitError ||= 'embed failed';
+    } else if (wrap.matches('.performance-report-page')) {
+      wrap.dataset.printError ||= 'performance data unavailable';
+      wrap.dataset.printErrorDetail ||= e.message;
+      wrap.dataset.printFitError ||= 'embed failed';
+    }
   }
 }
 
@@ -1828,15 +1964,9 @@ async function printFullReport() {
   renderPrintView();
   renderPrintCover();
 
-  // Make sure the natively-embedded performance dashboard (and its charts)
-  // has finished loading real data before we try to snapshot it for print.
   await perfDashboardReadyPromise;
-
-  // Re-assert which data source the embed should show right before we
-  // snapshot it: the frozen performance_snapshot belonging to this report
-  // if it has one (so printing an old report never pulls in today's live
-  // numbers), otherwise whatever is live.
   applyPerfData(perfSnapshotData || perfLiveData);
+  const performanceSnapshot = perfSnapshotData || perfLiveData;
 
   const container = document.getElementById('externalPagesContainer');
   container.innerHTML = '';
@@ -1862,7 +1992,7 @@ async function printFullReport() {
   // ----- Content pages, each inside the same rounded frame -----
   pageOrder.forEach(key => {
     pageCounter++;
-    const wrap = document.createElement('div');
+    const wrap = document.createElement(key === 'performance' || key === 'register' ? 'section' : 'div');
     wrap.className = 'report-page';
 
     const frame = document.createElement('div');
@@ -1896,25 +2026,52 @@ async function printFullReport() {
       return;
     } else if (key === 'performance') {
       wrap.classList.add('performance-report-page');
-      const source = document.getElementById('perfEmbedSource');
-      const clone = source.cloneNode(true);
-      clone.removeAttribute('id');
-      clone.style.position = 'static';
-      clone.style.left = 'auto';
-      clone.style.top = 'auto';
-      clone.style.width = '100%';
-      body.appendChild(clone);
-      // The clone's <canvas> elements are blank copies (see
-      // bakeCanvasesIntoImages) — snapshot the pixels from the still-live
-      // originals inside #perfEmbedSource before swapping them in.
-      bakeCanvasesIntoImages(source, clone);
+      const iframe = document.createElement('iframe');
+      iframe.className = 'embedded-page';
+      const readinessPromise = waitForEmbeddedPageReadyMessage(iframe);
+      iframe.src = 'performance.html?print=1&snapshot=1';
+      body.appendChild(iframe);
+      iframeLoadPromises.push(new Promise(resolve => {
+        let done = false;
+        const embed = () => {
+          if (done) return;
+          done = true;
+          iframe.contentWindow?.postMessage({
+            type: 'performance-print-snapshot',
+            snapshot: performanceSnapshot
+          }, '*');
+          embedExternalReportPage(iframe, wrap, body, readinessPromise).then(resolve);
+        };
+        iframe.addEventListener('load', embed);
+        setTimeout(embed, 12000);
+      }));
       container.appendChild(wrap);
-      applyAutoPageSize(wrap, clone);
       return;
+    } else if (key === 'register') {
+      wrap.classList.add('print-page');
+      wrap.classList.add('register-report-page');
+      const iframe = document.createElement('iframe');
+      iframe.className = 'embedded-page';
+      const readinessPromise = waitForEmbeddedPageReadyMessage(iframe);
+      iframe.src = `issue-risk-register.html?print=1&project=${encodeURIComponent(perfSnapshotData?.id || 1)}`;
+      body.appendChild(iframe);
+      iframeLoadPromises.push(new Promise(resolve => {
+        let done = false;
+        iframe.addEventListener('load', () => {
+          if (!done) {
+            done = true;
+            embedExternalReportPage(iframe, wrap, body, readinessPromise).then(resolve);
+          }
+        });
+        setTimeout(() => {
+          if (!done) { done = true; embedExternalReportPage(iframe, wrap, body, readinessPromise).then(resolve); }
+        }, 12000);
+      }));
     } else {
       wrap.classList.add('embed-page-wrap');
       const iframe = document.createElement('iframe');
       iframe.className = 'embedded-page';
+      const readinessPromise = waitForEmbeddedPageReadyMessage(iframe);
       iframe.src = key + '.html?print=1';
       body.appendChild(iframe);
       iframeLoadPromises.push(new Promise(resolve => {
@@ -1922,22 +2079,44 @@ async function printFullReport() {
         iframe.addEventListener('load', () => {
           if (!done) {
             done = true;
-            embedExternalReportPage(iframe, wrap, body).then(resolve);
+            embedExternalReportPage(iframe, wrap, body, readinessPromise).then(resolve);
           }
         });
         // Absolute safety net in case 'load' never fires for some reason.
         setTimeout(() => {
-          if (!done) { done = true; embedExternalReportPage(iframe, wrap, body).then(resolve); }
+          if (!done) { done = true; embedExternalReportPage(iframe, wrap, body, readinessPromise).then(resolve); }
         }, 9000);
       }));
     }
 
     container.appendChild(wrap);
   });
-
   await Promise.all(iframeLoadPromises);
   await Promise.all([...container.querySelectorAll('img')].map(img =>
     img.complete ? null : new Promise(r => { img.onload = img.onerror = r; })));
+
+  await document.fonts.ready;
+  paginateRegisterReport(container);
+
+  const oversizedPages = [...container.querySelectorAll('[data-print-fit-error], [data-print-error]')];
+  if (oversizedPages.length) {
+    overlay.style.display = 'none';
+    document.body.classList.remove('printing-full-report');
+    container.innerHTML = '';
+    const registerUnavailable = oversizedPages.some(page => page.dataset.printError === 'register data unavailable');
+    const performanceUnavailable = oversizedPages.some(page => page.dataset.printError === 'performance data unavailable');
+    const preparationFailed = oversizedPages.some(page => page.dataset.printError === 'page preparation failed');
+    const registerErrorDetail = oversizedPages.find(page => page.dataset.printError === 'register data unavailable')?.dataset.printErrorDetail;
+    const performanceErrorDetail = oversizedPages.find(page => page.dataset.printError === 'performance data unavailable')?.dataset.printErrorDetail;
+    alert(registerUnavailable
+      ? 'The Issues & Risks data could not be loaded (permission or setup failure). Printing was stopped so the report does not omit register records.' + (registerErrorDetail ? `\n\nDetails: ${registerErrorDetail}` : '')
+      : performanceUnavailable
+        ? 'The Performance Dashboard could not be loaded. Printing was stopped so the report does not omit performance data.' + (performanceErrorDetail ? `\n\nDetails: ${performanceErrorDetail}` : '')
+      : preparationFailed
+        ? 'A report page could not be prepared. Printing was stopped rather than exporting an incomplete report.'
+        : 'A report page could not be prepared. Printing was stopped rather than exporting an incomplete report.');
+    return;
+  }
 
   console.log('[print-debug] all pages built. report-page count =', container.querySelectorAll('.report-page').length, '| container display =', getComputedStyle(container).display);
   document.querySelectorAll('.report-page').forEach((rp, i) => {

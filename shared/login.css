@@ -10,11 +10,12 @@ body:has(.split-screen) .split-screen {
     width: min(1180px, 100%);
     min-height: min(760px, calc(100dvh - 80px));
     margin: 0 auto;
+    gap: 18px;
     overflow: hidden;
     align-items: stretch;
     border: 1px solid rgba(255, 255, 255, 0.9);
     border-radius: 30px;
-    background: #fff;
+    background: #cbd7ee;
     box-shadow: 0 30px 90px rgba(44, 67, 130, 0.18);
 }
 
@@ -23,6 +24,7 @@ body:has(.split-screen) .form-panel {
     flex: 1 1 48%;
     min-height: 0;
     padding: 56px clamp(32px, 6vw, 76px) !important;
+    border-radius: 24px;
 }
 
 body:has(.split-screen) .form-panel-inner {
@@ -34,6 +36,7 @@ body:has(.split-screen) .brand-panel {
     flex: 1 1 52%;
     min-height: 0;
     background: #172f68 !important;
+    border-radius: 24px;
 }
 
 body:has(.split-screen) .brand-bg {
@@ -104,6 +107,7 @@ body:has(.split-screen) .input-wrapper input {
     min-height: 50px;
     border-radius: 12px;
     background: #f8faff;
+    padding-inline: 42px 12px !important;
 }
 
 body:has(.split-screen) .btn-submit {

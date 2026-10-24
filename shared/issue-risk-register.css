@@ -27,7 +27,7 @@
 .register-analytics{display:grid;grid-template-columns:1.5fr 1fr;gap:12px}.register-chart{position:relative;height:240px;min-width:0}.register-chart canvas,.register-donut canvas{position:absolute;inset:0;width:100%!important;height:100%!important}
 .register-chart-note{font-size:11px;color:#62779c;margin:8px 0 0}.register-chart-empty{min-height:240px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:12px;color:#7c8ba6;font-size:13px}
 .register-status-layout{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:center;min-height:240px}.register-donut{position:relative;min-width:0;height:205px}
-.register-donut-total{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;pointer-events:none;color:#123d91}.register-donut-total strong{font-size:28px}.register-donut-total span{font-size:11px}
+.register-donut-total{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;pointer-events:none;color:#123d91}.register-donut-total strong{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:28px;line-height:1;font-weight:700}.register-donut-total span{position:absolute;left:0;right:0;bottom:0;font-size:11px;text-align:center}
 .register-status-legend{border:1px solid #e4ecfc;border-radius:7px;overflow:hidden}.register-status-legend button{width:100%;justify-content:space-between;border:0;border-bottom:1px solid #e6edfc;border-radius:0;padding:10px 9px;font-size:11px;white-space:normal;text-align:left}
 .register-status-legend button:last-child{border:0}.register-status-legend button span{display:flex;align-items:center;gap:7px}.register-legend-dot{width:9px;height:9px;display:inline-block;border-radius:2px;flex-shrink:0}
 .register-table-title{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.register-table-title h2{margin-bottom:0}.register-actions input{width:260px;min-width:0}
@@ -54,10 +54,62 @@
 .register-history-item{border-top:1px solid #e7edfa;padding:11px 0;font-size:12px}.register-history-item p{margin:4px 0;color:#6a7d9d;font-size:11px;white-space:pre-wrap;overflow-wrap:anywhere}
 .register-form-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px}.register-field{display:flex;flex-direction:column;gap:5px;font-size:11px;color:#5b7297;min-width:0}.register-field input,.register-field select,.register-field textarea{width:100%;color:#14213d}.register-field.wide{grid-column:1/-1}.register-field textarea{resize:vertical;min-height:72px}.register-field input:read-only{background:#f4f7fc}
 .register-savebar{display:flex;gap:9px;justify-content:flex-end;align-items:center;margin:16px 0}.register-savebar>span{margin-right:auto;font-size:12px;color:#637ba3}.register-risk-score{display:flex;gap:30px;padding:12px 0 0;color:#667fa5;font-size:12px}.register-risk-score strong{margin-left:10px;color:#002bff;font-size:19px}.register-upload{display:inline-flex;gap:12px;align-items:center;font-size:12px;color:#52719f;margin:10px 0}.register-upload input{max-width:320px}.register-check{white-space:nowrap}
+.register-editor-page{background:#f5f7fb!important}
+.register-editor-page .register-main{max-width:1200px;padding:24px 20px 36px}
+.register-editor-page .register-page-heading{align-items:center;padding:0 4px 14px;margin-bottom:16px;border-bottom:3px solid #d9e5ff}
+.register-editor-page .register-eyebrow{color:#657699}
+.register-editor-page h1{color:#002bff;letter-spacing:-.4px}
+.register-editor-page .register-subtitle{color:#596579}
+.register-editor-page .register-card{padding:18px 20px;border-color:#dce5f4;border-radius:12px;box-shadow:0 1px 6px #1a48a509;transition:box-shadow .2s ease}
+.register-editor-page .register-card:hover{box-shadow:0 10px 22px -10px rgba(15,23,42,.18)}
+.register-editor-page .register-card h2{margin:0 0 14px;padding-bottom:7px;border-bottom:2px solid #eff4ff;font-size:14px!important;font-weight:700;color:#1e40af}
+.register-editor-page .register-form-grid{gap:14px 16px}
+.register-editor-page .register-field{gap:5px;color:#64748b;font-size:11px;font-weight:700}
+.register-editor-page .register-field input,.register-editor-page .register-field select,.register-editor-page .register-field textarea{border-color:#e2e8f0!important;border-radius:6px!important;background:#f8fafc;font:13px Arial,'Segoe UI',sans-serif;min-height:36px;padding:8px 10px;transition:border-color .15s,box-shadow .15s}
+.register-editor-page .register-field textarea{min-height:84px}
+.register-editor-page .register-field :is(input,select,textarea):focus{outline:none!important;border-color:#1e40af!important;background:#fff;box-shadow:0 0 0 3px #1e40af1a}
+.register-editor-page .register-field input:read-only{background:#f1f5f9}
+.register-editor-page .register-savebar{position:sticky;bottom:12px;z-index:2;padding:12px 14px;border:1px solid #dce5f4;border-radius:10px;background:#ffffffed;box-shadow:0 6px 20px #193c7815;backdrop-filter:blur(8px)}
+.register-editor-page .register-savebar>span{color:#596579}
+.register-editor-page .register-risk-score{padding:12px;background:#f5f8ff;border:1px solid #e2e8f0;border-radius:8px}
+.register-editor-page .register-message{border-color:#dce5f4;border-radius:9px;box-shadow:0 1px 6px #1a48a509}
+.register-editor-page .register-change-list{margin:12px 0 0}
+.register-editor-page .register-change-list>div{padding:12px;border:1px solid #e2e8f0;border-radius:8px;margin-top:8px;background:#f8fafc}
+.register-editor-page .register-change-list dt{font-weight:700;color:#1e40af;margin-bottom:8px}
+.register-editor-page .register-change-list dd{margin:0}
+.register-editor-page .register-change-list dd>span{font-size:11px;color:#64748b}
+.register-editor-page .register-change-list pre{font:12px/1.6 Arial,sans-serif;white-space:pre-wrap;overflow-wrap:anywhere;margin:4px 0 10px;color:#14213d}
+.register-print-embed .register-main{max-width:none;padding:12px 16px}
+.register-print-embed .register-page-heading{padding-bottom:8px;margin-bottom:10px}
+.register-print-embed h1{font-size:20px!important}
+.register-print-embed .register-kpis{grid-template-columns:repeat(5,minmax(0,1fr));gap:7px;margin-bottom:8px}
+.register-print-embed .register-kpi{padding:9px 11px}
+.register-print-embed .register-kpi-value{font-size:21px;margin-bottom:4px}
+.register-print-embed .register-kpi-trend{font-size:8px}
+.register-print-embed .register-analytics{grid-template-columns:1.5fr 1fr;gap:8px}
+.register-print-embed .register-chart{height:105px}
+.register-print-embed .register-status-layout{min-height:105px;gap:5px}
+.register-print-embed .register-donut{height:90px}
+.register-print-embed .register-card{padding:10px 12px;margin-bottom:8px}
+.register-print-embed .register-card h2{font-size:13px!important}
+.register-print-embed .register-table-title h2{margin-bottom:0}
+.register-print-embed .register-table-scroll{overflow:visible}
+.register-print-embed #registerTable{min-width:0;width:100%;table-layout:fixed;font-size:9px}
+.register-print-embed #registerTable th,.register-print-embed #registerTable td{padding:5px 4px;font-size:9px}
+.register-print-embed #registerTable td:nth-child(3){min-width:0}
+.register-print-embed #registerTable th:nth-child(3){width:23%}
+.register-print-embed #registerTable th:nth-child(7){width:13%}
+.register-print-embed .register-badge{font-size:8px;min-width:0;padding:2px 3px}
+.register-print-embed .register-financial-kpis{grid-template-columns:repeat(6,minmax(0,1fr));gap:6px}
+.register-print-embed .register-financial-kpis .register-kpi{padding:8px 5px}
+.register-print-embed .register-financial-kpis .register-kpi-value{font-size:17px}
+.register-print-embed .register-financial-kpis p{font-size:8px}
+@media(max-width:700px){.register-editor-page .register-main{padding:18px 12px 28px}.register-editor-page .register-card{padding:15px}.register-editor-page .register-page-heading{align-items:flex-start}}
 @media(max-width:1150px){.register-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}.register-analytics{grid-template-columns:1fr}.register-financial-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}.register-page-heading{flex-wrap:wrap}.register-chart{height:250px}}
 @media(max-width:700px){.register-main{padding:18px 12px}.register-page h1{font-size:21px!important}.register-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.register-kpi{padding:12px}.register-kpi-value{font-size:25px}.register-status-layout{grid-template-columns:1fr}.register-donut{height:210px;max-width:260px;width:100%;margin:auto}.register-form-grid,.register-details-grid{grid-template-columns:1fr}.register-project-controls{justify-content:flex-start}.register-project-controls select{max-width:230px}.register-actions{width:100%}.register-actions input{width:100%;flex:1 1 100%}.register-financial-kpis{grid-template-columns:1fr 1fr}.register-datebar>span{width:100%;margin:0}.register-export-bar>div{margin-top:5px}.register-brand{padding:16px 22px!important}.register-brand>span{display:none}}
 @media print{
- @page{size:A4 landscape;margin:8mm}
+ @page registerStandalone{size:A4 portrait;margin:8mm}
+ html>body.register-page{page:registerStandalone}
  html:has(body.register-page),body.register-page{width:auto!important;height:auto!important;min-height:0!important;background:white!important;margin:0!important;padding:0!important;overflow:visible!important;print-color-adjust:exact;-webkit-print-color-adjust:exact}
  .register-page .nav-container,.register-page #navToggleBtn,.register-page .no-print,.register-page #mdceoAccountMenu,.register-page #notifyToastHost,.register-page .mdceo-welcome-toast,.register-page .register-datebar,.register-page .register-project-controls{display:none!important}
  .register-page .register-brand{width:100%!important;max-width:100%!important;margin:0 0 8px!important;margin-inline:0!important;padding:0 0 7px!important;padding-inline:0!important;position:static!important;overflow:visible!important;border-bottom:2px solid #adc6ff}.register-brand img{width:28px;height:25px}
@@ -67,6 +119,85 @@
  .register-table-section{break-inside:auto}.register-table-scroll{overflow:visible!important;border-radius:0}#registerTable{min-width:0;width:100%;font-size:9px;table-layout:fixed}#registerTable td,#registerTable th{padding:5px 4px;font-size:9px}#registerTable td:nth-child(3){min-width:0}#registerTable th:nth-child(3){width:22%}#registerTable th:nth-child(7){width:13%}#registerTable tr{break-inside:avoid}#registerTable thead{display:table-header-group}.register-badge{font-size:8px;padding:2px 3px;min-width:0;white-space:normal}
  .register-financial-kpis{grid-template-columns:repeat(6,1fr);gap:6px}.register-financial-kpis .register-kpi-value{font-size:17px}.register-financial-kpis .register-kpi{padding:8px}.register-financial-kpis p{font-size:8px}.register-print-meta{display:block;font-size:9px;color:#657699}
  .register-page button{border:0;background:none;min-height:0;padding:0;color:inherit;text-align:left}.register-card-heading select,.register-card-heading button{display:none}.register-page dialog{display:none}
- body.register-page:not(.register-summary) .register-analytics{display:none!important}
+ body.register-page:not(.register-summary):not(.register-print-embed) .register-analytics{display:grid!important}
+ .register-print-embed .register-analytics{display:grid!important;grid-template-columns:1.5fr 1fr!important;gap:8px}
+ .register-print-embed .register-datebar,.register-print-embed .register-message,.register-print-embed .register-project-controls,.register-print-embed .no-print{display:none!important}
+ .register-print-embed .register-main{padding:0!important;max-width:none!important;width:100%}
+ .register-print-embed .register-page-heading{margin-bottom:8px!important;padding-bottom:7px!important}
+ .register-print-embed h1{font-size:18px!important}
+ .register-print-embed .register-kpis{grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:8px}
+ .register-print-embed .register-kpi{padding:7px}
+ .register-print-embed .register-kpi-value{font-size:18px}
+ .register-print-embed .register-kpi-trend{font-size:7px}
+ .register-print-embed .register-chart{height:105px!important}
+ .register-print-embed .register-status-layout{min-height:105px!important}
+ .register-print-embed .register-donut{height:90px!important}
+ .register-print-embed .register-card{padding:8px 9px;margin-bottom:7px;box-shadow:none}
+ .register-print-embed .register-card h2{font-size:12px!important}
+ .register-print-embed .register-table-scroll{overflow:visible!important;border-radius:0}
+ .register-print-embed #registerTable{min-width:0;width:100%;font-size:9px;table-layout:fixed}
+ .register-print-embed #registerTable td,.register-print-embed #registerTable th{padding:4px 3px;font-size:9px}
+ .register-print-embed #registerTable td:nth-child(3){min-width:0}
+ .register-print-embed #registerTable th:nth-child(3){width:23%}
+ .register-print-embed #registerTable th:nth-child(7){width:13%}
+ .register-print-embed .register-badge{font-size:7px;padding:2px;min-width:0}
+ .register-print-embed .register-financial-kpis{grid-template-columns:repeat(6,minmax(0,1fr));gap:5px}
+ .register-print-embed .register-financial-kpis .register-kpi{padding:6px 4px}
+ .register-print-embed .register-financial-kpis .register-kpi-value{font-size:15px}
+ .register-print-embed .register-financial-kpis p{font-size:7px}
+ #registerTable th,#registerTable td{font-size:9pt;white-space:normal;overflow-wrap:anywhere}
+ #registerTable th:nth-child(1){width:9%}#registerTable th:nth-child(2){width:10%}#registerTable th:nth-child(3){width:27%}#registerTable th:nth-child(4){width:8%}#registerTable th:nth-child(5){width:8%}#registerTable th:nth-child(6){width:10%}#registerTable th:nth-child(7){width:11%}#registerTable th:nth-child(8){width:11%}#registerTable th:nth-child(9){width:6%}
+ #registerTable .register-badge{font-size:9pt;padding:0 1px}
+ body.register-page:not(.register-print-embed) .register-financial-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}
+ body.register-page:not(.register-print-embed) .register-financial-kpis .register-kpi-title{font-size:9pt}
+ body.register-page:not(.register-print-embed) .register-financial-kpis p{font-size:8pt}
  body.register-summary .register-table-section{display:none}body.register-summary .register-analytics{grid-template-columns:1fr}body.register-summary .register-chart{height:210px!important}body.register-summary .register-status-layout{min-height:200px!important}body.register-summary .register-donut{width:190px!important;height:190px!important;justify-self:center}.register-chart-empty{min-height:125px}
+}
+
+/* Polished, readable register print theme for standalone and embedded print views. */
+@media print{
+ @page registerStandalone{size:A4 portrait;margin:11mm 10mm}
+ html:has(body.register-page),body.register-page{print-color-adjust:exact;-webkit-print-color-adjust:exact}
+ .register-page .register-brand{align-items:center!important;gap:10px!important;padding:0 0 9px!important;margin:0 0 12px!important;border-bottom:2px solid #002bff!important}
+ .register-page .register-brand strong{font-size:19px!important;letter-spacing:-.4px!important;color:#002bff!important}
+ .register-page .register-brand>span{font-size:8px!important;letter-spacing:1.4px!important;color:#52688f!important}
+ .register-page .register-brand img{width:30px!important;height:27px!important}
+ .register-main{font-family:Arial,'Segoe UI',sans-serif!important;color:#172b4d!important}
+ .register-page-heading{padding:0 0 8px!important;margin:0 0 10px!important;border-bottom:1px solid #dce8ff}
+ .register-page h1{font-size:21px!important;line-height:1.25!important;color:#002bff!important}
+ .register-subtitle{font-size:10pt!important;color:#52688f!important;line-height:1.4!important}
+ .register-kpis{gap:6px!important;margin-bottom:9px!important}
+ .register-kpi{border:1px solid #cbdcff!important;border-top:3px solid #007fff!important;border-radius:5px!important;padding:8px!important;box-shadow:none!important}
+ .register-kpi-title{font-size:8.5pt!important;color:#52688f!important}
+ .register-kpi-value{font-size:19pt!important;color:#002bff!important;margin-bottom:3px!important}
+ .register-kpi-trend{font-size:7.5pt!important;color:#657699!important}
+ .register-analytics{gap:7px!important}
+ .register-card{border:1px solid #cbdcff!important;border-radius:5px!important;padding:9px 10px!important;margin-bottom:8px!important;box-shadow:none!important;break-inside:avoid}
+ .register-card-heading{border-color:#dce8ff!important}
+ .register-card h2{font-size:11pt!important;color:#002bff!important}
+ .register-chart{height:125px!important}
+ .register-status-layout{min-height:125px!important}
+ .register-donut{height:115px!important}
+ .register-status-legend{border-color:#dce8ff!important}
+ .register-status-legend button{font-size:8pt!important;padding:4px 6px!important}
+ .register-table-section{break-inside:auto!important}
+ .register-table-scroll{overflow:visible!important;border:1px solid #cbdcff!important;border-radius:5px!important}
+ #registerTable{width:100%!important;min-width:0!important;table-layout:fixed!important;border-collapse:collapse!important;font:8.5pt/1.35 Arial,'Segoe UI',sans-serif!important;color:#172b4d!important}
+ #registerTable thead{display:table-header-group!important}
+ #registerTable th{background:#eaf1ff!important;color:#173d83!important;font-weight:700!important;border-bottom:2px solid #9dbaff!important;padding:6px 5px!important;font-size:8pt!important;white-space:normal!important}
+ #registerTable td{padding:6px 5px!important;border-bottom:1px solid #dce8ff!important;font-size:8.2pt!important;vertical-align:top!important;overflow-wrap:anywhere!important;max-width:none!important}
+ #registerTable tbody tr:nth-child(even){background:#f5f8ff!important}
+ #registerTable tr{break-inside:avoid!important;page-break-inside:avoid!important}
+ #registerTable th:nth-child(1){width:8%!important}#registerTable th:nth-child(2){width:9%!important}#registerTable th:nth-child(3){width:25%!important}#registerTable th:nth-child(4){width:8%!important}#registerTable th:nth-child(5){width:8%!important}#registerTable th:nth-child(6){width:10%!important}#registerTable th:nth-child(7){width:11%!important}#registerTable th:nth-child(8){width:12%!important}#registerTable th:nth-child(9){width:9%!important}
+ .register-badge{min-width:0!important;white-space:normal!important;font-size:7.5pt!important;font-weight:700!important;padding:2px 4px!important;border-radius:4px!important}
+ .register-financial-kpis{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:6px!important}
+ .register-financial-kpis .register-kpi{padding:7px!important}
+ .register-financial-kpis .register-kpi-value{font-size:14pt!important}
+ .register-financial-kpis .register-kpi-title,.register-financial-kpis p{font-size:7.5pt!important}
+ .register-print-meta{display:block!important;margin:5px 0 8px!important;padding:5px 7px!important;border-left:3px solid #007fff!important;background:#f3f7ff!important;color:#52688f!important;font-size:8pt!important}
+ .register-print-embed .register-kpis{grid-template-columns:repeat(5,minmax(0,1fr))!important}
+ .register-print-embed .register-table-section{break-inside:auto!important}
+ .register-print-embed #registerTable th,.register-print-embed #registerTable td{font-size:8pt!important;padding:5px 4px!important}
+ .register-print-embed .register-card{padding:8px!important}
+ .register-page button{color:inherit!important}
 }

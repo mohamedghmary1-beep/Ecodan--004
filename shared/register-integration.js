@@ -1,7 +1,7 @@
 (function(){
  'use strict';
  const page=location.pathname.split('/').pop();
- if(!['home.html','summary.html','performance.html','general_by_activity.html','task-list.html','weekly_report.html','weekly_report_view.html'].includes(page))return;
+ if(!['general_by_activity.html','task-list.html'].includes(page))return;
  let started=false;
  async function init(){if(started)return;started=true;
   try{

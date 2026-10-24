@@ -55,7 +55,7 @@
     const ADMIN_AND_SUPER_ADMIN_PAGES = ['approvals.html'];
 
     // Pages every logged-in user can always reach, no matter what.
-    const ALWAYS_ALLOWED_PAGES = ['index.html'];
+    const ALWAYS_ALLOWED_PAGES = ['index.html', 'settings.html'];
 
     // Contractor accounts always see this page (their core page). Any OTHER
     // role can also be granted it explicitly via the page_contractor_submit
@@ -264,91 +264,57 @@
         return val === 'yes';
     }
 
-    // Small circular avatar (first letter of the username) injected into the
-    // top header of every protected page, with a dropdown holding "change
-    // password" and "logout" - replaces the separate buttons that used to
-    // sit in the nav bar on each page individually.
-    function injectAccountMenu(username, email) {
-        // Some pages (performance.html, weekly_report.html,
-        // weekly_report_view.html) use a differently-named top bar
-        // (".topbar") instead of ".header" - fall back to that so the
-        // account menu (and with it, the real sign-out) still gets
-        // attached everywhere instead of silently no-op'ing.
-        const headerEl = document.querySelector('.header') || document.querySelector('.topbar');
-        if (!headerEl || document.getElementById('mdceoAccountMenu')) return;
-        if (getComputedStyle(headerEl).position === 'static') {
-            headerEl.style.position = 'relative';
+    // Add shared account actions inside the existing navigation section.
+    function injectNavAccountActions() {
+        const nav = document.querySelector('.nav-container');
+        if (!nav || document.getElementById('mdceoNavAccountMenu')) return;
+        if (!document.getElementById('mdceoNavAccountStyle')) {
+            const style = document.createElement('style');
+            style.id = 'mdceoNavAccountStyle';
+            style.textContent = '.mdceo-nav-account{position:relative}.mdceo-nav-account summary{list-style:none;cursor:pointer}.mdceo-nav-account summary::-webkit-details-marker{display:none}.mdceo-nav-account-menu{position:absolute;z-index:100;inset-inline-end:0;top:calc(100% + 6px);min-width:205px;padding:5px;background:#fff;border:1px solid #dce8ff;border-radius:10px;box-shadow:0 10px 24px #14213d24}.mdceo-nav-account-menu button{display:flex;width:100%;gap:9px;align-items:center;padding:11px 12px;border:0;background:transparent;color:#14213d;text-align:start;font:inherit;cursor:pointer}.mdceo-nav-account-menu button:hover{background:#f0f5ff}.mdceo-nav-account-menu button:last-child{color:#b42318}';
+            document.head.appendChild(style);
         }
-
-        const lang = (typeof window.getCurrentLang === 'function') ? window.getCurrentLang() : 'ar';
-        const t = (lang === 'en')
-            ? { changePass: 'Change Password', logout: 'Logout' }
-            : { changePass: 'تغيير كلمة المرور', logout: 'تسجيل الخروج' };
-
-        const menuStyle = document.createElement('style');
-        menuStyle.textContent = `
-            .mdceo-account-menu { position:absolute; inset-inline-end:16px; top:50%; transform:translateY(-50%); z-index:60; }
-            .mdceo-account-avatar {
-                width:38px; height:38px; border-radius:50%;
-                background:rgba(255,255,255,0.18); color:#fff;
-                display:flex; align-items:center; justify-content:center;
-                font-weight:800; font-size:16px; cursor:pointer;
-                border:1.5px solid rgba(255,255,255,0.4); user-select:none;
-            }
-            .mdceo-account-avatar:hover { background:rgba(255,255,255,0.3); }
-            .mdceo-account-dropdown {
-                display:none; position:absolute; top:46px; inset-inline-end:0;
-                background:#fff; color:#1e293b; border-radius:10px;
-                box-shadow:0 10px 24px rgba(0,0,0,0.18); min-width:190px;
-                overflow:hidden; border:1px solid #e2e8f0; text-align:right;
-            }
-            .mdceo-account-dropdown.open { display:block; }
-            .mdceo-account-name {
-                padding:12px 14px; font-weight:700; font-size:13px;
-                border-bottom:1px solid #e2e8f0; background:#f8fafc;
-                white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-            }
-            .mdceo-account-item {
-                display:flex; align-items:center; gap:8px; padding:11px 14px;
-                font-size:13.5px; font-weight:600; cursor:pointer; color:#1e293b;
-            }
-            .mdceo-account-item:hover { background:#eff6ff; color:#1e40af; }
-            .mdceo-account-item.danger:hover { background:#fef2f2; color:#dc2626; }
-            [onclick="logoutUser()"], [onclick="openChangePasswordModal()"] { display:none !important; }
-        `;
-        document.head.appendChild(menuStyle);
-
-        const label = (username || email || '?').trim();
-        const initial = (label.charAt(0) || '?').toUpperCase();
-
-        const wrap = document.createElement('div');
-        wrap.className = 'mdceo-account-menu';
-        wrap.id = 'mdceoAccountMenu';
-        wrap.innerHTML = `
-            <div class="mdceo-account-avatar" id="mdceoAccountAvatar">${escapeHtml(initial)}</div>
-            <div class="mdceo-account-dropdown" id="mdceoAccountDropdown">
-                <div class="mdceo-account-name">${escapeHtml(label)}</div>
-                <div class="mdceo-account-item" id="mdceoChangePass"><i class="fa-solid fa-key"></i> ${t.changePass}</div>
-                <div class="mdceo-account-item danger" id="mdceoLogout"><i class="fa-solid fa-right-from-bracket"></i> ${t.logout}</div>
-            </div>
-        `;
-        headerEl.appendChild(wrap);
-
-        const avatar = wrap.querySelector('#mdceoAccountAvatar');
-        const dropdown = wrap.querySelector('#mdceoAccountDropdown');
-        avatar.addEventListener('click', function (e) {
-            e.stopPropagation();
-            dropdown.classList.toggle('open');
+        const details = document.createElement('details');
+        details.id = 'mdceoNavAccountMenu';
+        details.className = 'mdceo-nav-account';
+        details.innerHTML = '<summary class="nav-btn" aria-haspopup="menu"><span data-i18n="accountMenuLabel">Account</span></summary><div class="mdceo-nav-account-menu" role="menu"><button type="button" role="menuitem" data-account-action="password"><i class="fa-solid fa-key" aria-hidden="true"></i><span data-i18n="navChangePassword">Change Password</span></button><button type="button" role="menuitem" data-account-action="logout"><i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i><span data-i18n="navLogout">Log Out</span></button></div>';
+        const logout = nav.querySelector('.logout-btn');
+        if (logout && logout.parentElement) logout.parentElement.insertBefore(details, logout);
+        else nav.appendChild(details);
+        details.querySelector('[data-account-action="password"]').addEventListener('click', function () {
+            details.open = false;
+            window.openChangePasswordModal();
         });
-        document.addEventListener('click', function () { dropdown.classList.remove('open'); });
-        wrap.querySelector('#mdceoChangePass').addEventListener('click', function () {
-            dropdown.classList.remove('open');
-            if (typeof window.openChangePasswordModal === 'function') window.openChangePasswordModal();
-        });
-        wrap.querySelector('#mdceoLogout').addEventListener('click', function () {
-            dropdown.classList.remove('open');
+        details.querySelector('[data-account-action="logout"]').addEventListener('click', function () {
+            details.open = false;
             window.logoutUser();
         });
+        document.addEventListener('click', function (event) { if (!details.contains(event.target)) details.open = false; });
+    }
+
+    function injectSettingsNavItem() {
+        const nav = document.querySelector('.nav-container');
+        if (!nav) return;
+        const page = currentPage();
+        let link = Array.from(nav.querySelectorAll('a[href]')).find(function (item) {
+            try { return new URL(item.href, window.location.href).pathname.endsWith('/settings.html'); }
+            catch (e) { return false; }
+        });
+        if (!link) {
+            link = document.createElement('a');
+            link.href = 'settings.html';
+            link.className = 'nav-btn';
+            link.innerHTML = '<span data-i18n="navSettings"></span>';
+            const logout = nav.querySelector('.logout-btn');
+            if (logout && logout.parentElement) logout.parentElement.insertBefore(link, logout);
+            else nav.appendChild(link);
+        }
+        link.classList.add('nav-btn');
+        link.classList.toggle('active', page === 'settings.html');
+        if (page === 'settings.html') link.setAttribute('aria-current', 'page');
+        else link.removeAttribute('aria-current');
+        const label = link.querySelector('[data-i18n="navSettings"]') || link;
+        label.textContent = (window.getCurrentLang && window.getCurrentLang() === 'ar') ? 'الإعدادات' : 'Settings';
     }
 
     async function init() {
@@ -420,7 +386,8 @@
         }
 
         reveal();
-        injectAccountMenu(profile.username, session.user.email);
+        injectNavAccountActions();
+        injectSettingsNavItem();
         showWelcome(profile.username, session.user.id);
         setupPageTransitions();
 
@@ -463,11 +430,30 @@
         }
     }
 
-    window.logoutUser = function () {
-        try { sessionStorage.removeItem(`mdceo-welcomed-${window.__guardSession?.user?.id}`); } catch (e) { /* ignore */ }
-        guardClient.auth.signOut().finally(function () {
-            window.location.href = '../index.html';
+    window.logoutUser = async function () {
+        const arabic = (window.getCurrentLang && window.getCurrentLang() === 'ar');
+        const confirmed = await new Promise(function (resolve) {
+            const dialog = document.createElement('dialog');
+            dialog.className = 'mdceo-confirm-dialog';
+            dialog.innerHTML = `<form method="dialog" style="padding:24px;min-width:min(360px,calc(100vw - 48px));font:inherit;color:#14213d"><h2 style="margin:0 0 8px">${arabic ? 'تأكيد تسجيل الخروج' : 'Confirm log out'}</h2><p style="margin:0 0 20px;color:#657491">${arabic ? 'هل تريد تسجيل الخروج من حسابك؟' : 'Are you sure you want to log out of your account?'}</p><div style="display:flex;gap:10px;justify-content:flex-end"><button value="cancel">${arabic ? 'إلغاء' : 'Cancel'}</button><button value="confirm" style="background:#002bff;color:white;border:0">${arabic ? 'تسجيل الخروج' : 'Log out'}</button></div></form>`;
+            document.body.appendChild(dialog);
+            dialog.addEventListener('close', function () { const ok = dialog.returnValue === 'confirm'; dialog.remove(); resolve(ok); }, { once: true });
+            dialog.addEventListener('click', function (event) { if (event.target === dialog) dialog.close('cancel'); });
+            dialog.showModal();
         });
+        if (!confirmed) return;
+        try {
+            const { error } = await guardClient.auth.signOut();
+            if (error) throw error;
+            try { sessionStorage.clear(); } catch (e) { /* storage may be unavailable */ }
+            // Keep the language preference; clear only app-owned cached state.
+            try { Object.keys(localStorage).filter(key => key.startsWith('mdceo-') || key === 'userSession').forEach(key => localStorage.removeItem(key)); } catch (e) { /* ignore */ }
+            window.location.href = window.location.pathname.includes('/pages/') ? '../index.html' : 'index.html';
+        } catch (error) {
+            console.error('Sign out failed', error);
+            if (window.notify && window.notify.error) window.notify.error(arabic ? 'تعذر تسجيل الخروج. تحقق من الاتصال وحاول مرة أخرى.' : 'Could not sign out. Check your connection and try again.');
+            else window.alert(arabic ? 'تعذر تسجيل الخروج. تحقق من الاتصال وحاول مرة أخرى.' : 'Could not sign out. Check your connection and try again.');
+        }
     };
 
     // Re-verify identity by asking Supabase Auth to check the password again
@@ -536,91 +522,15 @@
         });
     };
 
-    // Self-service "change my password" modal. Available on every page that
-    // includes auth-guard.js (home.html, contractor-submit.html, etc).
-    // Requires the CURRENT password before accepting a new one - this re-uses
-    // reauthPassword (a real Supabase Auth check), never reads/compares any
-    // password value stored in the database.
+    // Keep every legacy password entry point on the same policy-enforcing form.
     window.openChangePasswordModal = function () {
-        const email = window.currentUserEmail;
-        if (!email) return;
-
-        let modal = document.createElement('div');
-        modal.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.55);' +
-            'display:flex;align-items:center;justify-content:center;z-index:9999;';
-        modal.innerHTML = `
-            <div style="background:#fff;padding:28px;border-radius:14px;max-width:360px;width:90%;
-                        box-shadow:0 20px 40px rgba(0,0,0,0.2);font-family:'Segoe UI',system-ui,sans-serif;">
-                <div style="font-weight:800;font-size:17px;margin-bottom:6px;color:#0f172a;">تغيير كلمة المرور</div>
-                <div style="color:#64748b;font-size:13px;margin-bottom:16px;">أدخل كلمة المرور الحالية، ثم كلمة المرور الجديدة مرتين</div>
-                <input type="password" id="cp-current" style="width:100%;box-sizing:border-box;padding:10px 12px;
-                       border:1px solid #e2e8f0;border-radius:8px;font-size:14px;margin-bottom:8px;" placeholder="كلمة المرور الحالية">
-                <input type="password" id="cp-new" style="width:100%;box-sizing:border-box;padding:10px 12px;
-                       border:1px solid #e2e8f0;border-radius:8px;font-size:14px;margin-bottom:8px;" placeholder="كلمة المرور الجديدة (6 أحرف على الأقل)">
-                <input type="password" id="cp-new2" style="width:100%;box-sizing:border-box;padding:10px 12px;
-                       border:1px solid #e2e8f0;border-radius:8px;font-size:14px;margin-bottom:8px;" placeholder="تأكيد كلمة المرور الجديدة">
-                <div id="cp-error" style="color:#ef4444;font-size:12px;min-height:16px;margin-bottom:10px;"></div>
-                <div style="display:flex;gap:8px;">
-                    <button id="cp-cancel" style="flex:1;padding:10px;border-radius:8px;border:1px solid #e2e8f0;
-                            background:#f8fafc;cursor:pointer;font-weight:700;">إلغاء</button>
-                    <button id="cp-confirm" style="flex:1;padding:10px;border-radius:8px;border:none;
-                            background:#2563eb;color:#fff;cursor:pointer;font-weight:700;">تأكيد</button>
-                </div>
-            </div>
-        `;
-        document.body.appendChild(modal);
-
-        const curInput = modal.querySelector('#cp-current');
-        const newInput = modal.querySelector('#cp-new');
-        const new2Input = modal.querySelector('#cp-new2');
-        const errBox = modal.querySelector('#cp-error');
-        curInput.focus();
-
-        modal.querySelector('#cp-cancel').onclick = function () { modal.remove(); };
-
-        modal.querySelector('#cp-confirm').onclick = async function () {
-            const current = curInput.value.trim();
-            const next = newInput.value;
-            const next2 = new2Input.value;
-            errBox.innerText = '';
-
-            if (!current) { errBox.innerText = 'يرجى إدخال كلمة المرور الحالية'; return; }
-            if (!next || next.length < 6) { errBox.innerText = 'يجب أن تتكون كلمة المرور الجديدة من 6 أحرف على الأقل'; return; }
-            if (next !== next2) { errBox.innerText = 'كلمتا المرور الجديدتان غير متطابقتين'; return; }
-
-            const confirmBtn = modal.querySelector('#cp-confirm');
-            confirmBtn.disabled = true;
-            confirmBtn.innerText = 'جاري التحديث...';
-
-            try {
-                const ok = await window.reauthPassword(current);
-                if (!ok) {
-                    errBox.innerText = 'كلمة المرور الحالية غير صحيحة';
-                    confirmBtn.disabled = false;
-                    confirmBtn.innerText = 'تأكيد';
-                    return;
-                }
-                const { error: updateError } = await guardClient.auth.updateUser({ password: next });
-                if (updateError) {
-                    errBox.innerText = 'حدث خطأ أثناء تحديث كلمة المرور، يرجى المحاولة مرة أخرى';
-                    confirmBtn.disabled = false;
-                    confirmBtn.innerText = 'تأكيد';
-                    return;
-                }
-                modal.remove();
-                notify.success('تم تغيير كلمة المرور بنجاح.');
-            } catch (e) {
-                errBox.innerText = 'حدث خطأ في الاتصال، يرجى المحاولة مرة أخرى';
-                confirmBtn.disabled = false;
-                confirmBtn.innerText = 'تأكيد';
-            }
-        };
-
-        [curInput, newInput, new2Input].forEach(function (inp) {
-            inp.addEventListener('keydown', function (e) {
-                if (e.key === 'Enter') modal.querySelector('#cp-confirm').click();
-            });
-        });
+        const destination = new URL('settings.html#securitySection', window.location.href);
+        if (currentPage() === 'settings.html') {
+            const trigger = document.getElementById('openPassword');
+            if (trigger) trigger.click();
+            return;
+        }
+        window.location.assign(destination.href);
     };
 
     // Builds a short-lived signed URL for a file stored in the (now private)

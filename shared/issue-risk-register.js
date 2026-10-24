@@ -1,12 +1,14 @@
 (function(){
  'use strict';
  const C=window.RegisterCore,$=id=>document.getElementById(id),E=C.esc;
- let api,context,items=[],events=[],performance=null,schedule={rows:[]},project,tab=new URLSearchParams(location.search).get('tab')||'all',page=0,sortKey='created_at',direction='desc',progressChart,statusChart,printing=false,started=false,filtered=[],bucketFilter='',detailAttachments=[],channel=null,refreshTimer,loadEpoch=0;
+ let api,context,items=[],events=[],performance=null,schedule={rows:[]},project,tab=new URLSearchParams(location.search).get('tab')||'all',page=0,sortKey='created_at',direction='desc',progressChart,statusChart,printing=new URLSearchParams(location.search).get('print')==='1',started=false,filtered=[],bucketFilter='',detailAttachments=[],channel=null,refreshTimer,loadEpoch=0;
  const COLORS={'Open Issues':'#ef4768','Open Risks':'#ffb21b','In Progress':'#007fff','Closed':'#10b981','Decisions Requested':'#7c3aed'};
  const notifyError=e=>window.notify?.error(e.message||String(e));
  function state(text,error=false){$('registerState').textContent=text;$('registerState').classList.toggle('error',error);}
+ function reportPageReady(error=''){if(new URLSearchParams(location.search).get('print')!=='1')return;document.body.classList.add('register-print-embed');const message={type:'print-page-ready',height:document.body.scrollHeight,error};window.parent.postMessage(message,'*');setTimeout(()=>window.parent.postMessage(message,'*'),300);}
  async function refreshNotificationCount(){try{const rows=await api.all('register_notifications',q=>q.eq('is_read',false).order('id'));$('notificationCount').textContent=rows.length;}catch{}}
  const manager=()=>!!context?.manager,mayCreate=()=>manager()||!!context?.engineer;
+ let inlineEditor;
  const mayEdit=r=>manager()||context?.engineer&&r.owner_id===context.user_id;
  const filters=()=>({project,from:$('dateFrom').value,to:$('dateTo').value,archived:$('showArchived').checked});
  function base(){return C.filter(items,filters());}
@@ -21,9 +23,12 @@
   $('registerTabs').innerHTML=[['all','All Items',tabRows.length],['issues','Issues',tabRows.filter(r=>r.kind==='issue').length],['risks','Risks',tabRows.filter(r=>r.kind==='risk').length],['decisions','Decisions',tabRows.filter(r=>r.kind==='decision').length],['overdue','Overdue',tabRows.filter(r=>C.overdue(r)).length],['closed','Closed',tabRows.filter(C.closed).length]].map(([key,label,count])=>`<button type="button" data-tab="${key}" aria-pressed="${tab===key}">${label}<span class="register-tab-count">${count}</span></button>`).join('');
  }
  function renderTable(){
-  filtered=C.sort(C.filter(items,currentFilters()),sortKey,direction);const size=Number($('pageSize').value),pages=Math.max(1,Math.ceil(filtered.length/size));page=Math.min(page,pages-1);
+  const activeFilters=currentFilters(),matching=printing
+   ?[...C.filter(items,{...activeFilters,archived:false}),...C.filter(items,{...activeFilters,archived:true})]
+   :C.filter(items,activeFilters);
+  filtered=C.sort(matching,sortKey,direction);const size=Number($('pageSize').value),pages=Math.max(1,Math.ceil(filtered.length/size));page=Math.min(page,pages-1);
   const rows=printing?filtered:filtered.slice(page*size,page*size+size);
-  $('registerRows').innerHTML=rows.map(r=>{const left=C.days(r.target_date),key=`${r.kind}:${r.id}`,type=r.kind==='decision'?'Decision Request':r.kind==='risk'?'Risk':'Issue';return `<tr><td>${E(r.code||key)}</td><td>${type}</td><td>${E(r.title)}</td><td>${E(r.category||'—')}</td><td>${badge(r.priority)}</td><td>${badge(r.status)}</td><td>${E(r.owner||'Unassigned')}</td><td>${E(r.target_date||'—')}</td><td>${left==null?'—':C.closed(r)?badge('Closed','green'):badge(String(left),left<0?'red':left<=3?'amber':'blue')}</td><td class="no-print"><div class="register-row-actions"><button data-action="view" data-key="${key}">Details</button>${mayEdit(r)?`<a class="register-button" href="issue-risk-editor.html?project=${r.project_id}&kind=${r.kind}&id=${r.id}">Edit</a>${r.kind!=='decision'||manager()?`<button data-action="lifecycle" data-key="${key}">${C.closed(r)?'Reopen':'Close'}</button>`:''}`:''}${manager()?`<button data-action="archive" data-key="${key}">${r.archived_at?'Restore':'Archive'}</button>`:''}</div></td></tr>`;}).join('')||'<tr><td colspan="10">No matching records. Change the filters or add your first item.</td></tr>';
+  $('registerRows').innerHTML=rows.map(r=>{const left=C.days(r.target_date),key=`${r.kind}:${r.id}`,type=r.kind==='decision'?'Decision Request':r.kind==='risk'?'Risk':'Issue',archived=printing&&r.archived_at?'<span class="register-archived-marker">ARCHIVED · </span>':'',description=printing&&r.description?`<div class="register-item-description">${E(r.description)}</div>`:'';return `<tr><td>${E(r.code||key)}</td><td>${type}</td><td>${archived}${E(r.title)}${description}</td><td>${E(r.category||'—')}</td><td>${badge(r.priority)}</td><td>${badge(r.status)}</td><td>${E(r.owner||'Unassigned')}</td><td>${E(r.target_date||'—')}</td><td>${left==null?'—':C.closed(r)?badge('Closed','green'):badge(String(left),left<0?'red':left<=3?'amber':'blue')}</td><td class="no-print"><div class="register-row-actions"><button data-action="view" data-key="${key}">Details</button>${mayEdit(r)?`<a class="register-button" href="issue-risk-editor.html?project=${r.project_id}&kind=${r.kind}&id=${r.id}">Edit</a>${r.kind!=='decision'||manager()?`<button data-action="lifecycle" data-key="${key}">${C.closed(r)?'Reopen':'Close'}</button>`:''}`:''}${manager()?`<button data-action="archive" data-key="${key}">${r.archived_at?'Restore':'Archive'}</button>`:''}</div></td></tr>`;}).join('')||'<tr><td colspan="10">No matching records. Change the filters or add your first item.</td></tr>';
   $('resultCount').textContent=`${filtered.length} matching records${bucketFilter?' · '+bucketFilter:''}`;$('pageSummary').textContent=`Page ${page+1} of ${pages}`;$('previousPage').disabled=page===0;$('nextPage').disabled=page>=pages-1;
   $('printMeta').textContent=`${context.projects.find(p=>String(p.id)===String(project))?.name||'Project'} · Report date: ${C.today()} · ${filtered.length} records · All matching rows included`;
   document.querySelectorAll('#registerTable th button[data-sort]').forEach(b=>b.closest('th').setAttribute('aria-sort',b.dataset.sort===sortKey?direction==='asc'?'ascending':'descending':'none'));
@@ -58,8 +63,9 @@
   const owner=$('ownerFilter').value,category=$('categoryFilter').value;$('ownerFilter').innerHTML='<option value="">All owners</option>'+[...new Map(items.filter(r=>r.owner_id).map(r=>[r.owner_id,r.owner])).entries()].map(([id,name])=>`<option value="${id}">${E(name||id)}</option>`).join('');$('ownerFilter').value=owner;
   $('categoryFilter').innerHTML='<option value="">All categories</option>'+[...new Set(items.map(r=>r.category).filter(Boolean))].sort().map(c=>`<option>${E(c)}</option>`).join('');$('categoryFilter').value=category;
   $('dataDateLabel').textContent=`Report date: ${C.today()}`;$('addItem').hidden=!mayCreate();$('addItem').href=`issue-risk-editor.html?project=${project}`;
+  $('editDataButton').hidden=!mayCreate()||printing;
   $('assessmentSettings').hidden=window.currentUserRole!=='super_admin';
-  state(results.slice(1).some(r=>r.status==='rejected')?'Some analytics are unavailable; register records are current.':'');update();renderProgress();renderFinancial();
+  state(results.slice(1).some(r=>r.status==='rejected')?'Some analytics are unavailable; register records are current.':'');update();renderProgress();renderFinancial();reportPageReady();
   if(manager())api.rpc('register_deadlines',{p_project:Number(project)}).then(refreshNotificationCount).catch(()=>{});
   else refreshNotificationCount();
  }
@@ -81,12 +87,13 @@
  function excel(){if(!window.XLSX)return notifyError(new Error('Excel export library did not load. Reload with an internet connection.'));
   const rows=[['ID','Type','Title','Category','Priority','Status','Owner','Target Date','Days Left'],...filtered.map(r=>[r.code,r.kind,r.title,r.category,r.priority,r.status,r.owner,r.target_date,C.days(r.target_date)])].map(row=>row.map(C.formulaSafe));const book=XLSX.utils.book_new();XLSX.utils.book_append_sheet(book,XLSX.utils.aoa_to_sheet(rows),'Register');XLSX.writeFile(book,`MDCEO-register-${project}-${C.today()}.xlsx`);
  }
- async function print(summary){document.body.classList.toggle('register-summary',summary);let style=$('registerPrintOrientation');if(!style){style=document.createElement('style');style.id='registerPrintOrientation';document.head.appendChild(style);}style.textContent=`@media print{@page{size:A4 ${summary?'portrait':'landscape'};margin:8mm}}`;await document.fonts.ready;await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));window.print();}
+ async function print(summary){document.body.classList.toggle('register-summary',summary);let style=$('registerPrintOrientation');if(!style){style=document.createElement('style');style.id='registerPrintOrientation';document.head.appendChild(style);}style.textContent='@media print{@page{size:A4 portrait;margin:8mm}}';await document.fonts.ready;await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));window.print();}
  async function start(){if(started)return;started=true;api=new C.API(window.__guardClient);
   try{context=await api.context();if(!context.projects.length)throw new Error('You do not have access to a project register.');const requested=new URLSearchParams(location.search).get('project');project=context.projects.some(p=>String(p.id)===requested)?requested:String(context.projects[0].id);$('projectSelect').innerHTML=context.projects.map(p=>`<option value="${p.id}">${E(p.name)}</option>`).join('');$('projectSelect').value=project;
    $('priorityFilter').innerHTML+=C.PRIORITIES.map(x=>`<option>${x}</option>`).join('');$('statusFilter').innerHTML+=C.STATUSES.map(x=>`<option>${x}</option>`).join('');await load();watchProject();
+   inlineEditor=new window.RegisterInlineEditor({api,context,onSaved:load});
    try{const notes=await api.all('register_notifications',q=>q.eq('is_read',false).order('id'));$('notificationCount').textContent=notes.length;}catch{}
-  }catch(e){state(manager()||window.canEditDashboard?'Register access/setup is unavailable. Apply sql/issue_risk_register.sql and explicitly enable Issues & Risks in Permissions. '+e.message:'The register is not available. Contact your project administrator.',true);}
+  }catch(e){state(manager()||window.canEditDashboard?'Register access/setup is unavailable. Apply sql/issue_risk_register.sql and explicitly enable Issues & Risks in Permissions. '+e.message:'The register is not available. Contact your project administrator.',true);reportPageReady(e.message);}
  }
  function watchProject(){
   if(channel&&api.client.removeChannel)api.client.removeChannel(channel);
@@ -95,8 +102,11 @@
   ['project_issues','project_risks','project_decisions'].forEach(table=>channel.on('postgres_changes',{event:'*',schema:'public',table,filter:'project_id=eq.'+project},()=>{clearTimeout(refreshTimer);refreshTimer=setTimeout(()=>load().catch(notifyError),250);}));
   channel.on('postgres_changes',{event:'INSERT',schema:'public',table:'register_notifications',filter:'recipient=eq.'+context.user_id},payload=>{refreshNotificationCount();if(payload.new?.message)notify.info(payload.new.message);});
   channel.on('postgres_changes',{event:'*',schema:'public',table:'register_settings',filter:'project_id=eq.'+project},()=>load().catch(notifyError));
+  channel.on('postgres_changes',{event:'UPDATE',schema:'public',table:'project_performance',filter:'id=eq.'+project},()=>load().catch(notifyError));
   channel.subscribe();
  }
+ $('editDataButton').onclick=()=>inlineEditor?.open(project);
+ window.addEventListener('focus',()=>{if(context&&!inlineEditor?.active)load().catch(notifyError);});
  $('assessmentSettings').onclick=async()=>{try{const r=await api.client.from('register_settings').select('*').eq('project_id',project).maybeSingle();if(r.error)throw r.error;const bands=r.data?.risk_bands||[];$('assessmentFields').innerHTML=bands.map((b,i)=>`<label class="register-field">${E(b.level)} maximum<input type="number" name="band${i}" required min="1" max="25" step="1" value="${b.max}"></label>`).join('');$('assessmentDialog').showModal();}catch(e){notifyError(e);}};
  $('closeAssessment').onclick=()=>$('assessmentDialog').close();
  $('assessmentForm').onsubmit=async e=>{e.preventDefault();try{const bands=['Low','Medium','High','Critical'].map((level,i)=>({level,max:Number(e.target.elements.namedItem('band'+i).value)}));await api.rpc('register_configure',{p_project:Number(project),p_bands:bands});$('assessmentState').textContent='Assessment settings saved.';await load();}catch(error){$('assessmentState').textContent=error.message;}};
@@ -123,6 +133,10 @@
   if(document.body.classList.contains('register-summary')){
    if(progressChart){progressChart.options.responsive=false;progressChart.resize(194*96/25.4-20,210);progressChart.update('none');}
    if(statusChart){statusChart.options.responsive=false;statusChart.resize(190,190);statusChart.update('none');}
+  }else{
+   const embedded=document.body.classList.contains('register-print-embed');
+   if(progressChart){const box=$('registerProgressChart').parentElement.getBoundingClientRect();progressChart.options.responsive=false;progressChart.resize(embedded&&box.width?box.width:194*96/25.4*.6-28,embedded?105:125);progressChart.update('none');}
+   if(statusChart){const box=$('registerStatusChart').parentElement.getBoundingClientRect();statusChart.options.responsive=false;statusChart.resize(embedded&&box.width?box.width:125,embedded?90:125);statusChart.update('none');}
   }
  });
  window.addEventListener('afterprint',()=>{printing=false;renderTable();[progressChart,statusChart].forEach(chart=>{if(chart){chart.options.responsive=true;chart.resize();chart.update('none');}});document.body.classList.remove('register-summary');$('registerPrintOrientation')?.remove();});

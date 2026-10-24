@@ -58,6 +58,8 @@
     const COMMON_DICTIONARY = {
         ar: {
             navHome: "الرئيسية",
+            navSettings: "الإعدادات",
+            accountMenuLabel: "الحساب",
             navSummary: "الملخص",
             navTasks: "المهام",
             navGeneral: "عام",
@@ -74,6 +76,8 @@
         },
         en: {
             navHome: "Home",
+            navSettings: "Settings",
+            accountMenuLabel: "Account",
             navSummary: "Summary",
             navTasks: "Tasks",
             navGeneral: "General",

@@ -1,0 +1,29 @@
+#registerEditPanel{background:#fff;color:#153f87;padding:16px 0}
+#registerEditPanel[hidden]{display:none!important}
+#registerEditPanel .register-edit-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+#registerEditPanel h2{color:#002bff;font-size:17px;margin:0}
+#registerEditPanel .register-edit-record{border:1px solid #dce8ff;border-radius:10px;margin:12px 0;background:white}
+#registerEditPanel .register-edit-record>summary{cursor:pointer;padding:14px;color:#002bff;font-weight:700;overflow-wrap:anywhere}
+#registerEditPanel .register-edit-fields{padding:0 16px 16px}
+#registerEditPanel .register-form-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+#registerEditPanel .register-field{font-size:12px;color:#245599}
+#registerEditPanel input,#registerEditPanel select,#registerEditPanel textarea{box-sizing:border-box;max-width:100%;border:1px solid #dce8ff;border-radius:7px;padding:9px;color:#153f87;background:white;font:13px Arial,sans-serif}
+#registerEditPanel :is(input,select,textarea):focus{outline:2px solid #007fff;outline-offset:1px}
+#registerEditPanel textarea{min-height:90px}
+#registerEditPanel .register-field-error{font-size:12px;color:#b42318;min-height:0}
+#registerEditPanel [aria-invalid="true"]{border-color:#b42318}
+#registerEditPanel .register-edit-record[data-deleted="true"]{opacity:.7;background:#fff6f7}
+#registerEditPanel .register-edit-record[data-deleted="true"] .register-form-grid{display:none}
+#registerEditPanel .register-edit-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+#registerEditPanel .register-edit-weeks{overflow:auto;margin-top:14px}
+#registerEditPanel .register-edit-weeks table{width:100%;border-collapse:collapse;min-width:560px}
+#registerEditPanel .register-edit-weeks th,#registerEditPanel .register-edit-weeks td{padding:7px;text-align:left;vertical-align:top;border-bottom:1px solid #dce8ff}
+#registerEditPanel .register-edit-weeks input{width:100%}
+#registerEditPanel .register-edit-support{margin-top:16px;border-top:1px solid #dce8ff;padding-top:12px}
+#registerEditPanel .register-edit-support-list{white-space:pre-wrap;overflow-wrap:anywhere}
+#registerEditPanel .register-edit-support-list pre{white-space:pre-wrap;overflow-wrap:anywhere;font:12px/1.5 Arial,sans-serif;max-width:100%}
+#registerEditPanel .register-savebar{position:sticky;bottom:10px;background:white;border:1px solid #dce8ff;border-radius:10px;padding:14px;z-index:3;flex-wrap:wrap}
+@media screen{body.register-editing #registerMain>:not(.register-page-heading):not(#registerState):not(#registerEditPanel){display:none!important}}
+@media(max-width:1100px){#registerEditPanel .register-form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:700px){#registerEditPanel .register-form-grid{grid-template-columns:1fr}}
+@media print{#registerEditPanel{display:none!important}}

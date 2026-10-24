@@ -1,0 +1,70 @@
+(function () {
+  const translations = {
+    en: { settingsTitle:'Settings',settingsIntro:'Manage your profile, account security, language, and current session.',profileTitle:'My Profile',profileIntro:'Your account information from the MDCEO directory.',profileName:'Name',profileEmail:'Email',profileRole:'Role',profileCompany:'Company',securityTitle:'Account & Security',securityIntro:'Protect your account and end your session securely.',changePassword:'Change Password',logout:'Log Out',currentPassword:'Current Password',newPassword:'New Password',confirmPassword:'Confirm New Password',passwordHint:'Use at least 12 characters. A memorable passphrase works well.',show:'Show',hide:'Hide',updatePassword:'Update Password',cancel:'Cancel',languageTitle:'Language & Appearance',languageIntro:'Choose the language used across the portal.',languageLabel:'Language',sessionTitle:'Session Management',sessionIntro:'Review this browser session and end it when you are finished.',currentSession:'This device · Active session',sessionScope:'Signing out ends this session. Other sessions are managed by the authentication provider.',role_admin:'Administrator',role_super_admin:'Super administrator',role_limited:'Limited',role_no_files:'No file access',role_contractor:'Contractor',errCurrent:'Enter your current password.',errLength:'Your new password must be at least 12 characters.',errMatch:'The new passwords do not match.',errReauth:'The current password could not be verified. Check it and try again.',errExpired:'Your session has expired. Sign in again and retry.',errUpdate:'The password could not be updated. Please try again.',okPassword:'Your password was updated successfully. Sign in again if your provider requests it.',working:'Updating…' },
+    ar: { settingsTitle:'الإعدادات',settingsIntro:'إدارة ملفك الشخصي وأمان الحساب واللغة والجلسة الحالية.',profileTitle:'ملفي الشخصي',profileIntro:'معلومات حسابك من دليل MDCEO.',profileName:'الاسم',profileEmail:'البريد الإلكتروني',profileRole:'الصلاحية',profileCompany:'الشركة',securityTitle:'الحساب والأمان',securityIntro:'احمِ حسابك وأنهِ جلستك بأمان.',changePassword:'تغيير كلمة المرور',logout:'تسجيل الخروج',currentPassword:'كلمة المرور الحالية',newPassword:'كلمة المرور الجديدة',confirmPassword:'تأكيد كلمة المرور الجديدة',passwordHint:'استخدم 12 حرفًا على الأقل. عبارة مرور سهلة التذكر خيار جيد.',show:'إظهار',hide:'إخفاء',updatePassword:'تحديث كلمة المرور',cancel:'إلغاء',languageTitle:'اللغة والمظهر',languageIntro:'اختر اللغة المستخدمة في البوابة.',languageLabel:'اللغة',sessionTitle:'إدارة الجلسة',sessionIntro:'راجع جلسة هذا المتصفح وأنهِها عند الانتهاء.',currentSession:'هذا الجهاز · جلسة نشطة',sessionScope:'ينهي تسجيل الخروج هذه الجلسة. يدير موفر المصادقة الجلسات الأخرى.',role_admin:'مسؤول',role_super_admin:'مسؤول عام',role_limited:'صلاحية محدودة',role_no_files:'دون صلاحية الملفات',role_contractor:'مقاول',errCurrent:'أدخل كلمة المرور الحالية.',errLength:'يجب ألا تقل كلمة المرور الجديدة عن 12 حرفًا.',errMatch:'كلمتا المرور الجديدتان غير متطابقتين.',errReauth:'تعذر التحقق من كلمة المرور الحالية. تحقق منها ثم حاول مرة أخرى.',errExpired:'انتهت جلستك. سجّل الدخول وحاول مرة أخرى.',errUpdate:'تعذر تحديث كلمة المرور. حاول مرة أخرى.',okPassword:'تم تحديث كلمة المرور بنجاح. سجّل الدخول مجددًا إذا طلب موفر المصادقة ذلك.',working:'جارٍ التحديث…' }
+  };
+  translations.en = Object.assign({}, translations.en, { profileName:'Full Name',assignedProjectsLabel:'Assigned Projects',preferredLanguage:'Preferred Language',noProjectInfo:'Project assignments are unavailable for this account.',currentSession:'This device - Active session',working:'Updating...' });
+  translations.ar = Object.assign({}, translations.ar, {
+    settingsTitle:'\u0627\u0644\u0625\u0639\u062f\u0627\u062f\u0627\u062a',
+    settingsIntro:'\u0625\u062f\u0627\u0631\u0629 \u0645\u0644\u0641\u0643 \u0627\u0644\u0634\u062e\u0635\u064a \u0648\u0623\u0645\u0627\u0646 \u0627\u0644\u062d\u0633\u0627\u0628 \u0648\u0627\u0644\u0644\u063a\u0629 \u0648\u0627\u0644\u062c\u0644\u0633\u0629 \u0627\u0644\u062d\u0627\u0644\u064a\u0629.',
+    profileTitle:'\u0645\u0644\u0641\u064a \u0627\u0644\u0634\u062e\u0635\u064a',profileIntro:'\u0645\u0639\u0644\u0648\u0645\u0627\u062a \u062d\u0633\u0627\u0628\u0643 \u0645\u0646 \u062f\u0644\u064a\u0644 MDCEO.',profileName:'\u0627\u0644\u0627\u0633\u0645 \u0627\u0644\u0643\u0627\u0645\u0644',profileEmail:'\u0627\u0644\u0628\u0631\u064a\u062f \u0627\u0644\u0625\u0644\u0643\u062a\u0631\u0648\u0646\u064a',profileRole:'\u0627\u0644\u0635\u0644\u0627\u062d\u064a\u0629',profileCompany:'\u0627\u0644\u0634\u0631\u0643\u0629',assignedProjectsLabel:'\u0627\u0644\u0645\u0634\u0627\u0631\u064a\u0639 \u0627\u0644\u0645\u0639\u064a\u0651\u0646\u0629',preferredLanguage:'\u0627\u0644\u0644\u063a\u0629 \u0627\u0644\u0645\u0641\u0636\u0644\u0629',noProjectInfo:'\u0628\u064a\u0627\u0646\u0627\u062a \u0627\u0644\u0645\u0634\u0627\u0631\u064a\u0639 \u0627\u0644\u0645\u0639\u064a\u0651\u0646\u0629 \u063a\u064a\u0631 \u0645\u062a\u0627\u062d\u0629 \u0644\u0647\u0630\u0627 \u0627\u0644\u062d\u0633\u0627\u0628.',
+    securityTitle:'\u0627\u0644\u062d\u0633\u0627\u0628 \u0648\u0627\u0644\u0623\u0645\u0627\u0646',securityIntro:'\u0627\u062d\u0645\u0650 \u062d\u0633\u0627\u0628\u0643 \u0648\u0623\u0646\u0647\u0650 \u062c\u0644\u0633\u062a\u0643 \u0628\u0623\u0645\u0627\u0646.',changePassword:'\u062a\u063a\u064a\u064a\u0631 \u0643\u0644\u0645\u0629 \u0627\u0644\u0645\u0631\u0648\u0631',logout:'\u062a\u0633\u062c\u064a\u0644 \u0627\u0644\u062e\u0631\u0648\u062c',currentPassword:'\u0643\u0644\u0645\u0629 \u0627\u0644\u0645\u0631\u0648\u0631 \u0627\u0644\u062d\u0627\u0644\u064a\u0629',newPassword:'\u0643\u0644\u0645\u0629 \u0627\u0644\u0645\u0631\u0648\u0631 \u0627\u0644\u062c\u062f\u064a\u062f\u0629',confirmPassword:'\u062a\u0623\u0643\u064a\u062f \u0643\u0644\u0645\u0629 \u0627\u0644\u0645\u0631\u0648\u0631 \u0627\u0644\u062c\u062f\u064a\u062f\u0629',passwordHint:'\u0627\u0633\u062a\u062e\u062f\u0645 12 \u062d\u0631\u0641\u064b\u0627 \u0639\u0644\u0649 \u0627\u0644\u0623\u0642\u0644. \u0639\u0628\u0627\u0631\u0629 \u0645\u0631\u0648\u0631 \u0633\u0647\u0644\u0629 \u0627\u0644\u062a\u0630\u0643\u0631 \u062e\u064a\u0627\u0631 \u062c\u064a\u062f.',show:'\u0625\u0638\u0647\u0627\u0631',hide:'\u0625\u062e\u0641\u0627\u0621',updatePassword:'\u062a\u062d\u062f\u064a\u062b \u0643\u0644\u0645\u0629 \u0627\u0644\u0645\u0631\u0648\u0631',cancel:'\u0625\u0644\u063a\u0627\u0621',
+    languageTitle:'\u0627\u0644\u0644\u063a\u0629 \u0648\u0627\u0644\u0645\u0638\u0647\u0631',languageIntro:'\u0627\u062e\u062a\u0631 \u0627\u0644\u0644\u063a\u0629 \u0627\u0644\u0645\u0633\u062a\u062e\u062f\u0645\u0629 \u0641\u064a \u0627\u0644\u0628\u0648\u0627\u0628\u0629.',languageLabel:'\u0627\u0644\u0644\u063a\u0629',sessionTitle:'\u0625\u062f\u0627\u0631\u0629 \u0627\u0644\u062c\u0644\u0633\u0629',sessionIntro:'\u0631\u0627\u062c\u0639 \u062c\u0644\u0633\u0629 \u0647\u0630\u0627 \u0627\u0644\u0645\u062a\u0635\u0641\u062d \u0648\u0623\u0646\u0647\u0650\u0647\u0627 \u0639\u0646\u062f \u0627\u0644\u0627\u0646\u062a\u0647\u0627\u0621.',currentSession:'\u0647\u0630\u0627 \u0627\u0644\u062c\u0647\u0627\u0632 \u00b7 \u062c\u0644\u0633\u0629 \u0646\u0634\u0637\u0629',sessionScope:'\u064a\u0646\u0647\u064a \u062a\u0633\u062c\u064a\u0644 \u0627\u0644\u062e\u0631\u0648\u062c \u0647\u0630\u0647 \u0627\u0644\u062c\u0644\u0633\u0629. \u064a\u062f\u064a\u0631 \u0645\u0648\u0641\u0631 \u0627\u0644\u0645\u0635\u0627\u062f\u0642\u0629 \u0627\u0644\u062c\u0644\u0633\u0627\u062a \u0627\u0644\u0623\u062e\u0631\u0649.',
+    role_admin:'\u0645\u0633\u0624\u0648\u0644',role_super_admin:'\u0645\u0633\u0624\u0648\u0644 \u0639\u0627\u0645',role_limited:'\u0635\u0644\u0627\u062d\u064a\u0629 \u0645\u062d\u062f\u0648\u062f\u0629',role_no_files:'\u062f\u0648\u0646 \u0635\u0644\u0627\u062d\u064a\u0629 \u0627\u0644\u0645\u0644\u0641\u0627\u062a',role_contractor:'\u0645\u0642\u0627\u0648\u0644',errCurrent:'\u0623\u062f\u062e\u0644 \u0643\u0644\u0645\u0629 \u0627\u0644\u0645\u0631\u0648\u0631 \u0627\u0644\u062d\u0627\u0644\u064a\u0629.',errLength:'\u064a\u062c\u0628 \u0623\u0644\u0627 \u062a\u0642\u0644 \u0643\u0644\u0645\u0629 \u0627\u0644\u0645\u0631\u0648\u0631 \u0627\u0644\u062c\u062f\u064a\u062f\u0629 \u0639\u0646 12 \u062d\u0631\u0641\u064b\u0627.',errMatch:'\u0643\u0644\u0645\u062a\u0627 \u0627\u0644\u0645\u0631\u0648\u0631 \u0627\u0644\u062c\u062f\u064a\u062f\u062a\u0627\u0646 \u063a\u064a\u0631 \u0645\u062a\u0637\u0627\u0628\u0642\u062a\u064a\u0646.',errReauth:'\u062a\u0639\u0630\u0631 \u0627\u0644\u062a\u062d\u0642\u0642 \u0645\u0646 \u0643\u0644\u0645\u0629 \u0627\u0644\u0645\u0631\u0648\u0631 \u0627\u0644\u062d\u0627\u0644\u064a\u0629. \u062a\u062d\u0642\u0642 \u0645\u0646\u0647\u0627 \u062b\u0645 \u062d\u0627\u0648\u0644 \u0645\u0631\u0629 \u0623\u062e\u0631\u0649.',errExpired:'\u0627\u0646\u062a\u0647\u062a \u062c\u0644\u0633\u062a\u0643. \u0633\u062c\u0644 \u0627\u0644\u062f\u062e\u0648\u0644 \u0648\u062d\u0627\u0648\u0644 \u0645\u0631\u0629 \u0623\u062e\u0631\u0649.',errUpdate:'\u062a\u0639\u0630\u0631 \u062a\u062d\u062f\u064a\u062b \u0643\u0644\u0645\u0629 \u0627\u0644\u0645\u0631\u0648\u0631. \u062d\u0627\u0648\u0644 \u0645\u0631\u0629 \u0623\u062e\u0631\u0649.',okPassword:'\u062a\u0645 \u062a\u062d\u062f\u064a\u062b \u0643\u0644\u0645\u0629 \u0627\u0644\u0645\u0631\u0648\u0631 \u0628\u0646\u062c\u0627\u062d. \u0633\u062c\u0644 \u0627\u0644\u062f\u062e\u0648\u0644 \u0645\u062c\u062f\u062f\u064b\u0627 \u0625\u0630\u0627 \u0637\u0644\u0628 \u0645\u0648\u0641\u0631 \u0627\u0644\u0645\u0635\u0627\u062f\u0642\u0629 \u0630\u0644\u0643.',working:'\u062c\u0627\u0631\u064d \u0627\u0644\u062a\u062d\u062f\u064a\u062b\u2026'
+  });
+  if (window.registerDictionary) window.registerDictionary(translations);
+  const $ = id => document.getElementById(id);
+  let assignedProjectNames = null;
+  function lang() { return window.getCurrentLang ? window.getCurrentLang() : 'en'; }
+  function say(key) { return (translations[lang()] || translations.en)[key] || translations.en[key] || key; }
+  function applyProfile() {
+    const p = window.__currentProfile || {};
+    $('profileName').textContent = p.username || '—';
+    $('profileEmail').textContent = window.currentUserEmail || '—';
+    $('profileRole').textContent = say('role_' + (window.currentUserRole || 'limited'));
+    $('profileCompany').textContent = p.company_name || '—';
+    $('profileLanguage').textContent = lang() === 'ar' ? 'العربية' : 'English';
+  }
+  async function loadProjects() {
+    try {
+      const { data, error } = await window.__guardClient.rpc('register_context');
+      if (error) throw error;
+      const projects = Array.isArray(data && data.projects) ? data.projects : [];
+      assignedProjectNames = projects.map(project => project.name);
+    } catch (_) { assignedProjectNames = null; }
+    renderProjects();
+  }
+  function renderProjects() { $('profileProjects').textContent = assignedProjectNames && assignedProjectNames.length ? assignedProjectNames.join(', ') : say('noProjectInfo'); }
+  function resetForm() { $('passwordForm').reset(); $('passwordError').textContent=''; $('passwordSuccess').textContent=''; document.querySelectorAll('[data-toggle]').forEach(b => { const input=$(b.dataset.toggle); input.type='password'; b.textContent=say('show'); }); }
+  window.onLanguageChanged = function () { const select=$('languageSelect'); if(select) select.value=lang(); document.querySelectorAll('[data-toggle]').forEach(b=>{b.textContent=$(b.dataset.toggle).type==='password'?say('show'):say('hide');}); applyProfile(); if($('profileProjects')) renderProjects(); };
+  document.addEventListener('authguard:ready', applyProfile);
+  document.addEventListener('authguard:ready', loadProjects);
+  document.addEventListener('DOMContentLoaded', function () {
+    const form=$('passwordForm');
+    $('languageSelect').value=lang();
+    $('languageSelect').addEventListener('change',e=>window.setLanguage(e.target.value));
+    $('openPassword').addEventListener('click',()=>{resetForm();form.classList.add('open');$('currentPassword').focus();});
+    $('cancelPassword').addEventListener('click',()=>{form.classList.remove('open');resetForm();});
+    $('logoutButton').addEventListener('click',()=>window.logoutUser());
+    document.querySelectorAll('[data-toggle]').forEach(button=>button.addEventListener('click',()=>{const input=$(button.dataset.toggle);input.type=input.type==='password'?'text':'password';button.textContent=input.type==='password'?say('show'):say('hide');}));
+    form.addEventListener('submit',async e=>{
+      e.preventDefault();$('passwordError').textContent='';$('passwordSuccess').textContent='';
+      const current=$('currentPassword').value, next=$('newPassword').value, confirm=$('confirmPassword').value;
+      if(!current){$('passwordError').textContent=say('errCurrent');$('currentPassword').focus();return;}
+      if(next.length<12){$('passwordError').textContent=say('errLength');$('newPassword').focus();return;}
+      if(next!==confirm){$('passwordError').textContent=say('errMatch');$('confirmPassword').focus();return;}
+      const button=$('submitPassword');button.disabled=true;button.textContent=say('working');
+      try {
+        const client=window.__guardClient;
+        const {data:{session}}=await client.auth.getSession();
+        if(!session){$('passwordError').textContent=say('errExpired');return;}
+        const {error:verifyError}=await client.auth.signInWithPassword({email:window.currentUserEmail,password:current});
+        if(verifyError){$('passwordError').textContent=say('errReauth');return;}
+        const {error}=await client.auth.updateUser({password:next});
+        if(error){$('passwordError').textContent=/session|token|auth/i.test(error.message||'')?say('errExpired'):say('errUpdate');return;}
+        resetForm();$('passwordSuccess').textContent=say('okPassword');
+      } catch (_) { $('passwordError').textContent=say('errUpdate'); }
+      finally {button.disabled=false;button.textContent=say('updatePassword');}
+    });
+  });
+})();
