@@ -385,15 +385,24 @@
   .register-report-page .embedded-page-copy .register-brand>span{font-size:7px}
 
   @media print{
-    @page{size:A4 portrait;margin:0}
+    @page{size:A4 portrait;margin:8mm}
     html,body{margin:0!important;padding:0!important;background:#fff!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
     body{background:#fff;padding:0;}
     .topbar,.wrap,#printLoadingOverlay{display:none !important;}
     body.printing-full-report #externalPagesContainer{
       display:block !important;position:static;left:auto;top:auto;width:auto;
     }
-    .report-page{box-sizing:border-box;width:210mm;min-height:297mm;padding:9mm;page-break-after:always;break-after:page;}
-    .report-page:last-child{page-break-after:auto;}
+    .report-page{
+      box-sizing:border-box;width:100%!important;max-width:194mm;min-height:278mm;
+      overflow:visible;break-after:page;page-break-after:always;
+    }
+    .report-page:last-child{break-after:auto;page-break-after:auto;}
+    .report-page *{min-width:0;}
+    .report-page canvas,.report-page svg,.report-page img{max-width:100%!important;}
+    .report-page tr,.report-page .kpi-card,.report-page .card{break-inside:avoid;page-break-inside:avoid;}
+    .report-page thead{display:table-header-group;}
+    .no-print,.report-page button,.toolbar{display:none!important;}
+    .report-page .empty-state:only-child{display:none!important;}
   }
   @media print{
     .register-report-page .register-main{padding:0!important;width:100%!important;max-width:none!important}
