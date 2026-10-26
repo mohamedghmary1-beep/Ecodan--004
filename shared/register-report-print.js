@@ -5,18 +5,25 @@ function paginateRegisterReport(container) {
     const section = main?.querySelector('.register-table-section');
     const source = section?.querySelector('tbody');
     if (!source) return;
+    first.classList.add('register-summary-page');
     const analytics=main.querySelector('.register-analytics');
     if(analytics)main.querySelector('.register-kpis')?.before(analytics);
-    main.querySelector('.register-kpis')?.after(section);
     const rows = [...source.children];
     const supplements = [...main.children].filter(node => node.matches('.register-financial-kpis, .register-source'));
     supplements.forEach(node => node.remove());
+    const financialKpis = supplements.find(node => node.matches('.register-financial-kpis'));
+    const reportSource = supplements.find(node => node.matches('.register-source'));
+    if(financialKpis)main.querySelector('.register-analytics')?.after(financialKpis);
+    main.querySelector('.register-kpis')?.after(section);
     source.replaceChildren();
     const template = first.cloneNode(true);
+    template.classList.remove('register-summary-page');
     template.querySelector('.register-kpis')?.remove();
     template.querySelector('.register-analytics')?.remove();
+    template.querySelector('.register-financial-kpis')?.remove();
+    section.remove();
     let current = first;
-    let target = source;
+    let target = null;
     const height = () => current.querySelector('.pf-body').getBoundingClientRect().height;
     const next = () => {
       const continuation = template.cloneNode(true);
@@ -24,6 +31,7 @@ function paginateRegisterReport(container) {
       current = continuation;
       target = current.querySelector('tbody');
     };
+    next();
     rows.forEach(row => {
       target.append(row);
       if (height() > budget && (target.children.length > 1 || current === first)) {
@@ -73,24 +81,13 @@ function paginateRegisterReport(container) {
         fragment = remainder;
       }
     });
-    supplements.forEach(node => {
-      current.querySelector('.register-main').append(node);
-      if (height() > budget) {
-        node.remove();
+    if(reportSource){
+      current.querySelector('.register-main').append(reportSource);
+      if(height()>budget){
+        reportSource.remove();
         next();
-        current.querySelector('.register-table-section').remove();
-        current.querySelector('.register-main').append(node);
+        current.querySelector('.register-main').append(reportSource);
       }
-    });
-    let summaryPage = first;
-    while (summaryPage?.classList.contains('register-report-page')) {
-      if (!summaryPage.querySelector('.register-table-section') && summaryPage.querySelector('.register-analytics')) {
-        summaryPage.classList.add('register-summary-page');
-        if (summaryPage.querySelector('.pf-body').getBoundingClientRect().height > budget) {
-          summaryPage.classList.remove('register-summary-page');
-        }
-      }
-      summaryPage = summaryPage.nextElementSibling;
     }
     delete first.dataset.printFitError;
   });

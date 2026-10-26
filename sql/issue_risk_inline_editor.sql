@@ -70,9 +70,19 @@ begin
   end if;
   if change->>'operation'='delete' then
    if not public.can_edit() or record_id is null then raise exception 'Only managers can delete existing records' using errcode='42501';end if;
-   if exists(select 1 from public.project_decisions where project_id=p_project and details->>'related_kind'=change->>'kind' and details->>'related_id'=record_id::text)
-    or (change->>'kind'='issue' and exists(select 1 from public.project_risks where project_id=p_project and coalesce(details->>'from_issue',from_issue)=oldrow->>'code')) then
-    raise exception 'This record is linked to another record. Remove the link or archive it instead.';
+   -- Preserve related records, but clear links to the item being deleted so
+   -- managers can complete an intentional deletion without leaving stale refs.
+   update public.project_decisions
+    set details=coalesce(details,'{}'::jsonb)-'related_kind'-'related_id',
+        updated_by=auth.uid(),updated_at=now(),version=version+1
+    where project_id=p_project and details->>'related_kind'=change->>'kind'
+      and details->>'related_id'=record_id::text;
+   if change->>'kind'='issue' then
+    update public.project_risks
+     set from_issue=case when from_issue=oldrow->>'code' then null else from_issue end,
+         details=case when details->>'from_issue'=oldrow->>'code' then coalesce(details,'{}'::jsonb)-'from_issue' else coalesce(details,'{}'::jsonb) end,
+         updated_by=auth.uid(),updated_at=now(),version=version+1
+     where project_id=p_project and coalesce(details->>'from_issue',from_issue)=oldrow->>'code';
    end if;
    insert into public.register_events(project_id,kind,item_id,event,before_data,after_data,actor)
     values(p_project,change->>'kind',record_id,'deleted',oldrow,null,auth.uid());

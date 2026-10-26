@@ -4,6 +4,9 @@
 #registerEditPanel h2{color:#002bff;font-size:17px;margin:0}
 #registerEditPanel .register-edit-record{border:1px solid #dce8ff;border-radius:10px;margin:12px 0;background:white}
 #registerEditPanel .register-edit-record>summary{cursor:pointer;padding:14px;color:#002bff;font-weight:700;overflow-wrap:anywhere}
+#registerEditPanel .register-delete-icon{display:flex;align-items:center;justify-content:center;margin:0 14px 10px auto;width:34px;height:34px;border:1px solid #fecaca;border-radius:8px;background:#fff1f2;color:#dc2626;cursor:pointer;font-size:15px}
+#registerEditPanel .register-delete-icon:hover{background:#fee2e2;border-color:#f87171}
+#registerEditPanel .register-edit-record[data-deleted="true"] .register-delete-icon{background:#f1f5f9;border-color:#cbd5e1;color:#475569}
 #registerEditPanel .register-edit-fields{padding:0 16px 16px}
 #registerEditPanel .register-form-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
 #registerEditPanel .register-field{font-size:12px;color:#245599}

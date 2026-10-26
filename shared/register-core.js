@@ -1,7 +1,7 @@
 (function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;else root.RegisterCore=api;})(typeof globalThis!=='undefined'?globalThis:this,function(){
  'use strict';
  const TERMINAL=new Set(['Closed','Resolved','Rejected']);
- const TYPES=['issue','risk','decision'],PRIORITIES=['Low','Medium','High','Critical'],STATUSES=['Open','In Progress','Pending Approval','Resolved','Closed','Rejected'];
+ const TYPES=['issue','risk','decision'],PRIORITIES=['Low','Medium','High','Critical'],STATUSES=['Open','In Progress','Pending Approval','Resolved','Closed','Rejected'],STATUS_SORT_ORDER=['Open','In Progress','Pending Approval','Rejected','Resolved','Closed'];
  const today=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Riyadh',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
  const dateTime=value=>value&&Number.isFinite(Date.parse(value))?new Date(value).toLocaleString('en-GB',{timeZone:'Asia/Riyadh',day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'—';
  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -16,11 +16,28 @@
  }
  function breakdown(rows){const result={'Open Issues':0,'Open Risks':0,'In Progress':0,'Closed':0,'Decisions Requested':0};rows.filter(r=>!r.archived_at).forEach(r=>result[bucket(r)]++);return result;}
  function filter(rows,f={}){
-  const q=String(f.search||'').toLowerCase().trim();
-  return rows.filter(r=>(f.archived?!!r.archived_at:!r.archived_at)&&(!f.project||String(r.project_id)===String(f.project))&&(!f.from||(r.opened_on||r.created_at||'').slice(0,10)>=f.from)&&(!f.to||(r.opened_on||r.created_at||'').slice(0,10)<=f.to)&&(!f.tab||matchesTab(r,f.tab,f.asof))&&(!f.bucket||bucket(r)===f.bucket)&&(!f.priority||r.priority===f.priority)&&(!f.status||r.status===f.status)&&(!f.owner||r.owner_id===f.owner)&&(!f.category||r.category===f.category)&&(!q||[r.code,r.title,r.category,r.owner,r.description].join(' ').toLowerCase().includes(q)));
+  const normalize=value=>String(value??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase();
+  const terms=normalize(f.search).trim().split(/\s+/).filter(Boolean);
+  return rows.filter(r=>(f.archived?!!r.archived_at:!r.archived_at)&&(!f.project||String(r.project_id)===String(f.project))&&(!f.from||(r.opened_on||r.created_at||'').slice(0,10)>=f.from)&&(!f.to||(r.opened_on||r.created_at||'').slice(0,10)<=f.to)&&(!f.tab||matchesTab(r,f.tab,f.asof))&&(!f.bucket||bucket(r)===f.bucket)&&(!f.priority||r.priority===f.priority)&&(!f.status||r.status===f.status)&&(!f.owner||r.owner_id===f.owner)&&(!f.category||r.category===f.category)&&terms.every(term=>normalize([r.code,r.id,r.kind,r.status,r.priority,r.target_date,r.title,r.category,r.owner,r.description].join(' ')).includes(term)));
  }
- function sort(rows,key='created_at',direction='desc'){
-  return [...rows].sort((a,b)=>{const av=key==='priority'?PRIORITIES.indexOf(a[key]):a[key]??'',bv=key==='priority'?PRIORITIES.indexOf(b[key]):b[key]??'';return (typeof av==='number'&&typeof bv==='number'?av-bv:String(av).localeCompare(String(bv),undefined,{numeric:true}))*(direction==='asc'?1:-1)||Number(a.id)-Number(b.id);});
+ function sort(rows,key='created_at',direction='desc',groupByKind=false){
+  const compare=(a,b)=>{
+   let comparison;
+   if(key==='priority'||key==='status'){
+    const order=key==='priority'?PRIORITIES:STATUS_SORT_ORDER,ai=order.indexOf(a[key]),bi=order.indexOf(b[key]);
+    if(ai<0||bi<0){if(ai<0&&bi<0)comparison=0;else return ai<0?1:-1;}
+    else comparison=ai-bi;
+   }else comparison=String(a[key]??'').localeCompare(String(b[key]??''),undefined,{numeric:true});
+   return comparison*(direction==='asc'?1:-1)||Number(a.id)-Number(b.id);
+  };
+  return [...rows].sort((a,b)=>{
+   if(groupByKind){
+    const order=['issue','risk','decision'],ai=order.indexOf(a.kind),bi=order.indexOf(b.kind);
+    if(ai!==bi)return (ai<0?order.length:ai)-(bi<0?order.length:bi);
+    if(key==='kind')return Number(a.id)-Number(b.id);
+   }
+   return compare(a,b);
+  });
  }
  function parsePeriod(value){
   const s=String(value||'').trim();let m=s.match(/^(\d{4})-(\d{2})-(\d{2})/);if(m)return m[0];
@@ -53,7 +70,20 @@
  }
  class API{
   constructor(client){this.client=client;}
-  async rpc(name,args={}){const r=await this.client.rpc(name,args);if(r.error)throw r.error;return r.data;}
+  async rpc(name,args={},options={}){
+   const timeoutMs=Number(options.timeoutMs)||30000,controller=new AbortController();let timedOut=false,timer;
+   try{
+    const request=this.client.rpc(name,args);
+    if(typeof request.abortSignal==='function')request.abortSignal(controller.signal);
+    timer=setTimeout(()=>{timedOut=true;controller.abort();},timeoutMs);
+    const result=await request;
+    if(result.error)throw result.error;
+    return result.data;
+   }catch(error){
+    if(timedOut){const timeoutError=new Error(`Supabase request ${name} timed out after ${Math.round(timeoutMs/1000)} seconds. Check the database response before retrying.`);timeoutError.code='RPC_TIMEOUT';throw timeoutError;}
+    throw error;
+   }finally{clearTimeout(timer);}
+  }
   async all(table,configure=q=>q){const rows=[];for(let offset=0;;offset+=500){const r=await configure(this.client.from(table).select('*')).range(offset,offset+499);if(r.error)throw r.error;rows.push(...(r.data||[]));if(!r.data||r.data.length<500)break;}return rows;}
   context(){return this.rpc('register_context');}
   async items(project){const rows=await this.all('register_items_v',q=>q.eq('project_id',project).order('kind').order('id'));return rows.map(r=>({...r,...Object.fromEntries(['opened_on','target_date','closed_at'].map(k=>[k,r[k]?String(r[k]).slice(0,10):null]))}));}

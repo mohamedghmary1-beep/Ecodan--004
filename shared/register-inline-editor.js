@@ -83,7 +83,7 @@
    return `<label class="register-field ${type==='textarea'?'wide':''}">${escapeHTML(title)}${required?' *':''}${control}<span class="register-field-error" aria-live="polite"></span></label>`;
   }
   recordHTML(record){
-   return `<details class="register-edit-record" data-record="${record.key}" data-deleted="${record.deleted}" ${record.id?'':'open'}><summary>${escapeHTML(record.code)} — ${escapeHTML(record.payload.title||'Untitled')} ${record.original.archived_at?'(Archived)':''}${record.editable?'':' — Read only'}</summary><div class="register-edit-fields"><div class="register-form-grid">${this.definitions(record.kind).map(field=>this.fieldHTML(record,field)).join('')}</div>${record.kind==='risk'?'<p data-risk-score></p>':''}<div class="register-edit-actions">${record.editable?`<button type="button" class="register-button" data-edit-action="lifecycle">Close / Reopen</button>`:''}${this.context.manager&&record.id?`<button type="button" class="register-button" data-edit-action="archive">${record.payload.archived_at||record.original.archived_at?'Restore':'Archive'}</button><button type="button" class="register-button" data-edit-action="delete">${record.deleted?'Undo deletion':'Delete'}</button>`:!record.id?'<button type="button" class="register-button" data-edit-action="remove-new">Remove unsaved record</button>':''}</div><div class="register-edit-support"><button type="button" class="register-button" data-edit-action="support">Attachments, comments and history</button><div data-support></div></div></div></details>`;
+   return `<details class="register-edit-record" data-record="${record.key}" data-deleted="${record.deleted}" ${record.id?'':'open'}><summary>${escapeHTML(record.code)} — ${escapeHTML(record.payload.title||'Untitled')} ${record.original.archived_at?'(Archived)':''}${record.editable?'':' — Read only'}</summary>${this.context.manager&&record.id?`<button type="button" class="register-delete-icon" data-edit-action="delete" aria-label="${record.deleted?'Undo deletion':'Delete this item permanently'}" title="${record.deleted?'Undo deletion':'Delete this item permanently'}"><i class="fa-solid ${record.deleted?'fa-rotate-left':'fa-trash'}" aria-hidden="true"></i></button>`:''}<div class="register-edit-fields"><div class="register-form-grid">${this.definitions(record.kind).map(field=>this.fieldHTML(record,field)).join('')}</div>${record.kind==='risk'?'<p data-risk-score></p>':''}<div class="register-edit-actions">${record.editable?`<button type="button" class="register-button" data-edit-action="lifecycle">Close / Reopen</button>`:''}${this.context.manager&&record.id?`<button type="button" class="register-button" data-edit-action="archive">${record.payload.archived_at||record.original.archived_at?'Restore':'Archive'}</button>`:!record.id?'<button type="button" class="register-button" data-edit-action="remove-new">Remove unsaved record</button>':''}</div><div class="register-edit-support"><button type="button" class="register-button" data-edit-action="support">Attachments, comments and history</button><div data-support></div></div></div></details>`;
   }
   weekHTML(week,index){
    return `<tr data-week="${index}">${[['week','text'],['plan','number'],['actual','number']].map(([key,type])=>`<td><label><input aria-label="${key==='week'?'Reporting Week':key==='plan'?'Planned %':'Actual %'}" data-week-field="${key}" type="${type}" value="${escapeHTML(week[key])}" ${key==='week'?'required maxlength="40"':'min="0" max="100" step="any"'} ${this.context.manager&&this.performance?'':'disabled'}><span class="register-field-error" aria-live="polite"></span></label></td>`).join('')}<td><output data-variance></output></td><td><button type="button" data-edit-action="remove-week" ${this.context.manager&&this.performance?'':'disabled'}>Remove Week</button></td></tr>`;
@@ -139,7 +139,7 @@
    if(action==='remove-new')this.records=this.records.filter(item=>item!==record);
    if(action==='lifecycle'){if(record.kind==='decision'&&!this.context.manager)return;record.payload.status=Core.closed(record.payload)?'Open':record.kind==='decision'?'Resolved':'Closed';record.payload.closed_at=Core.closed(record.payload)?Core.today():null;if(record.kind==='decision')record.payload.details.decision_status=Core.closed(record.payload)?'Approved':'Requested';}
    if(action==='archive'&&this.context.manager)record.payload.archived_at=record.payload.archived_at?null:new Date().toISOString();
-   if(action==='delete'&&this.context.manager){if(!record.deleted&&!await this.confirm(`Delete ${record.code} when Save Changes is confirmed? This permanently removes the record; audit history is retained.`))return;record.deleted=!record.deleted;}
+   if(action==='delete'&&this.context.manager){if(!record.deleted&&!await this.confirm(`Delete ${record.code} when Save Changes is confirmed? This permanently removes the record, clears links to it from related records, and retains its audit history.`))return;record.deleted=!record.deleted;}
    this.render();
   }
   async support(record,element){
@@ -180,11 +180,21 @@
    const progressChanged=this.context.manager&&JSON.stringify(this.weeks)!==this.progressBaseline;
    if(!changes.length&&!progressChanged){this.close();return;}
    this.busy=true;const controls=[...this.panel.querySelectorAll('input,select,textarea,button')].map(control=>[control,control.disabled]);controls.forEach(([control])=>control.disabled=true);this.status('Saving changes…');
+   let saveTimeout;
    try{
-    await this.api.rpc('register_save_changes',{p_project:this.project,p_changes:changes,p_progress:progressChanged?this.weeks:null,p_expected_progress:this.originalProgress});
+    await Promise.race([
+     this.api.rpc('register_save_changes',{p_project:this.project,p_changes:changes,p_progress:progressChanged?this.weeks:null,p_expected_progress:this.originalProgress}),
+     new Promise((_,reject)=>{saveTimeout=setTimeout(()=>reject(Object.assign(new Error('The save request did not return within 45 seconds. Reload and check whether the changes were saved before trying again.'),{code:'SAVE_TIMEOUT'})),45000);})
+    ]);
     this.close();try{await this.onSaved();window.notify?.success('Changes saved. Dashboard refreshed.');}catch(error){window.notify?.error('Changes were saved, but the dashboard could not refresh: '+error.message);}
-   }catch(error){this.status(['PGRST202','42883'].includes(error.code)?'The inline editor database migration is required. Apply sql/issue_risk_inline_editor.sql. Your changes are still here.':error.message,true);}
-   finally{this.busy=false;controls.forEach(([control,disabled])=>control.disabled=disabled);}
+   }catch(error){
+    console.error('Register changes save failed:',error);
+    const message=error?.code==='SAVE_TIMEOUT'||error?.code==='RPC_TIMEOUT'?error.message:
+     ['PGRST202','42883'].includes(error?.code)?'The inline editor database migration is required. Apply sql/issue_risk_inline_editor.sql. Your changes are still here.':
+     [error?.message,error?.details,error?.hint].filter(Boolean).join(' — ')||'Save failed without a database error message. Check the browser console and Network response.';
+    this.status(message,true);
+   }
+   finally{clearTimeout(saveTimeout);this.busy=false;controls.forEach(([control,disabled])=>control.disabled=disabled);}
   }
   close(){this.active=false;this.records=[];this.weeks=[];this.progressBaseline='[]';this.panel.hidden=true;this.panel.replaceChildren();document.body.classList.remove('register-editing');document.getElementById('projectSelect').disabled=false;document.getElementById('editDataButton')?.focus();}
  }

@@ -25,7 +25,10 @@
 .register-kpi-title{font-size:12px;margin:0 0 7px}.register-kpi-value{font-size:28px;font-weight:700;line-height:1.2;margin-bottom:8px;letter-spacing:-.6px}
 .register-kpi-trend{font-size:10px;color:#7b89a3;line-height:1.5}.register-kpi-trend.positive{color:#079e71}.register-kpi-trend.negative{color:#e44159}.register-spark{position:absolute;right:13px;bottom:36px;width:44px;height:24px}
 .register-analytics{display:grid;grid-template-columns:1.5fr 1fr;gap:12px}.register-chart{position:relative;height:240px;min-width:0}.register-chart canvas,.register-donut canvas{position:absolute;inset:0;width:100%!important;height:100%!important}
+.register-financial-trend{grid-column:1/-1}
 .register-chart-note{font-size:11px;color:#62779c;margin:8px 0 0}.register-chart-empty{min-height:240px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:12px;color:#7c8ba6;font-size:13px}
+.register-progress-highlights{margin:10px 0 0;padding:10px 12px;border-left:3px solid #007fff;border-radius:0 7px 7px 0;background:#f2f7ff;color:#294c7d;font-size:12px;font-weight:600;line-height:1.5}
+.register-progress-highlights[hidden]{display:none!important}
 .register-status-layout{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:center;min-height:240px}.register-donut{position:relative;min-width:0;height:205px}
 .register-donut-total{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;pointer-events:none;color:#123d91}.register-donut-total strong{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:28px;line-height:1;font-weight:700}.register-donut-total span{position:absolute;left:0;right:0;bottom:0;font-size:11px;text-align:center}
 .register-status-legend{border:1px solid #e4ecfc;border-radius:7px;overflow:hidden}.register-status-legend button{width:100%;justify-content:space-between;border:0;border-bottom:1px solid #e6edfc;border-radius:0;padding:10px 9px;font-size:11px;white-space:normal;text-align:left}
@@ -36,13 +39,15 @@
 .register-filter-panel{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px;background:#f7faff;border:1px solid #e2ebfd;border-radius:7px;margin-bottom:10px}
 .register-export-bar{justify-content:space-between;margin:8px 0;color:#6b7b96;font-size:11px}.register-export-bar>div{display:flex;gap:6px;flex-wrap:wrap}.register-export-bar button{font-size:10px;min-height:28px}
 .register-table-scroll{overflow:auto;border:1px solid #e2ebfb;border-radius:7px}
-#registerTable{width:100%;border-collapse:collapse;min-width:970px;font:11px/1.35 Arial,sans-serif;color:#153f87}
-#registerTable th{background:#f5f8ff!important;font-weight:500;text-align:left;white-space:nowrap;color:#17418d!important;padding:8px 9px;border-bottom:1px solid #dce8ff}
+#registerTable{width:100%;border-collapse:collapse;table-layout:fixed;min-width:970px;font:12px/1.45 Arial,'Segoe UI',sans-serif;color:#153f87}
+#registerTable th{background:#f1f5ff!important;font-weight:700;text-align:left;white-space:nowrap;color:#17418d!important;padding:10px 10px;border-bottom:1px solid #cbd9f3}
 #registerTable th button{border:0;padding:0;min-height:0;color:inherit;font:inherit;background:none}
-#registerTable td{border-bottom:1px solid #e6edfa;padding:8px 9px;vertical-align:middle;max-width:300px;overflow-wrap:anywhere}
-#registerTable tr:nth-child(even){background:#f9fbff}#registerTable tr:last-child td{border:0}#registerTable td:nth-child(3){min-width:180px}
+#registerTable td{border-bottom:1px solid #e1e9f8;padding:10px 10px;vertical-align:middle;max-width:none;overflow-wrap:anywhere}
+#registerTable th:nth-child(1){width:9%}#registerTable th:nth-child(2){width:50%}#registerTable th:nth-child(3){width:10%}#registerTable th:nth-child(4){width:12%}#registerTable th:nth-child(5){width:12%}#registerTable th:nth-child(6){width:7%}
+#registerTable tr:nth-child(even){background:#f9fbff}#registerTable tr:last-child td{border:0}#registerTable td:nth-child(2){min-width:180px}
 .register-badge{display:inline-block;min-width:62px;text-align:center;font-size:10px;border:1px solid transparent;padding:3px 6px;border-radius:5px;white-space:nowrap}
 .register-badge.red{background:#fff0f1!important;color:#dc3345!important;border-color:#ffc5cc}.register-badge.amber{background:#fff7e4;color:#b46b00;border-color:#ffe1a0}.register-badge.green{background:#e9faf3;color:#07865d;border-color:#b1efd6}.register-badge.blue{background:#edf5ff;color:#0071e3;border-color:#bdd9ff}.register-badge.purple{background:#f3edff;color:#7c3aed;border-color:#deccff}
+.register-risk-type{font-weight:800}.register-risk-row td:first-child{color:#b42332;font-weight:700}.register-risk-row td:nth-child(3){color:#7f1d1d}
 .register-row-actions{display:flex;gap:4px;flex-wrap:wrap}.register-row-actions button,.register-row-actions a{font-size:10px;min-height:25px;padding:4px 6px}
 .register-pagination{justify-content:flex-end;margin-top:12px;font-size:11px;color:#6e7e98}.register-pagination label{display:flex;align-items:center;gap:5px}.register-pagination>span{margin-right:auto}
 .register-financial-kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:9px}.register-financial-kpis .register-kpi{padding:12px;text-align:center}.register-financial-kpis .register-kpi-value{font-size:21px}.register-financial-kpis .register-kpi-title{font-size:10px}.register-financial-kpis p{margin:5px 0 0;font-size:10px;color:#6c80a4}
@@ -96,9 +101,9 @@
 .register-print-embed .register-table-scroll{overflow:visible}
 .register-print-embed #registerTable{min-width:0;width:100%;table-layout:fixed;font-size:9px}
 .register-print-embed #registerTable th,.register-print-embed #registerTable td{padding:5px 4px;font-size:9px}
-.register-print-embed #registerTable td:nth-child(3){min-width:0}
-.register-print-embed #registerTable th:nth-child(3){width:23%}
-.register-print-embed #registerTable th:nth-child(7){width:13%}
+.register-print-embed #registerTable td:nth-child(2){min-width:0}
+.register-print-embed #registerTable th:nth-child(2){width:53%}
+.register-print-embed #registerTable th:nth-child(5){width:16%}
 .register-print-embed .register-badge{font-size:8px;min-width:0;padding:2px 3px}
 .register-print-embed .register-financial-kpis{grid-template-columns:repeat(6,minmax(0,1fr));gap:6px}
 .register-print-embed .register-financial-kpis .register-kpi{padding:8px 5px}
@@ -108,7 +113,8 @@
 @media(max-width:1150px){.register-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}.register-analytics{grid-template-columns:1fr}.register-financial-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}.register-page-heading{flex-wrap:wrap}.register-chart{height:250px}}
 @media(max-width:700px){.register-main{padding:18px 12px}.register-page h1{font-size:21px!important}.register-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.register-kpi{padding:12px}.register-kpi-value{font-size:25px}.register-status-layout{grid-template-columns:1fr}.register-donut{height:210px;max-width:260px;width:100%;margin:auto}.register-form-grid,.register-details-grid{grid-template-columns:1fr}.register-project-controls{justify-content:flex-start}.register-project-controls select{max-width:230px}.register-actions{width:100%}.register-actions input{width:100%;flex:1 1 100%}.register-financial-kpis{grid-template-columns:1fr 1fr}.register-datebar>span{width:100%;margin:0}.register-export-bar>div{margin-top:5px}.register-brand{padding:16px 22px!important}.register-brand>span{display:none}}
 @media print{
- @page registerStandalone{size:A4 portrait;margin:8mm}
+ @page registerStandalone{size:A4 portrait;margin:10mm}
+ @page{size:A4 portrait;margin:10mm}
  html>body.register-page{page:registerStandalone}
  html:has(body.register-page),body.register-page{width:auto!important;height:auto!important;min-height:0!important;background:white!important;margin:0!important;padding:0!important;overflow:visible!important;print-color-adjust:exact;-webkit-print-color-adjust:exact}
  .register-page .nav-container,.register-page #navToggleBtn,.register-page .no-print,.register-page #mdceoAccountMenu,.register-page #notifyToastHost,.register-page .mdceo-welcome-toast,.register-page .register-datebar,.register-page .register-project-controls{display:none!important}
@@ -116,7 +122,7 @@
  .register-main{padding:0!important;max-width:none;width:100%}.register-page-heading{margin-bottom:8px}.register-page h1{font-size:19px!important}.register-subtitle{font-size:10px;margin-bottom:6px}
  .register-kpis{grid-template-columns:repeat(5,1fr);gap:7px;margin-bottom:8px}.register-kpi{padding:9px}.register-kpi-value{font-size:22px}.register-kpi-title{font-size:10px}.register-kpi-trend{font-size:8px}
  .register-analytics{grid-template-columns:1.5fr 1fr;gap:8px}.register-card{padding:9px;margin-bottom:8px;box-shadow:none;break-inside:avoid}.register-card h2{font-size:13px!important}.register-chart{height:125px!important}.register-status-layout{min-height:125px!important}.register-donut{height:125px!important}.register-status-legend button{padding:4px!important;font-size:9px;min-height:0!important}.register-card-heading{margin-bottom:6px;padding-bottom:5px}
- .register-table-section{break-inside:auto}.register-table-scroll{overflow:visible!important;border-radius:0}#registerTable{min-width:0;width:100%;font-size:9px;table-layout:fixed}#registerTable td,#registerTable th{padding:5px 4px;font-size:9px}#registerTable td:nth-child(3){min-width:0}#registerTable th:nth-child(3){width:22%}#registerTable th:nth-child(7){width:13%}#registerTable tr{break-inside:avoid}#registerTable thead{display:table-header-group}.register-badge{font-size:8px;padding:2px 3px;min-width:0;white-space:normal}
+ .register-table-section{break-inside:auto}.register-table-scroll{overflow:visible!important;border-radius:0}#registerTable{min-width:0;width:100%;font-size:9px;table-layout:fixed}#registerTable td,#registerTable th{padding:5px 4px;font-size:9px}#registerTable td:nth-child(2){min-width:0}#registerTable th:nth-child(2){width:53%}#registerTable th:nth-child(5){width:16%}#registerTable tr{break-inside:avoid}#registerTable thead{display:table-header-group}.register-badge{font-size:8px;padding:2px 3px;min-width:0;white-space:normal}
  .register-financial-kpis{grid-template-columns:repeat(6,1fr);gap:6px}.register-financial-kpis .register-kpi-value{font-size:17px}.register-financial-kpis .register-kpi{padding:8px}.register-financial-kpis p{font-size:8px}.register-print-meta{display:block;font-size:9px;color:#657699}
  .register-page button{border:0;background:none;min-height:0;padding:0;color:inherit;text-align:left}.register-card-heading select,.register-card-heading button{display:none}.register-page dialog{display:none}
  body.register-page:not(.register-summary):not(.register-print-embed) .register-analytics{display:grid!important}
@@ -137,27 +143,40 @@
  .register-print-embed .register-table-scroll{overflow:visible!important;border-radius:0}
  .register-print-embed #registerTable{min-width:0;width:100%;font-size:9px;table-layout:fixed}
  .register-print-embed #registerTable td,.register-print-embed #registerTable th{padding:4px 3px;font-size:9px}
- .register-print-embed #registerTable td:nth-child(3){min-width:0}
- .register-print-embed #registerTable th:nth-child(3){width:23%}
- .register-print-embed #registerTable th:nth-child(7){width:13%}
+ .register-print-embed #registerTable td:nth-child(2){min-width:0}
+ .register-print-embed #registerTable th:nth-child(2){width:53%}
+ .register-print-embed #registerTable th:nth-child(5){width:16%}
  .register-print-embed .register-badge{font-size:7px;padding:2px;min-width:0}
  .register-print-embed .register-financial-kpis{grid-template-columns:repeat(6,minmax(0,1fr));gap:5px}
  .register-print-embed .register-financial-kpis .register-kpi{padding:6px 4px}
  .register-print-embed .register-financial-kpis .register-kpi-value{font-size:15px}
  .register-print-embed .register-financial-kpis p{font-size:7px}
  #registerTable th,#registerTable td{font-size:9pt;white-space:normal;overflow-wrap:anywhere}
- #registerTable th:nth-child(1){width:9%}#registerTable th:nth-child(2){width:10%}#registerTable th:nth-child(3){width:27%}#registerTable th:nth-child(4){width:8%}#registerTable th:nth-child(5){width:8%}#registerTable th:nth-child(6){width:10%}#registerTable th:nth-child(7){width:11%}#registerTable th:nth-child(8){width:11%}#registerTable th:nth-child(9){width:6%}
+ #registerTable th:nth-child(1){width:9%}#registerTable th:nth-child(2){width:53%}#registerTable th:nth-child(3){width:10%}#registerTable th:nth-child(4){width:12%}#registerTable th:nth-child(5){width:16%}
  #registerTable .register-badge{font-size:9pt;padding:0 1px}
- body.register-page:not(.register-print-embed) .register-financial-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}
+ body.register-page:not(.register-print-embed) .register-kpis{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+ body.register-page:not(.register-print-embed) .register-analytics{grid-template-columns:minmax(0,1fr)!important}
+ body.register-page:not(.register-print-embed) .register-financial-kpis{grid-template-columns:repeat(3,minmax(0,1fr));gap:2mm!important;margin:2mm 0!important;break-inside:avoid!important;page-break-inside:avoid!important}
+ body.register-page:not(.register-print-embed) .register-financial-kpis .register-kpi{display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;grid-template-areas:"title value" "note note";align-items:center;column-gap:2mm;row-gap:0;min-height:15mm;padding:2mm!important;text-align:left!important}
+ body.register-page:not(.register-print-embed) .register-financial-kpis .register-kpi-title{grid-area:title;font-size:7.5pt!important;line-height:1.1}
+ body.register-page:not(.register-print-embed) .register-financial-kpis .register-kpi-value{grid-area:value;font-size:12pt!important;margin:0!important;white-space:nowrap}
+ body.register-page:not(.register-print-embed) .register-financial-kpis p{grid-area:note;font-size:6.5pt!important;line-height:1.1;margin:1mm 0 0!important}
  body.register-page:not(.register-print-embed) .register-financial-kpis .register-kpi-title{font-size:9pt}
  body.register-page:not(.register-print-embed) .register-financial-kpis p{font-size:8pt}
- body.register-summary .register-table-section{display:none}body.register-summary .register-analytics{grid-template-columns:1fr}body.register-summary .register-chart{height:210px!important}body.register-summary .register-status-layout{min-height:200px!important}body.register-summary .register-donut{width:190px!important;height:190px!important;justify-self:center}.register-chart-empty{min-height:125px}
+  body.register-summary .register-table-section{display:block!important;break-before:page!important;page-break-before:always!important}body.register-summary .register-analytics{grid-template-columns:1fr}body.register-summary .register-chart{height:210px!important}body.register-summary .register-status-layout{min-height:200px!important}body.register-summary .register-donut{width:190px!important;height:190px!important;justify-self:center}.register-chart-empty{min-height:125px}
 }
 
 /* Polished, readable register print theme for standalone and embedded print views. */
 @media print{
- @page registerStandalone{size:A4 portrait;margin:11mm 10mm}
+ @page registerStandalone{size:A4 portrait;margin:10mm}
  html:has(body.register-page),body.register-page{print-color-adjust:exact;-webkit-print-color-adjust:exact}
+ body.register-page:not(.register-print-embed) .register-main{display:flex!important;flex-direction:column!important}
+ body.register-page:not(.register-print-embed) .register-page-heading{order:0}
+ body.register-page:not(.register-print-embed) #topKpis{order:1}
+ body.register-page:not(.register-print-embed) .register-analytics{order:2}
+ body.register-page:not(.register-print-embed) #financialKpis{order:3}
+ body.register-page:not(.register-print-embed) .register-table-section{order:4}
+ body.register-page:not(.register-print-embed) #scheduleSource{order:5}
  .register-page .register-brand{align-items:center!important;gap:10px!important;padding:0 0 9px!important;margin:0 0 12px!important;border-bottom:2px solid #002bff!important}
  .register-page .register-brand strong{font-size:19px!important;letter-spacing:-.4px!important;color:#002bff!important}
  .register-page .register-brand>span{font-size:8px!important;letter-spacing:1.4px!important;color:#52688f!important}
@@ -166,18 +185,19 @@
  .register-page-heading{padding:0 0 8px!important;margin:0 0 10px!important;border-bottom:1px solid #dce8ff}
  .register-page h1{font-size:21px!important;line-height:1.25!important;color:#002bff!important}
  .register-subtitle{font-size:10pt!important;color:#52688f!important;line-height:1.4!important}
- .register-kpis{gap:6px!important;margin-bottom:9px!important}
+ .register-kpis{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:6px!important;margin-bottom:9px!important}
  .register-kpi{border:1px solid #cbdcff!important;border-top:3px solid #007fff!important;border-radius:5px!important;padding:8px!important;box-shadow:none!important}
  .register-kpi-title{font-size:8.5pt!important;color:#52688f!important}
  .register-kpi-value{font-size:19pt!important;color:#002bff!important;margin-bottom:3px!important}
  .register-kpi-trend{font-size:7.5pt!important;color:#657699!important}
- .register-analytics{gap:7px!important}
+ .register-analytics{grid-template-columns:minmax(0,1fr)!important;gap:7px!important}
  .register-card{border:1px solid #cbdcff!important;border-radius:5px!important;padding:9px 10px!important;margin-bottom:8px!important;box-shadow:none!important;break-inside:avoid}
  .register-card-heading{border-color:#dce8ff!important}
  .register-card h2{font-size:11pt!important;color:#002bff!important}
- .register-chart{height:125px!important}
- .register-status-layout{min-height:125px!important}
- .register-donut{height:115px!important}
+ .register-chart{height:27mm!important}
+ .register-status-layout{min-height:25mm!important}
+ .register-donut{height:24mm!important}
+ .register-financial-trend .register-chart{height:24mm!important}
  .register-status-legend{border-color:#dce8ff!important}
  .register-status-legend button{font-size:8pt!important;padding:4px 6px!important}
  .register-table-section{break-inside:auto!important}
@@ -188,9 +208,10 @@
  #registerTable td{padding:6px 5px!important;border-bottom:1px solid #dce8ff!important;font-size:8.2pt!important;vertical-align:top!important;overflow-wrap:anywhere!important;max-width:none!important}
  #registerTable tbody tr:nth-child(even){background:#f5f8ff!important}
  #registerTable tr{break-inside:avoid!important;page-break-inside:avoid!important}
- #registerTable th:nth-child(1){width:8%!important}#registerTable th:nth-child(2){width:9%!important}#registerTable th:nth-child(3){width:25%!important}#registerTable th:nth-child(4){width:8%!important}#registerTable th:nth-child(5){width:8%!important}#registerTable th:nth-child(6){width:10%!important}#registerTable th:nth-child(7){width:11%!important}#registerTable th:nth-child(8){width:12%!important}#registerTable th:nth-child(9){width:9%!important}
+ #registerTable th:nth-child(1){width:9%!important}#registerTable th:nth-child(2){width:53%!important}#registerTable th:nth-child(3){width:10%!important}#registerTable th:nth-child(4){width:12%!important}#registerTable th:nth-child(5){width:16%!important}
  .register-badge{min-width:0!important;white-space:normal!important;font-size:7.5pt!important;font-weight:700!important;padding:2px 4px!important;border-radius:4px!important}
- .register-financial-kpis{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:6px!important}
+ .register-financial-kpis{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:6px!important;break-inside:avoid!important;page-break-inside:avoid!important}
+ .register-financial-kpis .register-kpi{break-inside:avoid!important;page-break-inside:avoid!important}
  .register-financial-kpis .register-kpi{padding:7px!important}
  .register-financial-kpis .register-kpi-value{font-size:14pt!important}
  .register-financial-kpis .register-kpi-title,.register-financial-kpis p{font-size:7.5pt!important}
@@ -200,4 +221,168 @@
  .register-print-embed #registerTable th,.register-print-embed #registerTable td{font-size:8pt!important;padding:5px 4px!important}
  .register-print-embed .register-card{padding:8px!important}
  .register-page button{color:inherit!important}
+ /* Keep the date range, register KPIs, and dashboard charts in standalone
+    print output, matching the on-screen overview. */
+ body.register-page:not(.register-summary):not(.register-print-embed) #topKpis{display:grid!important}
+ body.register-page:not(.register-summary):not(.register-print-embed) .register-analytics{display:grid!important;grid-template-columns:minmax(0,1fr)!important}
+ body.register-page:not(.register-summary):not(.register-print-embed) .register-datebar{display:flex!important;align-items:center!important}
+ body.register-page:not(.register-summary):not(.register-print-embed) #scheduleSource{display:none!important}
+ body.register-page:not(.register-print-embed) .register-table-section{display:block!important;visibility:visible!important;break-before:page!important;page-break-before:always!important}
+ .register-page .register-datebar button{display:none!important}
+ .register-page .register-datebar input{border:0!important;background:transparent!important;padding:0!important;color:#172b4d!important;font:8pt Arial,sans-serif!important}
+ .register-page .register-datebar{margin:0 0 5mm!important;padding:0 0 2mm!important;border-bottom:1px solid #dce8ff}
+ .register-page .register-page-heading{margin-bottom:5mm!important}
+ .register-page .register-kpis{gap:3mm!important;margin-bottom:3mm!important}
+ .register-page .register-kpi{padding:2.5mm!important}
+ .register-page .register-analytics{gap:3mm!important}
+ .register-page .register-chart{height:27mm!important}
+ .register-page .register-status-layout{min-height:25mm!important}
+ .register-page .register-donut{height:24mm!important}
+ .register-page .register-financial-trend .register-chart{height:24mm!important}
+ .register-page .register-donut-total span{top:calc(50% + 15px)!important;bottom:auto!important;font-size:7pt!important;white-space:nowrap}
+ .register-page .register-card{padding:2.5mm!important;margin-bottom:0!important}
+ .register-page .register-card-heading{margin-bottom:1mm!important;padding-bottom:1mm!important}
+ @page registerStandalone{size:A4 portrait;margin:10mm}
+ html:has(body.register-page),body.register-page,.register-page .register-main,.register-page .register-table-section,.register-page .register-table-scroll{height:auto!important;max-height:none!important;overflow:visible!important}
+ .register-page .register-main,.register-page .register-table-section,.register-page .register-table-scroll{width:100%!important;max-width:none!important}
+ .register-page #registerTable{width:100%!important;min-width:0!important;table-layout:fixed!important;border-collapse:collapse!important}
+ .register-page #registerTable th,.register-page #registerTable td{white-space:normal!important;overflow:visible!important;overflow-wrap:anywhere!important;word-break:normal!important;vertical-align:top!important}
+ .register-page #registerTable thead{display:table-header-group!important}
+ .register-page #registerTable tr{break-inside:auto!important;page-break-inside:auto!important}
+}
+
+ .register-table-title{align-items:flex-start}
+ .register-table-title h2{padding-top:8px}
+ .register-actions{flex:1;justify-content:flex-end}
+ .register-actions input[type=search]{width:min(390px,100%);min-height:38px;padding:9px 12px;border-color:#cbd9f3!important;border-radius:8px!important;box-shadow:0 2px 8px #173d7a0a}
+ .register-actions input[type=search]:focus{border-color:#007fff!important;box-shadow:0 0 0 3px #007fff1a}
+ .register-tabs button,.register-filter-panel,.register-table-scroll{border-radius:9px}
+ .register-tabs button{min-height:36px;padding:7px 10px;transition:background-color .15s,border-color .15s,color .15s}
+ .register-tabs button:not([aria-pressed=true]):hover{border-color:#a9c3f5;background:#f4f8ff}
+ .register-filter-panel{gap:12px;padding:14px;background:linear-gradient(135deg,#f8faff,#f2f6ff)}
+ .register-filter-panel select{min-width:135px}
+ .register-table-scroll{box-shadow:0 3px 12px #183d7a0a}
+ #registerTable th{position:sticky;top:0;z-index:1;padding:10px 9px;background:#f1f5ff!important}
+ #registerTable th button{display:inline-flex;align-items:center;gap:7px;min-height:24px}
+ #registerTable th button[data-sort]{cursor:pointer}
+ #registerTable th[aria-sort=ascending] button:after{content:"▲";font-size:8px;color:#007fff}
+ #registerTable th[aria-sort=descending] button:after{content:"▼";font-size:8px;color:#007fff}
+ #registerTable tbody tr{transition:background-color .12s}
+ #registerTable tbody tr:hover{background:#eef4ff}
+ #registerTable td{padding-top:10px;padding-bottom:10px}
+ .register-badge{font-weight:600}
+ .register-pagination{padding-top:2px}
+ @media(max-width:700px){
+  .register-table-title h2{padding-top:0}
+  .register-actions{justify-content:stretch}
+  .register-actions input[type=search]{flex:1 1 100%;width:100%}
+  .register-actions>#toggleFilters{flex:1}
+  .register-filter-panel{align-items:stretch}
+  .register-filter-panel label:not(.register-check){flex:1 1 100%;justify-content:space-between}
+  .register-filter-panel label:not(.register-check) select{flex:1;min-width:0}
+  .register-filter-panel>.register-check{flex:1 1 auto}
+ }
+
+@media screen{
+.register-page{--bg-main:#f4f7ff;--border:#dce7fb;--text-main:#18345f;--text-muted:#647895;background:linear-gradient(180deg,#f5f8ff 0,#f7f9fd 320px)!important}
+.register-page .register-main{max-width:1680px;padding:24px 28px 36px}
+.register-page-heading{align-items:center;margin-bottom:18px}
+.register-page h1{font-size:28px!important;font-weight:750!important;letter-spacing:-.65px}
+.register-eyebrow{font-weight:700;letter-spacing:1.7px}
+.register-subtitle{font-size:13px}
+.register-project-controls label,.register-datebar label{font-size:12px;font-weight:600}
+.register-datebar{padding:10px 12px;margin-bottom:14px;border:1px solid #e2eafb;border-radius:10px;background:#ffffffb8}
+.register-datebar button{min-height:36px}
+.register-message{border-radius:10px;padding:13px 16px}
+.register-kpis{gap:14px;margin-bottom:16px}
+.register-kpi{display:flex;align-items:flex-start;gap:12px;min-height:120px;padding:16px 17px;border-radius:12px;box-shadow:0 4px 14px #173d7a08;transition:transform .16s ease,box-shadow .16s ease}
+.register-kpi:hover{transform:translateY(-2px);box-shadow:0 9px 22px #173d7a13}
+.register-kpi-icon{display:grid;place-items:center;flex:0 0 40px;width:40px;height:40px;border-radius:50%;background:#e9f1ff;color:#2875f5;font-size:17px}
+.register-kpi-content{min-width:0}
+.register-kpi-title{font-size:12px;font-weight:700;color:#42618f;margin:2px 0 7px}
+.register-kpi-value{font-size:30px;color:#163e80;line-height:1;margin-bottom:10px}
+.register-kpi-trend{font-size:10px}
+.register-kpi-total{border-color:#cfe3ff;background:linear-gradient(135deg,#fff,#f2f8ff)}
+.register-kpi-issues{border-color:#ffd7dc;background:linear-gradient(135deg,#fff,#fff5f6)}
+.register-kpi-issues .register-kpi-icon{color:#e44e62;background:#ffe3e7}
+.register-kpi-risks{border-color:#ffe4bd;background:linear-gradient(135deg,#fff,#fff9ef)}
+.register-kpi-risks .register-kpi-icon{color:#df9410;background:#fff0d1}
+.register-kpi-decisions{border-color:#c8f0e5;background:linear-gradient(135deg,#fff,#f2fcf8)}
+.register-kpi-decisions .register-kpi-icon{color:#11a982;background:#d9f7ed}
+.register-kpi-overdue{border-color:#e2d5ff;background:linear-gradient(135deg,#fff,#f8f5ff)}
+.register-kpi-overdue .register-kpi-icon{color:#8050e8;background:#eee5ff}
+.register-spark{right:14px;bottom:16px;width:48px;height:28px}
+.register-analytics{gap:14px;margin-bottom:14px}
+.register-card{border-color:#e0e9f8;border-radius:12px;padding:16px 18px;box-shadow:0 4px 16px #173d7a08}
+.register-card h2{font-size:16px!important;font-weight:700!important;color:#173f7f}
+.register-card-heading{padding-bottom:10px;margin-bottom:12px}
+.register-chart{height:250px}
+.register-status-layout{min-height:250px;gap:18px}
+.register-donut{height:210px}
+.register-status-legend button{padding:11px 12px;font-size:12px}
+.register-table-section{padding:18px}
+.register-table-title{align-items:center}
+.register-table-title h2{padding:0;font-size:18px!important}
+.register-tabs{gap:8px;margin:14px 0 12px}
+.register-tabs button{padding:8px 12px;border-color:#e0e9f8;border-radius:8px;font-size:12px}
+.register-tabs button[aria-pressed=true]{box-shadow:0 3px 8px #002bff24}
+.register-table-scroll{border-color:#dce6f6;border-radius:10px;background:#fff}
+#registerTable{font-size:12px;line-height:1.5}
+#registerTable th{padding:11px 12px;font-size:11px;letter-spacing:.15px}
+#registerTable td{padding:11px 12px}
+#registerTable tbody tr:nth-child(even){background:#f6f9ff}
+#registerTable tbody tr:hover{background:#edf4ff}
+.register-badge{font-size:10px;padding:4px 8px;border-radius:6px}
+.register-row-actions{gap:5px}
+.register-row-actions button,.register-row-actions a{min-height:29px;padding:5px 8px;border-radius:6px}
+.register-export-bar{margin:12px 2px;color:#617796}
+.register-export-bar button{min-height:32px;padding:6px 10px;border-radius:7px;font-size:11px}
+.register-pagination{gap:10px;padding:10px 2px 0}
+@media(max-width:900px){
+  .register-page .register-main{padding:20px 18px 30px}
+  .register-page-heading{align-items:flex-start}
+  .register-kpis{gap:10px}
+  .register-analytics{grid-template-columns:1fr}
+  .register-status-layout{grid-template-columns:minmax(180px,.8fr) 1.2fr}
+}
+@media(max-width:700px){
+  .register-page .register-main{padding:16px 12px 24px}
+  .register-page h1{font-size:23px!important}
+  .register-kpis{gap:9px}
+  .register-kpi{min-height:104px;padding:12px}
+  .register-kpi-icon{flex-basis:34px;width:34px;height:34px;font-size:14px}
+  .register-kpi-value{font-size:25px}
+  .register-kpi-trend{font-size:9px}
+  .register-spark{right:8px;bottom:10px;width:38px}
+  .register-card{padding:13px}
+  .register-table-section{padding:13px}
+  .register-table-title h2{font-size:16px!important}
+  .register-status-layout{grid-template-columns:1fr}
+  .register-donut{height:190px}
+  .register-progress-highlights{font-size:11px}
+}
+}
+@media print{
+  body.register-page:not(.register-print-embed)::before{content:"";position:fixed;inset:-7mm;z-index:9999;pointer-events:none;border:1.5px solid #29a9e0;border-radius:7mm;box-shadow:inset 0 0 0 1px #dceffc}
+  .register-page .register-brand{border-bottom:2px solid #29a9e0!important}
+  .register-page .register-page-heading{border-bottom:1px solid #d6e4f2!important}
+  .register-page .register-kpi{display:flex!important;align-items:flex-start!important;gap:2mm!important;border-radius:3mm!important;border-top-width:1px!important}
+  .register-page .register-kpi-icon{display:grid!important;flex:0 0 8mm!important;width:8mm!important;height:8mm!important;font-size:10pt!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .register-page .register-kpi-content{min-width:0}
+  .register-page .register-kpi-title{font-size:8pt!important;font-weight:700!important;color:#38577e!important}
+  .register-page .register-kpi-value{font-size:18pt!important;color:#173f7f!important}
+  .register-page .register-kpi-trend{font-size:7pt!important}
+  .register-page .register-card{border:1px solid #c9d9ec!important;border-radius:3mm!important}
+  .register-page .register-card-heading{border-bottom:1px solid #dce6f2!important}
+  .register-page .register-card h2{color:#173f7f!important}
+  .register-page .register-table-section{padding:8mm 3mm 3mm!important;border:1px solid #a9c8e5!important;border-radius:3mm!important}
+  .register-page .register-table-title{justify-content:center!important;padding:2mm 0 4mm!important;margin-bottom:2mm!important;border-bottom:1px solid #dce6f2!important;text-align:center!important}
+  .register-page .register-table-title h2{width:100%;padding:0!important;text-align:center!important}
+  .register-page .register-print-meta{margin:3mm 0 5mm!important;padding:2mm 3mm!important}
+  .register-page .register-table-scroll{border:1px solid #b8cde3!important;border-radius:2mm!important}
+  .register-page #registerTable th{background:#eaf2fb!important;color:#173f7f!important;border-bottom:1.5px solid #8bb9df!important}
+  .register-page #registerTable td{border-bottom:1px solid #dfe8f1!important;line-height:1.35!important}
+  .register-page #registerTable tbody tr:nth-child(even){background:#f5f9fd!important}
+  .register-page .register-badge{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .register-page .register-progress-highlights{margin:2mm 0 0!important;padding:2mm 3mm!important;border-left:2px solid #007fff!important;background:#f2f7ff!important;color:#294c7d!important;font-size:8pt!important;line-height:1.35!important;print-color-adjust:exact;-webkit-print-color-adjust:exact}
 }

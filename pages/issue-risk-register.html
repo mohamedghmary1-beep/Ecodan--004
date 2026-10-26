@@ -3,16 +3,16 @@
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Issue &amp; Risk Register | MDCEO</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-<link rel="stylesheet" href="../shared/design-system.css?v=3"><link rel="stylesheet" href="../shared/apple-ui.css?v=6"><link rel="stylesheet" href="../shared/issue-risk-register.css?v=6">
+<link rel="stylesheet" href="../shared/design-system.css?v=3"><link rel="stylesheet" href="../shared/apple-ui.css?v=6"><link rel="stylesheet" href="../shared/issue-risk-register.css?v=26">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="../shared/notify.js"></script><script src="../shared/auth-guard.js"></script>
 <script src="../shared/lang.js" defer></script><script src="../shared/nav-toggle.js?v=4" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" defer></script>
-<script src="../shared/register-core.js?v=1" defer></script>
+<script src="../shared/register-core.js?v=2" defer></script>
 <link rel="stylesheet" href="../shared/register-inline-editor.css?v=1">
-<script src="../shared/register-inline-editor.js?v=1" defer></script>
-<script src="../shared/issue-risk-register.js?v=7" defer></script>
+<script src="../shared/register-inline-editor.js?v=3" defer></script>
+<script src="../shared/issue-risk-register.js?v=22" defer></script>
 <script src="../shared/register-schedule-import.js?v=1" defer></script>
 <link rel="stylesheet" href="../shared/mdceo-ui.css?v=1">
 </head><body class="register-page">
@@ -24,19 +24,19 @@
  <div class="register-message" id="registerState" role="status" aria-live="polite">Connecting to your project…</div>
  <section class="register-kpis" id="topKpis" aria-label="Register indicators"></section>
  <div class="register-analytics">
-  <section class="register-card"><div class="register-card-heading"><h2>Cumulative completion</h2><select id="progressPeriod" class="no-print" aria-label="Progress interval"><option value="weekly">Weekly</option><option value="monthly">Monthly</option></select></div><div class="register-chart" id="progressChartBox"><canvas id="registerProgressChart" role="img" aria-label="Existing project planned and actual completion"></canvas></div><div class="register-chart-empty" id="progressEmpty" hidden>No progress data is available.<button type="button" id="importScheduleAction" hidden>Import schedule</button></div><p class="register-chart-note" id="progressSummary"></p></section>
+  <section class="register-card"><div class="register-card-heading"><h2>Cumulative completion</h2><select id="progressPeriod" class="no-print" aria-label="Progress interval"><option value="weekly">Weekly</option><option value="monthly">Monthly</option></select></div><div class="register-chart" id="progressChartBox"><canvas id="registerProgressChart" role="img" aria-label="Existing project planned and actual completion"></canvas></div><div class="register-chart-empty" id="progressEmpty" hidden>No progress data is available.<button type="button" id="importScheduleAction" hidden>Import schedule</button></div><p class="register-progress-highlights" id="progressHighlights" role="status" aria-live="polite"></p><p class="register-chart-note" id="progressSummary"></p></section>
   <section class="register-card"><div class="register-card-heading"><h2>Issue &amp; Risk Status Overview</h2><button id="clearBucket" type="button" class="no-print">All items</button></div><div class="register-status-layout"><div class="register-donut"><canvas id="registerStatusChart" role="img" aria-label="Mutually exclusive register status counts"></canvas><div class="register-donut-total"><strong id="statusTotal">0</strong><span>Total items</span></div></div><div id="statusLegend" class="register-status-legend"></div></div></section>
+  <section class="register-card register-financial-trend" id="financialTrendCard" hidden><div class="register-card-heading"><h2>Financial Cost Trend</h2></div><div class="register-chart"><canvas id="financialTrendChart" role="img" aria-label="Weekly planned and actual project costs in Saudi riyals"></canvas></div><section class="register-financial-kpis" id="financialKpis" aria-label="Existing project financial and schedule indicators"></section></section>
  </div>
  <section class="register-card register-table-section">
-  <div class="register-table-title"><h2>Issue &amp; Risk Register — Decisions Requested</h2><div class="register-actions no-print"><input type="search" id="registerSearch" placeholder="Search by title, ID, category or owner…" aria-label="Search register"><button id="toggleFilters" aria-expanded="false">Filter</button><a class="register-primary" id="addItem" href="issue-risk-editor.html" hidden>+ Add New</a><button type="button" class="register-primary" id="editDataButton" hidden>Edit Data</button></div></div>
+  <div class="register-table-title"><h2>Issue &amp; Risk Register — Decisions Requested</h2><div class="register-actions no-print"><input type="search" id="registerSearch" placeholder="Search title, type, status, priority, assignee or details…" aria-label="Search register"><button id="toggleFilters" aria-expanded="false">Filter</button><a class="register-primary" id="addItem" href="issue-risk-editor.html" hidden>+ Add New</a><button type="button" class="register-primary" id="editDataButton" hidden>Edit Data</button></div></div>
   <div class="register-tabs no-print" id="registerTabs" role="group" aria-label="Register type filters"></div>
-  <div class="register-filter-panel no-print" id="filterPanel" hidden><label>Priority<select id="priorityFilter"><option value="">All priorities</option></select></label><label>Status<select id="statusFilter"><option value="">All statuses</option></select></label><label>Owner<select id="ownerFilter"><option value="">All owners</option></select></label><label>Category<select id="categoryFilter"><option value="">All categories</option></select></label><label class="register-check"><input type="checkbox" id="showArchived"> Archived records</label><button id="resetFilters">Reset filters</button></div>
-  <div class="register-export-bar no-print"><span id="resultCount"></span><div><button id="exportExcel">Export Excel</button><button id="exportPdf">Print / PDF</button><button id="exportSummary">Executive summary</button></div></div>
+  <div class="register-filter-panel no-print" id="filterPanel" hidden><label>Priority<select id="priorityFilter"><option value="">All priorities</option></select></label><label>Status<select id="statusFilter"><option value="">All statuses</option></select></label><label>Assigned to<select id="ownerFilter"><option value="">All assignees</option></select></label><label>Category<select id="categoryFilter"><option value="">All categories</option></select></label><label class="register-check"><input type="checkbox" id="showArchived"> Archived records</label><button id="resetFilters">Reset filters</button></div>
+  <div class="register-export-bar no-print"><span id="resultCount"></span><div><button id="exportExcel">Export Excel</button><button id="exportPdf" type="button"><i class="fa-solid fa-print" aria-hidden="true"></i> Print issues</button><button id="exportSummary">Executive summary</button></div></div>
   <p class="register-print-meta" id="printMeta"></p>
-  <div class="register-table-scroll"><table id="registerTable"><thead><tr><th><button data-sort="code">ID</button></th><th><button data-sort="kind">Type</button></th><th><button data-sort="title">Title</button></th><th><button data-sort="category">Category</button></th><th><button data-sort="priority">Priority</button></th><th><button data-sort="status">Status</button></th><th><button data-sort="owner">Owner</button></th><th><button data-sort="target_date">Target date</button></th><th>Days left</th><th class="no-print">Actions</th></tr></thead><tbody id="registerRows"></tbody></table></div>
-  <div class="register-pagination no-print"><label>Rows<select id="pageSize"><option>10</option><option selected>25</option><option>50</option></select></label><span id="pageSummary"></span><button id="previousPage">Previous</button><button id="nextPage">Next</button></div>
+  <div class="register-table-scroll"><table id="registerTable"><thead><tr><th>Type</th><th><button data-sort="title">Title</button></th><th><button data-sort="priority">Priority</button></th><th><button data-sort="status">Status</button></th><th><button data-sort="target_date">Target date</button></th><th class="no-print">Actions</th></tr></thead><tbody id="registerRows"></tbody></table></div>
+  <div class="register-pagination no-print"><label>Rows<select id="pageSize"><option>10</option><option selected>25</option><option>50</option><option value="all">All</option></select></label><span id="pageSummary"></span><button id="previousPage">Previous</button><button id="nextPage">Next</button></div>
  </section>
- <section class="register-financial-kpis" id="financialKpis" aria-label="Existing project financial and schedule indicators"></section>
  <p class="register-source" id="scheduleSource"></p>
 <section id="registerEditPanel" class="no-print" hidden aria-label="Edit project register data"></section>
 </main>

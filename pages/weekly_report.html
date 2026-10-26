@@ -257,7 +257,7 @@
   /* Keep the print DOM laid out off-screen so page sizing can be checked
      before the print dialog opens. */
   body.printing-full-report #externalPagesContainer{
-    display:block;position:absolute;left:-99999px;top:0;width:718px;
+    display:block;position:absolute;left:-99999px;top:0;width:194mm;
   }
   .embedded-page{width:100%;border:none;display:block;}
   .report-page{max-width:100%;box-sizing:border-box;}
@@ -321,6 +321,10 @@
   .perf-embed .chart-title{flex:1;text-align:center;font-size:13px;font-weight:700;margin:0;color:var(--text-main);}
   .perf-embed .chart-logo-slot{width:44px;height:44px;flex-shrink:0;border:1px dashed #cbd5e1;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--text-muted);background:#f8fafc;}
   .perf-embed .chart-logo-slot::after{content:'Logo';}
+  .perf-embed .chart-logo-slot.has-logo{border:none;background:none;padding:0;}
+  .perf-embed .chart-logo-slot.has-logo::after{content:none;}
+  .perf-print-copy{width:100%;box-sizing:border-box;}
+  .perf-print-copy .panel{break-inside:avoid;page-break-inside:avoid;}
   .perf-embed .spi-value{font-size:26px;font-weight:900;color:var(--text-main);}
   .perf-embed .cash-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
   .perf-embed .cash-col{display:flex;flex-direction:column;gap:8px;}
@@ -349,15 +353,11 @@
   .register-report-page .register-table-scroll{overflow:visible}
   .register-report-page #registerTable{min-width:0;width:100%;table-layout:fixed;font-size:9px;line-height:1.15}
   .register-report-page #registerTable th,.register-report-page #registerTable td{padding:3px 2px;font-size:9px;white-space:normal;overflow-wrap:anywhere}
-  .register-report-page #registerTable th:nth-child(1){width:7%!important}
-  .register-report-page #registerTable th:nth-child(2){width:8%!important}
-  .register-report-page #registerTable th:nth-child(3){width:39%!important}
-  .register-report-page #registerTable th:nth-child(4){width:8%!important}
-  .register-report-page #registerTable th:nth-child(5){width:7%!important}
-  .register-report-page #registerTable th:nth-child(6){width:8%!important}
-  .register-report-page #registerTable th:nth-child(7){width:9%!important}
-  .register-report-page #registerTable th:nth-child(8){width:8%!important}
-  .register-report-page #registerTable th:nth-child(9){width:6%!important}
+  .register-report-page #registerTable th:nth-child(1){width:9%!important}
+  .register-report-page #registerTable th:nth-child(2){width:53%!important}
+  .register-report-page #registerTable th:nth-child(3){width:10%!important}
+  .register-report-page #registerTable th:nth-child(4){width:12%!important}
+  .register-report-page #registerTable th:nth-child(5){width:16%!important}
   .register-report-page .register-badge{font-size:8px;min-width:0;padding:1px 2px;white-space:normal}
   .register-report-page .register-financial-kpis{grid-template-columns:repeat(6,minmax(0,1fr));gap:4px}
   .register-report-page .register-financial-kpis .register-kpi{padding:5px 3px}
@@ -393,16 +393,19 @@
       display:block !important;position:static;left:auto;top:auto;width:auto;
     }
     .report-page{
-      box-sizing:border-box;width:100%!important;max-width:194mm;min-height:278mm;
-      overflow:visible;break-after:page;page-break-after:always;
+      box-sizing:border-box;width:194mm!important;max-width:194mm;min-height:278mm;
+      margin:0 auto!important;padding:0!important;overflow:visible;break-after:page;page-break-after:always;
     }
     .report-page:last-child{break-after:auto;page-break-after:auto;}
-    .report-page *{min-width:0;}
-    .report-page canvas,.report-page svg,.report-page img{max-width:100%!important;}
+    .report-page canvas,.report-page svg,.report-page img,.report-page iframe{max-width:100%!important;}
+    .report-page .pf-page{width:100%!important;max-width:none!important;min-height:268mm!important;margin:0!important;box-sizing:border-box;break-inside:avoid;page-break-inside:avoid;}
+    .report-page .pf-body{width:100%!important;max-width:none!important;overflow:visible!important;}
     .report-page tr,.report-page .kpi-card,.report-page .card{break-inside:avoid;page-break-inside:avoid;}
     .report-page thead{display:table-header-group;}
-    .no-print,.report-page button,.toolbar{display:none!important;}
+    .report-page .no-print,.report-page .toolbar{display:none!important;}
+    .report-page button:not([data-sort]){display:none!important;}
     .report-page .empty-state:only-child{display:none!important;}
+    #externalPagesContainer{width:194mm!important;margin:0 auto!important;}
   }
   @media print{
     .register-report-page .register-main{padding:0!important;width:100%!important;max-width:none!important}
@@ -424,14 +427,11 @@
     .register-report-page .register-table-scroll{overflow:visible!important}
     .register-report-page #registerTable{min-width:0;width:100%;table-layout:fixed;font-size:7px;line-height:1.15}
     .register-report-page #registerTable th,.register-report-page #registerTable td{padding:3px 2px;font-size:7px;white-space:normal;overflow-wrap:anywhere}
-    .register-report-page #registerTable th:nth-child(1){width:7%}
-    .register-report-page #registerTable th:nth-child(2){width:8%}
-    .register-report-page #registerTable th:nth-child(3){width:39%}
-    .register-report-page #registerTable th:nth-child(4){width:8%}
-    .register-report-page #registerTable th:nth-child(5){width:7%}
-    .register-report-page #registerTable th:nth-child(6){width:8%}
-    .register-report-page #registerTable th:nth-child(7){width:9%}
-    .register-report-page #registerTable th:nth-child(8){width:8%}
+    .register-report-page #registerTable th:nth-child(1){width:9%}
+    .register-report-page #registerTable th:nth-child(2){width:53%}
+    .register-report-page #registerTable th:nth-child(3){width:10%}
+    .register-report-page #registerTable th:nth-child(4){width:12%}
+    .register-report-page #registerTable th:nth-child(5){width:16%}
     .register-report-page .register-badge{font-size:6px;min-width:0;padding:1px 2px;white-space:normal}
     .register-report-page .register-financial-kpis{grid-template-columns:repeat(6,minmax(0,1fr));gap:4px}
     .register-report-page .register-financial-kpis .register-kpi{padding:5px 3px}
@@ -457,15 +457,11 @@
     .register-report-page .register-badge{font-size:8px!important}
     .register-report-page .register-financial-kpis .register-kpi-title,.register-report-page .register-financial-kpis p,.register-report-page .register-source,.register-report-page .register-chart-note{font-size:8px!important}
     .register-report-page .register-table-section{break-inside:auto!important;page-break-inside:auto!important}
-    .register-report-page #registerTable th:nth-child(1){width:7%!important}
-    .register-report-page #registerTable th:nth-child(2){width:8%!important}
-    .register-report-page #registerTable th:nth-child(3){width:39%!important}
-    .register-report-page #registerTable th:nth-child(4){width:8%!important}
-    .register-report-page #registerTable th:nth-child(5){width:7%!important}
-    .register-report-page #registerTable th:nth-child(6){width:8%!important}
-    .register-report-page #registerTable th:nth-child(7){width:9%!important}
-    .register-report-page #registerTable th:nth-child(8){width:8%!important}
-    .register-report-page #registerTable th:nth-child(9){width:6%!important}
+    .register-report-page #registerTable th:nth-child(1){width:9%!important}
+    .register-report-page #registerTable th:nth-child(2){width:53%!important}
+    .register-report-page #registerTable th:nth-child(3){width:10%!important}
+    .register-report-page #registerTable th:nth-child(4){width:12%!important}
+    .register-report-page #registerTable th:nth-child(5){width:16%!important}
     .report-page.performance-report-page,.report-page.register-report-page{break-inside:avoid;page-break-inside:avoid;break-after:page;page-break-after:always}
     /* When a section's content (Performance/Summary/Work) is taller than one
        page, let it flow onto extra pages instead of being clipped — and
@@ -473,6 +469,9 @@
        looks like a consistent set of framed pages, not one page followed by
        bare unframed overflow. */
     .pf-page{-webkit-box-decoration-break:clone;box-decoration-break:clone;}
+    .report-page.performance-report-page{break-inside:avoid;page-break-inside:avoid;}
+    .performance-report-page .pf-page{overflow:hidden;}
+    .performance-report-page .pf-page *{break-before:avoid!important;break-after:avoid!important;page-break-before:avoid!important;page-break-after:avoid!important;}
     * {-webkit-print-color-adjust:exact;print-color-adjust:exact;}
   }
 </style>
@@ -480,8 +479,8 @@
     <script src="../shared/nav-toggle.js?v=4" defer></script>
 <link rel="stylesheet" href="../shared/apple-ui.css?v=6">
 <link rel="stylesheet" href="../shared/mdceo-ui.css?v=1">
-<link rel="stylesheet" href="../shared/register-report-print.css?v=3">
-<script src="../shared/register-report-print.js?v=3"></script>
+<link rel="stylesheet" href="../shared/register-report-print.css?v=11">
+<script src="../shared/register-report-print.js?v=6"></script>
 </head>
 <body>
 
@@ -542,11 +541,6 @@
       <button class="btn-mini superadmin-only" onclick="newReport()"><i class="fa-solid fa-plus"></i> <span data-i18n="newReportBtn">تقرير جديد</span></button>
       <button class="btn-mini danger superadmin-only" id="deleteReportBtn" onclick="deleteSelectedReport()"><i class="fa-solid fa-trash"></i> <span data-i18n="deleteReportBtn">حذف التقرير</span></button>
     </div>
-  </div>
-
-  <div class="panel">
-    <h2 class="section-title"><i class="fa-solid fa-arrow-down-up-across-line"></i> <span data-i18n="pageOrderTitle">ترتيب صفحات التقرير عند الطباعة</span></h2>
-    <div id="pageOrderList" class="page-order-list"></div>
   </div>
 
   <div class="panel">
@@ -1192,13 +1186,15 @@ function unlockEditMode() {
 }
 
 // ---------- Page order (for print) ----------
-let pageOrder = ['performance', 'register', 'work'];
+// The weekly report printout contains only this report's work and photos.
+let pageOrder = ['work'];
 function pageLabel(key) {
   return { performance: T('pageLabelPerformance'), register: T('pageLabelRegister'), summary: T('pageLabelSummary'), work: T('pageLabelWork') }[key];
 }
 
 function renderPageOrderList() {
   const list = document.getElementById('pageOrderList');
+  if (!list) return;
   list.innerHTML = '';
   pageOrder.forEach((key, idx) => {
     const item = document.createElement('div');
@@ -1770,6 +1766,29 @@ function applyAutoPageSize(wrap, measureEl) {
   }
 }
 
+function fitPerformanceToOnePage(wrap, content) {
+  const frame = wrap.querySelector('.pf-page');
+  if (!frame || !content) return;
+  content.querySelectorAll('*').forEach(el => {
+    el.style.breakBefore = el.style.breakAfter = 'auto';
+    el.style.pageBreakBefore = el.style.pageBreakAfter = 'auto';
+  });
+  const mm = 96 / 25.4;
+  const pageH = 281 * mm - 6;
+  frame.style.minHeight = '0';
+  frame.style.height = 'auto';
+  let z = 1;
+  for (let i = 0; i < 8; i++) {
+    content.style.zoom = z;
+    const h = frame.offsetHeight;
+    if (h <= pageH) break;
+    z *= (pageH / h) * 0.985;
+  }
+  frame.style.height = '279mm';
+  frame.style.overflow = 'hidden';
+  console.log('[print-debug] performance zoom =', z);
+}
+
 // Before cloning an input/textarea/select, bake its *live* value into an
 // attribute. cloneNode() only copies attributes (the HTML that was originally
 // parsed), not values that were set later via JS as a DOM property — so a
@@ -1803,19 +1822,13 @@ function bakeCanvasesIntoImages(doc, contentWrap) {
     const orig = originalCanvases[i];
     if (!orig) return;
     let dataUrl;
-    try {
-      dataUrl = orig.toDataURL('image/png');
-    } catch (e) {
-      console.error('Could not snapshot canvas for print:', e);
-      return;
-    }
-    const rect = orig.getBoundingClientRect();
+    try { dataUrl = orig.toDataURL('image/png'); } catch (e) { return; }
     const img = document.createElement('img');
     img.src = dataUrl;
-    img.style.width = rect.width ? rect.width + 'px' : '100%';
-    img.style.height = rect.height ? rect.height + 'px' : 'auto';
-    img.style.display = 'block';
+    img.style.cssText = 'display:block;width:100%;height:100%;max-width:100%;object-fit:contain;';
     if (clonedCanvas.id) img.id = clonedCanvas.id;
+    const box = clonedCanvas.parentElement;
+    if (box) { box.style.position = 'relative'; box.style.overflow = 'hidden'; }
     clonedCanvas.replaceWith(img);
   });
 }
@@ -1867,11 +1880,6 @@ async function embedExternalReportPage(iframe, wrap, body, readinessPromise) {
       doc.querySelectorAll('link[rel="stylesheet"], style').forEach(node => contentWrap.appendChild(node.cloneNode(true)));
       const clonedBody = doc.body.cloneNode(true);
       contentWrap.appendChild(clonedBody);
-      if (wrap.classList.contains('performance-report-page')) {
-        const printStyle = document.createElement('style');
-        printStyle.textContent = '@media print{@page{size:A4 portrait;margin:0}}';
-        contentWrap.appendChild(printStyle);
-      }
       if (wrap.classList.contains('register-report-page')) {
         contentWrap.querySelector('.register-brand')?.classList.remove('header');
         const registerTitle = contentWrap.querySelector('.register-page-heading h1');
@@ -2005,6 +2013,10 @@ async function printFullReport() {
 
   // ----- Content pages, each inside the same rounded frame -----
   pageOrder.forEach(key => {
+    // Only print this weekly report's work and photos. Ignore any stale
+    // dashboard/register entry that may exist in an already-open page.
+    if (key !== 'work') return;
+    if (key === 'performance' && !(perfSnapshotData || perfLiveData)) return;
     pageCounter++;
     const wrap = document.createElement(key === 'performance' || key === 'register' ? 'section' : 'div');
     wrap.className = 'report-page';
@@ -2040,26 +2052,25 @@ async function printFullReport() {
       return;
     } else if (key === 'performance') {
       wrap.classList.add('performance-report-page');
-      const iframe = document.createElement('iframe');
-      iframe.className = 'embedded-page';
-      const readinessPromise = waitForEmbeddedPageReadyMessage(iframe);
-      iframe.src = 'performance.html?print=1&snapshot=1';
-      body.appendChild(iframe);
-      iframeLoadPromises.push(new Promise(resolve => {
-        let done = false;
-        const embed = () => {
-          if (done) return;
-          done = true;
-          iframe.contentWindow?.postMessage({
-            type: 'performance-print-snapshot',
-            snapshot: performanceSnapshot
-          }, '*');
-          embedExternalReportPage(iframe, wrap, body, readinessPromise).then(resolve);
-        };
-        iframe.addEventListener('load', embed);
-        setTimeout(embed, 12000);
-      }));
       container.appendChild(wrap);
+      const src = document.getElementById('perfDashboard');
+      const host = document.createElement('div');
+      host.className = 'perf-embed perf-print-copy';
+      const clone = src.cloneNode(true);
+      clone.style.display = 'block';
+      host.appendChild(clone);
+      bakeCanvasesIntoImages(src, clone);
+      clone.removeAttribute('id');
+      clone.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
+
+      clone.querySelectorAll('.chart-logo-slot').forEach((slot, i) => {
+        slot.classList.add('has-logo');
+        slot.innerHTML = '<img alt="" style="width:100%;height:100%;object-fit:contain" src="' +
+          (i % 2 === 0 ? '../images/WhatsApp Image 2025-11-24 at 10.33.58 AM.jpeg' : '../images/afford.jpg') + '">';
+      });
+
+      body.appendChild(host);
+      fitPerformanceToOnePage(wrap, host);
       return;
     } else if (key === 'register') {
       wrap.classList.add('print-page');

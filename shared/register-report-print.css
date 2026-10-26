@@ -11,24 +11,22 @@
 #externalPagesContainer .register-report-page .register-kpi-title,#externalPagesContainer .register-report-page .register-kpi-trend{font-size:9pt!important;line-height:1.2!important}
 #externalPagesContainer .register-report-page .register-kpi-value{font-size:14pt!important;margin:0!important}
 #externalPagesContainer .register-report-page .register-card{padding:2mm!important;margin:0 0 2mm!important;box-shadow:none!important;break-inside:auto!important}
+#externalPagesContainer .register-report-page .register-table-section{padding:8mm 3mm 3mm!important}
 #externalPagesContainer .register-report-page .register-card h2{font-size:10pt!important;margin:0 0 1mm!important}
 #externalPagesContainer .register-report-page .register-table-scroll{overflow:visible!important;max-height:none!important}
 #externalPagesContainer .register-report-page #registerTable{width:100%!important;min-width:0!important;table-layout:fixed!important;border-collapse:collapse;font:9pt/1.25 Arial,sans-serif!important}
 #externalPagesContainer .register-report-page #registerTable th,#externalPagesContainer .register-report-page #registerTable td{font-size:9pt!important;padding:1.2mm .8mm!important;white-space:normal!important;overflow-wrap:anywhere!important;vertical-align:top;max-height:none!important;height:auto!important}
 #externalPagesContainer .register-report-page #registerTable th:nth-child(1){width:9%!important}
-#externalPagesContainer .register-report-page #registerTable th:nth-child(2){width:10%!important}
-#externalPagesContainer .register-report-page #registerTable th:nth-child(3){width:27%!important}
-#externalPagesContainer .register-report-page #registerTable th:nth-child(4){width:8%!important}
-#externalPagesContainer .register-report-page #registerTable th:nth-child(5){width:8%!important}
-#externalPagesContainer .register-report-page #registerTable th:nth-child(6){width:10%!important}
-#externalPagesContainer .register-report-page #registerTable th:nth-child(7){width:11%!important}
-#externalPagesContainer .register-report-page #registerTable th:nth-child(8){width:11%!important}
-#externalPagesContainer .register-report-page #registerTable th:nth-child(9){width:6%!important}
+#externalPagesContainer .register-report-page #registerTable th:nth-child(2){width:53%!important}
+#externalPagesContainer .register-report-page #registerTable th:nth-child(3){width:10%!important}
+#externalPagesContainer .register-report-page #registerTable th:nth-child(4){width:12%!important}
+#externalPagesContainer .register-report-page #registerTable th:nth-child(5){width:16%!important}
 #externalPagesContainer .register-report-page #registerTable thead{display:table-header-group!important}
 #externalPagesContainer .register-report-page #registerTable tr{break-inside:avoid;page-break-inside:avoid}
 #externalPagesContainer .register-report-page .register-badge{font-size:9pt!important;white-space:normal!important;min-width:0!important;padding:0!important}
 #externalPagesContainer .register-report-page .register-item-description{display:block!important;margin-top:1mm;color:#475569}
-#externalPagesContainer .register-report-page .register-print-meta{display:block!important;font-size:9pt!important;margin:1mm 0!important}
+#externalPagesContainer .register-report-page .register-table-title{margin:0 0 2mm!important;padding:0 0 3mm!important}
+#externalPagesContainer .register-report-page .register-print-meta{display:block!important;font-size:9pt!important;margin:3mm 0 5mm!important;padding:2mm 3mm!important}
 #externalPagesContainer .register-report-page .no-print,#externalPagesContainer .register-report-page nav,#externalPagesContainer .register-report-page dialog,#externalPagesContainer .register-report-page .register-datebar,#externalPagesContainer .register-report-page .register-message,#externalPagesContainer .register-report-page .register-project-controls,#externalPagesContainer .register-report-page .register-eyebrow,#externalPagesContainer .register-report-page .register-subtitle,#externalPagesContainer .register-report-page i{display:none!important}
 #externalPagesContainer .register-report-page button{font:inherit!important;color:inherit!important;background:none!important;border:0!important;padding:0!important;min-height:0!important;text-align:left}
 #externalPagesContainer .register-report-page:last-child{break-after:auto!important;page-break-after:auto!important}
@@ -38,20 +36,23 @@
 #externalPagesContainer .register-report-page .register-donut{height:90px!important}
 #externalPagesContainer .register-report-page .register-chart img,#externalPagesContainer .register-report-page .register-donut img{position:absolute;inset:0;width:100%!important;height:100%!important;object-fit:contain}
 #externalPagesContainer .register-report-page .register-status-legend button{display:flex!important;justify-content:space-between;font-size:9pt!important;padding:1mm!important}
-#externalPagesContainer .register-report-page .register-financial-kpis{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:2mm!important}
+#externalPagesContainer .register-report-page .register-financial-kpis{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:2mm!important;break-inside:avoid!important;page-break-inside:avoid!important}
+#externalPagesContainer .register-report-page .register-financial-kpis .register-kpi{break-inside:avoid!important;page-break-inside:avoid!important}
 #externalPagesContainer .register-report-page .register-financial-kpis p,#externalPagesContainer .register-report-page .register-source,#externalPagesContainer .register-report-page .register-chart-note{font-size:9pt!important;line-height:1.25!important}
-#externalPagesContainer .register-summary-page .register-analytics{grid-template-columns:1fr!important;gap:4mm!important;margin:4mm 0!important}
-#externalPagesContainer .register-summary-page .register-card{padding:4mm!important;margin:0!important}
-#externalPagesContainer .register-summary-page .register-card h2{font-size:12pt!important;margin-bottom:3mm!important}
-#externalPagesContainer .register-summary-page .register-chart{height:55mm!important}
+#externalPagesContainer .register-summary-page .register-analytics{grid-template-columns:1.4fr 1fr!important;gap:2mm!important;margin:2mm 0!important;break-inside:avoid!important;page-break-inside:avoid!important}
+#externalPagesContainer .register-summary-page .register-card{padding:2mm!important;margin:0!important;break-inside:avoid!important;page-break-inside:avoid!important}
+#externalPagesContainer .register-summary-page .register-card h2{font-size:9pt!important;margin-bottom:1mm!important}
+#externalPagesContainer .register-summary-page .register-chart{height:32mm!important}
+#externalPagesContainer .register-summary-page .register-financial-trend{grid-column:1/-1!important}
+#externalPagesContainer .register-summary-page .register-financial-trend .register-chart{height:28mm!important}
 #externalPagesContainer .register-summary-page .register-chart img{width:100%!important;height:100%!important;object-fit:contain}
-#externalPagesContainer .register-summary-page .register-status-layout{grid-template-columns:44mm minmax(0,1fr)!important;min-height:44mm!important;gap:8mm!important}
-#externalPagesContainer .register-summary-page .register-donut{width:44mm!important;height:44mm!important;margin:0!important}
+#externalPagesContainer .register-summary-page .register-status-layout{grid-template-columns:28mm minmax(0,1fr)!important;min-height:28mm!important;gap:4mm!important}
+#externalPagesContainer .register-summary-page .register-donut{width:28mm!important;height:28mm!important;margin:0!important}
 #externalPagesContainer .register-summary-page .register-donut img{position:absolute;inset:0;width:100%!important;height:100%!important;object-fit:contain}
 #externalPagesContainer .register-summary-page .register-status-legend button{display:flex!important;align-items:center;justify-content:space-between;padding:2mm!important;font-size:10pt!important}
-#externalPagesContainer .register-summary-page .register-financial-kpis{gap:3mm!important;margin:4mm 0!important}
-#externalPagesContainer .register-summary-page .register-financial-kpis .register-kpi{min-height:28mm!important;padding:3mm!important;display:flex;flex-direction:column;justify-content:center}
-#externalPagesContainer .register-summary-page .register-kpi-value{font-size:18pt!important;margin:2mm 0!important}
+#externalPagesContainer .register-summary-page .register-financial-kpis{gap:2mm!important;margin:2mm 0!important}
+#externalPagesContainer .register-summary-page .register-financial-kpis .register-kpi{min-height:19mm!important;padding:2mm!important;display:flex;flex-direction:column;justify-content:center}
+#externalPagesContainer .register-summary-page .register-kpi-value{font-size:14pt!important;margin:1mm 0!important}
 #externalPagesContainer .register-summary-page .register-source{margin:3mm 0 0!important}
 
 #externalPagesContainer .register-report-page .register-donut-total{position:absolute!important;inset:0!important;display:block!important;text-align:center!important}
