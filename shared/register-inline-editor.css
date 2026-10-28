@@ -30,3 +30,18 @@
 @media(max-width:1100px){#registerEditPanel .register-form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:700px){#registerEditPanel .register-form-grid{grid-template-columns:1fr}}
 @media print{#registerEditPanel{display:none!important}}
+
+#registerEditPanel .register-edit-toolbar-actions{display:flex;gap:8px;flex-wrap:wrap}
+#registerEditPanel.register-edit-focused .register-edit-record{margin:0;border:0}
+#registerEditPanel.register-edit-focused .register-edit-record>summary{display:none}
+#registerEditPanel.register-edit-focused .register-edit-fields{padding:0}
+#registerEditPanel.register-edit-focused section.register-card>.register-edit-toolbar:empty{display:none}
+.register-add-menu{position:relative;display:inline-block}
+.register-add-list{position:absolute;inset-inline-end:0;top:calc(100% + 6px);z-index:30;display:flex;flex-direction:column;min-width:190px;padding:6px;background:#fff;border:1px solid #dce8ff;border-radius:10px;box-shadow:0 10px 24px #193c7826}
+.register-add-list[hidden]{display:none}
+.register-add-list button{padding:9px 12px;border:0;border-radius:6px;background:none;color:#153f87;font:600 13px Arial,sans-serif;text-align:start;cursor:pointer}
+.register-add-list button:hover,.register-add-list button:focus-visible{background:#eef4ff;outline:none}
+@media print{
+ #registerEditPanel,#registerEditPanel *,.register-add-menu,.register-add-list{display:none!important}
+ body.register-editing .register-page-heading,body.register-editing .register-kpis,body.register-editing .register-analytics,body.register-editing .register-table-section{visibility:visible}
+}

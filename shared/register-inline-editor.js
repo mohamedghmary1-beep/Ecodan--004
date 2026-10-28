@@ -9,7 +9,7 @@
  };
  class RegisterInlineEditor{
   constructor({api,context,onSaved}){
-   this.api=api;this.context=context;this.onSaved=onSaved;this.records=[];this.weeks=[];this.progressBaseline='[]';this.active=false;this.busy=false;this.counter=0;
+   this.api=api;this.context=context;this.onSaved=onSaved;this.records=[];this.weeks=[];this.progressBaseline='[]';this.active=false;this.busy=false;this.counter=0;this.focusKey=null;
    this.panel=document.getElementById('registerEditPanel');
    this.panel.addEventListener('click',event=>this.click(event));
    this.panel.addEventListener('input',event=>{if(event.target.matches('[data-field], [data-week-field]')){event.target.setCustomValidity('');this.syncDecisionStatus(event.target);this.sync();this.updateVariance();this.updateRisk(event.target.closest('[data-record]'));this.validateControl(event.target);}});
@@ -44,9 +44,9 @@
    });
    return {key:'record-'+(++this.counter),kind:row.kind,id:row.id??null,version:row.version??null,code:row.code||'New '+row.kind,editable:this.editable(row),original:row,payload,baseline:JSON.stringify(payload),deleted:false};
   }
-  async open(project){
+  async open(project,options={}){
    if(this.active||!this.context.manager&&!this.context.engineer)return;
-   this.project=Number(project);this.active=true;this.busy=true;this.panel.hidden=false;
+   this.project=Number(project);this.active=true;this.busy=true;this.focusKey=null;this.panel.hidden=false;
    document.body.classList.add('register-editing');document.getElementById('projectSelect').disabled=true;
    this.panel.innerHTML='<p class="register-message" role="status">Loading existing project records and shared progress…</p>';
    try{
@@ -55,16 +55,31 @@
     if(rows.some(row=>Number(row.project_id)!==this.project))throw Error('Project records do not match the selected project.');
     this.bands=settings.data?.risk_bands||[];this.performance=performance;this.originalProgress=structuredClone(performance?.weekly_table??null);
     this.weeks=structuredClone(performance?.weekly_table||[]).map(week=>({...week,plan:week.plan==null||week.plan===''?null:Number(week.plan),actual:week.actual==null||week.actual===''?null:Number(week.actual)}));this.progressBaseline=JSON.stringify(this.weeks);
-    this.records=rows.map(row=>this.makeRecord(row));this.render();
+    this.records=rows.map(row=>this.makeRecord(row));
+    if(options.add&&Core.TYPES.includes(options.add)){const added=this.makeRecord({kind:options.add,project_id:this.project,owner_id:this.context.user_id,opened_on:Core.today(),priority:'Medium',status:'Open',details:options.add==='decision'?{requested_by:this.context.user_id,decision_status:'Requested'}:{}});this.records.push(added);this.focusKey=added.key;}
+    else if(options.kind&&options.id){const target=this.records.find(record=>record.kind===options.kind&&String(record.id)===String(options.id));if(target&&target.editable)this.focusKey=target.key;}
+    this.render();this.panel.scrollIntoView({block:'start'});
    }catch(error){this.records=[];this.panel.innerHTML='<p class="register-message error" role="alert"></p><button type="button" data-edit-action="cancel">Back to Dashboard</button>';this.panel.querySelector('p').textContent='Could not load editor: '+error.message;}
    finally{this.busy=false;}
   }
   render(){
    const supporting=new Map([...this.panel.querySelectorAll('[data-record]')].map(element=>[element.dataset.record,{host:element.querySelector('[data-support]'),open:element.open}]));
    const projectName=this.context.projects.find(project=>Number(project.id)===this.project)?.name||String(this.project);
-   this.panel.innerHTML=`<div class="register-edit-toolbar"><div><h2>Edit Data</h2><p>${escapeHTML(projectName)} — changes apply only to this project.</p></div><button type="button" class="register-button" data-edit-action="cancel">Back to Dashboard</button></div><p class="register-message" data-edit-state role="status" aria-live="polite">Edit records, then choose Save Changes. KPI values are calculated automatically.</p><form id="registerInlineForm" novalidate>${[['issue','Issues Management'],['risk','Risks Management'],['decision','Decisions Requested Management']].map(([kind,title])=>`<section class="register-card"><div class="register-edit-toolbar"><h2>${title}</h2><button type="button" class="register-button" data-edit-action="add" data-kind="${kind}">Add ${kind==='decision'?'Decision Request':kind==='risk'?'Risk':'Issue'}</button></div><div data-record-list="${kind}">${this.records.filter(record=>record.kind===kind).map(record=>this.recordHTML(record)).join('')||'<p data-empty>No records for this project.</p>'}</div></section>`).join('')}<section class="register-card"><div class="register-edit-toolbar"><h2>Cumulative Completion — Edit Data</h2><button type="button" class="register-button" data-edit-action="add-week" ${this.context.manager&&this.performance?'':'disabled'}>Add Week</button></div><p>Shared with the Performance Dashboard and live Weekly Report. Variance = Actual % - Planned %. ${!this.performance?'No performance row exists for this project; progress editing is unavailable.':!this.context.manager?'Progress is read-only for your account.':''}</p><div class="register-edit-weeks"><table><thead><tr><th>Reporting Week</th><th>Planned %</th><th>Actual %</th><th>Variance %</th><th>Action</th></tr></thead><tbody data-edit-weeks>${this.weeks.map((week,index)=>this.weekHTML(week,index)).join('')}</tbody></table></div></section><div class="register-savebar"><span data-save-state role="status" aria-live="polite"></span><button type="button" class="register-button" data-edit-action="cancel">Cancel</button><button type="submit" class="register-primary">Save Changes</button></div></form>`;
+   const focus=this.focusKey?this.records.find(record=>record.key===this.focusKey)||null:null;
+   if(!focus)this.focusKey=null;
+   const KINDS=[['issue','Issues Management'],['risk','Risks Management'],['decision','Decisions Requested Management']];
+   const kindName=kind=>kind==='decision'?'Decision Request':kind==='risk'?'Risk':'Issue';
+   const heading=focus?`${focus.id?'Edit':'New'} ${kindName(focus.kind)}${focus.id?' — '+escapeHTML(focus.code):''}`:'Edit Data';
+   const toolbar=`<div class="register-edit-toolbar"><div><h2>${heading}</h2><p>${escapeHTML(projectName)} — changes apply only to this project.</p></div><div class="register-edit-toolbar-actions">${focus&&focus.id?'<button type="button" class="register-button" data-edit-action="show-all">Edit all records</button>':''}<button type="button" class="register-button" data-edit-action="cancel">Back to Dashboard</button></div></div>`;
+   const sections=(focus?KINDS.filter(([kind])=>kind===focus.kind):KINDS).map(([kind,title])=>{
+    const list=this.records.filter(record=>record.kind===kind&&(!focus||record===focus));
+    return `<section class="register-card"><div class="register-edit-toolbar">${focus?'':`<h2>${title}</h2><button type="button" class="register-button" data-edit-action="add" data-kind="${kind}">Add ${kindName(kind)}</button>`}</div><div data-record-list="${kind}">${list.map(record=>this.recordHTML(record)).join('')||'<p data-empty>No records for this project.</p>'}</div></section>`;
+   }).join('');
+   const progress=focus?'':`<section class="register-card"><div class="register-edit-toolbar"><h2>Cumulative Completion — Edit Data</h2><button type="button" class="register-button" data-edit-action="add-week" ${this.context.manager&&this.performance?'':'disabled'}>Add Week</button></div><p>Shared with the Performance Dashboard and live Weekly Report. Variance = Actual % - Planned %. ${!this.performance?'No performance row exists for this project; progress editing is unavailable.':!this.context.manager?'Progress is read-only for your account.':''}</p><div class="register-edit-weeks"><table><thead><tr><th>Reporting Week</th><th>Planned %</th><th>Actual %</th><th>Variance %</th><th>Action</th></tr></thead><tbody data-edit-weeks>${this.weeks.map((week,index)=>this.weekHTML(week,index)).join('')}</tbody></table></div></section>`;
+   this.panel.classList.toggle('register-edit-focused',!!focus);
+   this.panel.innerHTML=`${toolbar}<p class="register-message" data-edit-state role="status" aria-live="polite">${focus?'Edit the fields below, then choose Save Changes.':'Edit records, then choose Save Changes. KPI values are calculated automatically.'}</p><form id="registerInlineForm" novalidate>${sections}${progress}<div class="register-savebar"><span data-save-state role="status" aria-live="polite"></span><button type="button" class="register-button" data-edit-action="cancel">Cancel</button><button type="submit" class="register-primary">Save Changes</button></div></form>`;
    this.panel.querySelector('form').onsubmit=event=>{event.preventDefault();this.save();};
-   this.records.forEach(record=>{const element=this.panel.querySelector(`[data-record="${record.key}"]`),previous=supporting.get(record.key);if(previous){element.open=previous.open;element.querySelector('[data-support]').replaceWith(previous.host);}element.querySelector('summary').textContent=`${record.code} — ${record.payload.title||'Untitled'}${record.payload.archived_at?' (Archived)':''}${record.deleted?' — Pending deletion':''}${record.editable?'':' — Read only'}`;const archive=element.querySelector('[data-edit-action="archive"]');if(archive)archive.textContent=record.payload.archived_at?'Restore':'Archive';this.updateRisk(element);});this.updateVariance();
+   this.records.forEach(record=>{const element=this.panel.querySelector(`[data-record="${record.key}"]`);if(!element)return;const previous=supporting.get(record.key);if(previous){element.open=previous.open;element.querySelector('[data-support]').replaceWith(previous.host);}element.querySelector('summary').textContent=`${record.code} — ${record.payload.title||'Untitled'}${record.payload.archived_at?' (Archived)':''}${record.deleted?' — Pending deletion':''}${record.editable?'':' — Read only'}`;const archive=element.querySelector('[data-edit-action="archive"]');if(archive)archive.textContent=record.payload.archived_at?'Restore':'Archive';this.updateRisk(element);});this.updateVariance();
   }
   fieldHTML(record,[key,title,type,required]){
    const top=GENERAL.some(field=>field[0]===key)||['probability','impact'].includes(key);
@@ -83,7 +98,7 @@
    return `<label class="register-field ${type==='textarea'?'wide':''}">${escapeHTML(title)}${required?' *':''}${control}<span class="register-field-error" aria-live="polite"></span></label>`;
   }
   recordHTML(record){
-   return `<details class="register-edit-record" data-record="${record.key}" data-deleted="${record.deleted}" ${record.id?'':'open'}><summary>${escapeHTML(record.code)} — ${escapeHTML(record.payload.title||'Untitled')} ${record.original.archived_at?'(Archived)':''}${record.editable?'':' — Read only'}</summary>${this.context.manager&&record.id?`<button type="button" class="register-delete-icon" data-edit-action="delete" aria-label="${record.deleted?'Undo deletion':'Delete this item permanently'}" title="${record.deleted?'Undo deletion':'Delete this item permanently'}"><i class="fa-solid ${record.deleted?'fa-rotate-left':'fa-trash'}" aria-hidden="true"></i></button>`:''}<div class="register-edit-fields"><div class="register-form-grid">${this.definitions(record.kind).map(field=>this.fieldHTML(record,field)).join('')}</div>${record.kind==='risk'?'<p data-risk-score></p>':''}<div class="register-edit-actions">${record.editable?`<button type="button" class="register-button" data-edit-action="lifecycle">Close / Reopen</button>`:''}${this.context.manager&&record.id?`<button type="button" class="register-button" data-edit-action="archive">${record.payload.archived_at||record.original.archived_at?'Restore':'Archive'}</button>`:!record.id?'<button type="button" class="register-button" data-edit-action="remove-new">Remove unsaved record</button>':''}</div><div class="register-edit-support"><button type="button" class="register-button" data-edit-action="support">Attachments, comments and history</button><div data-support></div></div></div></details>`;
+   return `<details class="register-edit-record" data-record="${record.key}" data-deleted="${record.deleted}" ${record.id&&record.key!==this.focusKey?'':'open'}><summary>${escapeHTML(record.code)} — ${escapeHTML(record.payload.title||'Untitled')} ${record.original.archived_at?'(Archived)':''}${record.editable?'':' — Read only'}</summary>${this.context.manager&&record.id?`<button type="button" class="register-delete-icon" data-edit-action="delete" aria-label="${record.deleted?'Undo deletion':'Delete this item permanently'}" title="${record.deleted?'Undo deletion':'Delete this item permanently'}"><i class="fa-solid ${record.deleted?'fa-rotate-left':'fa-trash'}" aria-hidden="true"></i></button>`:''}<div class="register-edit-fields"><div class="register-form-grid">${this.definitions(record.kind).map(field=>this.fieldHTML(record,field)).join('')}</div>${record.kind==='risk'?'<p data-risk-score></p>':''}<div class="register-edit-actions">${record.editable?`<button type="button" class="register-button" data-edit-action="lifecycle">Close / Reopen</button>`:''}${this.context.manager&&record.id?`<button type="button" class="register-button" data-edit-action="archive">${record.payload.archived_at||record.original.archived_at?'Restore':'Archive'}</button>`:!record.id?'<button type="button" class="register-button" data-edit-action="remove-new">Remove unsaved record</button>':''}</div><div class="register-edit-support"><button type="button" class="register-button" data-edit-action="support">Attachments, comments and history</button><div data-support></div></div></div></details>`;
   }
   weekHTML(week,index){
    return `<tr data-week="${index}">${[['week','text'],['plan','number'],['actual','number']].map(([key,type])=>`<td><label><input aria-label="${key==='week'?'Reporting Week':key==='plan'?'Planned %':'Actual %'}" data-week-field="${key}" type="${type}" value="${escapeHTML(week[key])}" ${key==='week'?'required maxlength="40"':'min="0" max="100" step="any"'} ${this.context.manager&&this.performance?'':'disabled'}><span class="register-field-error" aria-live="polite"></span></label></td>`).join('')}<td><output data-variance></output></td><td><button type="button" data-edit-action="remove-week" ${this.context.manager&&this.performance?'':'disabled'}>Remove Week</button></td></tr>`;
@@ -98,7 +113,7 @@
      else if(top)record.payload[key]=value;else record.payload.details[key]=value;
     });
    });
-   this.weeks=[...this.panel.querySelectorAll('[data-week]')].map((element,index)=>{
+   if(this.panel.querySelector('[data-edit-weeks]'))this.weeks=[...this.panel.querySelectorAll('[data-week]')].map((element,index)=>{
     const original=this.weeks[index]||{},week={...original};element.querySelectorAll('[data-week-field]').forEach(control=>{week[control.dataset.weekField]=control.dataset.weekField==='week'?control.value:control.value===''?null:Number(control.value);});return week;
    });
   }
@@ -130,13 +145,14 @@
     const kind=button.dataset.kind;if(!Core.TYPES.includes(kind))return;
     const added=this.makeRecord({kind,project_id:this.project,owner_id:this.context.user_id,opened_on:Core.today(),priority:'Medium',status:'Open',details:kind==='decision'?{requested_by:this.context.user_id,decision_status:'Requested'}:{}});this.records.push(added);this.render();this.panel.querySelector(`[data-record="${added.key}"] input`).focus();return;
    }
+   if(action==='show-all'){this.focusKey=null;this.render();return;}
    if(action==='add-week'&&this.context.manager&&this.performance){this.weeks.push({week:'',plan:null,actual:null});this.render();return;}
    if(action==='remove-week'&&this.context.manager){this.weeks.splice(Number(button.closest('[data-week]').dataset.week),1);this.render();return;}
    if(!record)return;
    if(action==='support'){await this.support(record,element);return;}
    if(action==='comment'||action==='upload'||action==='download'){await this.supportAction(action,record,element,button);return;}
    if(!record.editable)return;
-   if(action==='remove-new')this.records=this.records.filter(item=>item!==record);
+   if(action==='remove-new'){this.records=this.records.filter(item=>item!==record);if(this.focusKey===record.key){this.focusKey=null;if(!this.dirty()){this.close();return;}}}
    if(action==='lifecycle'){if(record.kind==='decision'&&!this.context.manager)return;record.payload.status=Core.closed(record.payload)?'Open':record.kind==='decision'?'Resolved':'Closed';record.payload.closed_at=Core.closed(record.payload)?Core.today():null;if(record.kind==='decision')record.payload.details.decision_status=Core.closed(record.payload)?'Approved':'Requested';}
    if(action==='archive'&&this.context.manager)record.payload.archived_at=record.payload.archived_at?null:new Date().toISOString();
    if(action==='delete'&&this.context.manager){if(!record.deleted&&!await this.confirm(`Delete ${record.code} when Save Changes is confirmed? This permanently removes the record, clears links to it from related records, and retains its audit history.`))return;record.deleted=!record.deleted;}
@@ -196,7 +212,7 @@
    }
    finally{clearTimeout(saveTimeout);this.busy=false;controls.forEach(([control,disabled])=>control.disabled=disabled);}
   }
-  close(){this.active=false;this.records=[];this.weeks=[];this.progressBaseline='[]';this.panel.hidden=true;this.panel.replaceChildren();document.body.classList.remove('register-editing');document.getElementById('projectSelect').disabled=false;document.getElementById('editDataButton')?.focus();}
+  close(){this.active=false;this.focusKey=null;this.records=[];this.weeks=[];this.progressBaseline='[]';this.panel.hidden=true;this.panel.replaceChildren();document.body.classList.remove('register-editing');document.getElementById('projectSelect').disabled=false;document.getElementById('editDataButton')?.focus();}
  }
  window.RegisterInlineEditor=RegisterInlineEditor;
 })();

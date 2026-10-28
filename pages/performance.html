@@ -16,6 +16,9 @@
   document.write('<script src="../shared/cache-buster.js?v=' + Date.now() + '"><' + '/script>');
 </script>
 <script>
+(function(){var q=new URLSearchParams(location.search);if(q.get('print')==='1'||q.get('snapshot')==='1')document.documentElement.classList.add('print-embed');})();
+</script>
+<script>
 // ----- Print-embed mode -----
 // When this page is loaded inside the weekly report's combined print
 // (weekly_report.html adds ?print=1), hide our own header/nav/search UI and
@@ -348,6 +351,7 @@
 <link href="../shared/apple-ui.css?v=6" rel="stylesheet"/>
 <link href="../shared/performance-dashboard.css?v=2" rel="stylesheet"/>
 <link rel="stylesheet" href="../shared/mdceo-ui.css?v=1">
+<link href="../shared/print-frame.css?v=1" rel="stylesheet"/>
 </head>
 <body class="performance-page">
 <div class="topbar">
@@ -414,7 +418,7 @@
 </div>
 </div>
 <div class="loading" id="loadingMsg">Loading data...</div>
-<div aria-label="MDCEO project performance report" class="dashboard-print" id="dashboard" style="display:none;"><header class="report-header"><div class="report-brand"><img alt="Original MDCEO company logo" src="../images/WhatsApp Image 2025-11-24 at 10.33.58 AM.jpeg"/><strong>MDCEO</strong></div><div class="report-identity"><h1>Project Performance Dashboard</h1><p><span id="reportProjectName"></span><span class="report-meta-separator">|</span><span id="reportDate"></span></p></div></header><section aria-labelledby="plannedActualTitle" class="panel report-card planned-actual-panel">
+<div aria-label="MDCEO project performance report" class="dashboard-print" id="dashboard" style="display:none;"><header class="report-header"><div class="report-brand"><img alt="Original MDCEO company logo" src="../images/WhatsApp Image 2025-11-24 at 10.33.58 AM.jpeg"/><strong>MDCEO</strong><span class="report-portal">PROJECT PORTAL</span></div><div class="report-identity"><h1>Project Performance Dashboard</h1><p><span id="reportProjectName"></span><span class="report-meta-separator">|</span><span id="reportDate"></span></p></div></header><section aria-labelledby="plannedActualTitle" class="panel report-card planned-actual-panel">
 <header class="pa-heading"><h2 id="plannedActualTitle"><span aria-hidden="true" class="report-title-icon"><svg fill="none" viewbox="0 0 20 20"><path d="M5 17V5l5-3 5 3v12M2 17h16M8 7h1m2 0h1M8 10h1m2 0h1M8 13h1m2 0h1" stroke="currentColor" stroke-linecap="round" stroke-width="1.4"></path></svg></span>Project Planned vs Actual</h2></header>
 <div class="pa-chart"><canvas aria-label="Weekly planned and actual completion percentages. Values are available in the tables below." id="plannedActualChart" role="img"></canvas></div>
 <div class="pa-tables">
