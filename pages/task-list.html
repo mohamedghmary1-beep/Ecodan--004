@@ -960,64 +960,6 @@
     </div>
 </div>
 
-<div class="sig-overlay" id="sigOverlay">
-    <div class="sig-modal">
-        <h3>وقّع الملف</h3>
-        <div class="sig-sub">ارسم التوقيع في المربع، أو ارفع صورة توقيع جاهزة من جهازك</div>
-        <div class="sig-canvas-wrap">
-            <canvas id="sigCanvas"></canvas>
-            <div class="sig-hint" id="sigHint">وقّع هنا</div>
-        </div>
-        <input type="file" id="sigImageInput" accept="image/*" style="display:none;" onchange="handleSigImageUpload(this)">
-        <div class="sig-actions">
-            <button class="sig-clear-btn" onclick="clearSignaturePad()">مسح</button>
-            <button class="sig-upload-btn" onclick="document.getElementById('sigImageInput').click()">
-                <i class="fa-solid fa-image"></i> رفع صورة
-            </button>
-        </div>
-        <div class="sig-actions" style="margin-top:8px;">
-            <button class="sig-cancel-btn" onclick="closeSigDrawModal()">إلغاء</button>
-            <button class="sig-confirm-btn" onclick="confirmSigDraw()">استخدام التوقيع المرسوم</button>
-        </div>
-    </div>
-</div>
-
-<div class="annot-overlay" id="annotOverlay">
-    <div class="annot-modal">
-        <div class="annot-toolbar">
-            <div class="annot-title">اكتب على الملف براحتك</div>
-            <button class="annot-tool-btn" id="toolTextBtn" onclick="setAnnotTool('text')">
-                <i class="fa-solid fa-font"></i> نص
-            </button>
-            <button class="annot-tool-btn" id="toolSigBtn" onclick="setAnnotTool('sig')">
-                <i class="fa-solid fa-signature"></i> توقيع
-            </button>
-            <div class="font-size-group">
-                <button class="annot-tool-btn" onclick="changeFontSize(-1)" title="تصغير الخط"><i class="fa-solid fa-minus"></i></button>
-                <span class="font-size-val" id="fontSizeVal">15</span>
-                <button class="annot-tool-btn" onclick="changeFontSize(1)" title="تكبير الخط"><i class="fa-solid fa-plus"></i></button>
-            </div>
-            <select class="font-family-select" id="fontFamilySelect" onchange="changeFontFamily(this.value)"></select>
-            <button class="annot-tool-btn danger" onclick="clearAllAnnotations()">
-                <i class="fa-solid fa-trash"></i> مسح الكل
-            </button>
-        </div>
-        <div class="annot-canvas-area" id="annotCanvasArea">
-            <div class="annot-page-wrap" id="annotPageWrap">
-                <canvas class="pdf-render" id="pdfRenderCanvas"></canvas>
-                <div class="annot-layer tool-none" id="annotLayer" onclick="handleAnnotLayerClick(event)"></div>
-            </div>
-        </div>
-        <div class="annot-footer">
-            <span class="annot-hint" id="annotHint">دوس "نص" أو "توقيع" فوق، وبعدين دوس في أي مكان في الصفحة عشان تضيف هناك.</span>
-            <button class="annot-cancel-btn" onclick="closeAnnotationModal()">إلغاء</button>
-            <button class="annot-submit-btn" id="annotSubmitBtn" onclick="submitAnnotatedRequest()">
-                <i class="fa-solid fa-paper-plane"></i> إرسال للأدمن للموافقة
-            </button>
-        </div>
-    </div>
-</div>
-
 <div id="toastContainer" class="toast-container"></div>
 
 <div class="header">
@@ -1139,21 +1081,6 @@ const CONTRACTOR_BUCKET_KEY = "__contractor__";
 let contractorRequests = [];
 let selectedContractorCode = {};
 let expandedContractorCards = {};
-
-let annotState = null;
-let draggingEl = null, dragStartX = 0, dragStartY = 0, dragOrigLeft = 0, dragOrigTop = 0;
-let selectedAnnotItem = null, selectedAnnotEl = null;
-let sigPad = null;
-let pendingSigPos = null;
-
-const FONT_OPTIONS = [
-    { key: 'Helvetica',      label: 'Helvetica',   css: 'Helvetica, Arial, sans-serif',        weight: '700' },
-    { key: 'HelveticaBold',  label: 'Helvetica (سميك)', css: 'Helvetica, Arial, sans-serif',   weight: '800' },
-    { key: 'TimesRoman',     label: 'Times',       css: '"Times New Roman", Times, serif',     weight: '700' },
-    { key: 'TimesRomanBold', label: 'Times (سميك)', css: '"Times New Roman", Times, serif',    weight: '800' },
-    { key: 'Courier',        label: 'Courier',     css: '"Courier New", Courier, monospace',   weight: '700' },
-    { key: 'CourierBold',    label: 'Courier (سميك)', css: '"Courier New", Courier, monospace', weight: '800' }
-];
 
 const PENDING_POLL_INTERVAL = 60000;
 
@@ -2519,6 +2446,7 @@ async function loadContractorRequests() {
             .select('*')
             .eq('engineer_id', session.user.id)
             .eq('status', 'pending_engineer')
+            .is('deleted_at', null)
             .order('requested_at', { ascending: true });
         if (error) throw error;
 
@@ -2593,12 +2521,40 @@ async function openContractorReviewFile(id) {
 
 // The browser never receives the Drive URL. The Edge Function first verifies
 // this signed-in viewer can access the request, then creates a 20-minute token.
+function saveBlobAs(blob, fileName) {
+    let objUrl = URL.createObjectURL(blob);
+    let a = document.createElement('a');
+    a.href = objUrl;
+    a.download = fileName || 'file';
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { URL.revokeObjectURL(objUrl); a.remove(); }, 1500);
+}
+
+// تنزيل مباشر: الملف بينزل على طول من غير ما يفتح تاب جديد
 async function openContractorDownload(id) {
     const req = contractorRequests.find(r => String(r.id) === String(id));
-    if (!req || !req.drive_file_url) {
+    if (!req || !(req.drive_file_url || req.file_link)) {
         notify.error(T('contractorDownloadUnavailable'));
         return;
     }
+
+    // 1) الملف متخزن في التخزين المؤقت (مسار مش رابط): نجيب رابط موقّع وننزّله كملف مباشرة
+    let storedPath = req.file_link;
+    if (storedPath && !/^https?:/i.test(storedPath) && !req.drive_file_url) {
+        try {
+            let signed = await resolveFileLinkForDisplay(storedPath);
+            let resp = await fetch(signed);
+            if (!resp.ok) throw new Error('HTTP ' + resp.status);
+            saveBlobAs(await resp.blob(), req.file_name);
+            return;
+        } catch (err) {
+            console.warn('Direct blob download failed, falling back to download link:', err);
+        }
+    }
+
+    // 2) الملف على درايف: رابط التنزيل المؤقت بيرجّع الملف كـ attachment فينزل مباشرة
     const session = window.__guardSession || (await supabaseClient.auth.getSession()).data.session;
     if (!session?.access_token) {
         notify.error(T('contractorDownloadExpired'));
@@ -2618,7 +2574,13 @@ async function openContractorDownload(id) {
         notify.error(result.error || T('contractorDownloadExpired'));
         return;
     }
-    window.open(result.url, '_blank', 'noopener');
+    let a = document.createElement('a');
+    a.href = result.url;
+    a.download = req.file_name || 'file';
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => a.remove(), 1500);
 }
 
 function openLock(msg) {
@@ -2644,6 +2606,78 @@ function dataUrlToUint8Array(dataUrl) {
     return bytes;
 }
 
+function isAdminRole() {
+    let role = (window.currentUserRole || '').toString().trim().toLowerCase();
+    return role === 'admin' || role === 'administrator' || role === 'super_admin';
+}
+
+// حذف ريكوست المقاول نهائيًا (للأدمن بس) مع ملفاته
+async function deleteContractorRequest(id) {
+    if (!isAdminRole()) return;
+    let req = contractorRequests.find(r => String(r.id) === String(id));
+    if (!req) return;
+    if (!(await notify.confirm(T('confirmDeleteTask')))) return;
+
+    openLock(T('contractorWorking'));
+    try {
+        // الحذف بقى "soft delete" على الخادم (الصف والتاريخ بيفضلوا محفوظين)، فمش بنمسح الملفات من التخزين/درايف
+        const { error } = await supabaseClient.rpc('delete_contractor_request', { p_request_id: id });
+        if (error) throw error;
+
+        contractorRequests = contractorRequests.filter(r => String(r.id) !== String(id));
+        let key = myTaskBucketKey();
+        if (key && data[key]) {
+            data[key] = data[key].filter(t => !(t.type === 'contractor' && String(t.id) === String(id)));
+            if (currentEmployee === key) selected = data[key];
+        }
+        delete inlineRevCode['creq_' + id];
+        clearRevSelectionActive('creq_' + id);
+        renderSidebar();
+        render();
+    } catch (err) {
+        console.error('deleteContractorRequest failed:', err);
+        notify.error(err.message || T('deleteTaskErr'));
+    } finally {
+        closeLock();
+    }
+}
+
+function buildContractorUploadHtml(id) {
+    let uid = 'creq_' + id;
+    return `
+    <div class="inline-rev-upload" data-uid="${uid}">
+        <label class="inline-rev-file-label" for="rf-${uid}">
+            <i class="fa-solid fa-paperclip"></i> ${T('revCodeChooseFile')}
+        </label>
+        <input type="file" id="rf-${uid}" class="inline-rev-file-input"
+               accept=".pdf,.xls,.xlsx,.xlsm,.csv,.doc,.docx,.dwg,.dxf,.dwf,.zip"
+               onchange="onInlineRevFileChange('${uid}', this)">
+        <div class="inline-rev-filename" id="rfname-${uid}">
+            <i class="fa-regular fa-circle"></i> ${T('revCodeNoFileYet')}
+        </div>
+        <div class="inline-rev-codes">
+            <div class="inline-rev-code-wrap">
+                <button type="button" data-code="A" onclick="pickInlineRevCode('${uid}','A')">A</button>
+                <div class="inline-rev-code-hint">${T('revCodeHintA')}</div>
+            </div>
+            <div class="inline-rev-code-wrap">
+                <button type="button" data-code="B" onclick="pickInlineRevCode('${uid}','B')">B</button>
+                <div class="inline-rev-code-hint">${T('revCodeHintB')}</div>
+            </div>
+            <div class="inline-rev-code-wrap">
+                <button type="button" data-code="C" onclick="pickInlineRevCode('${uid}','C')">C</button>
+                <div class="inline-rev-code-hint">${T('revCodeHintC')}</div>
+            </div>
+            <div class="inline-rev-code-wrap">
+                <button type="button" data-code="D" onclick="pickInlineRevCode('${uid}','D')">D</button>
+                <div class="inline-rev-code-hint">${T('revCodeHintD')}</div>
+            </div>
+        </div>
+        <button type="button" class="inline-rev-send" id="rs-${uid}" disabled onclick="submitContractorInlineUpload(${id})">📨 ${T('revCodeSend')}</button>
+        <div class="inline-rev-hint" id="rh-${uid}"></div>
+    </div>`;
+}
+
 function buildContractorCard(r, animDelay) {
     let currentLang = (typeof window.getCurrentLang === 'function') ? window.getCurrentLang() : 'ar';
     let submittedAtStr = r.requested_at ? new Date(r.requested_at).toLocaleString(currentLang === 'ar' ? 'ar-EG' : 'en-US') : '-';
@@ -2655,21 +2689,17 @@ function buildContractorCard(r, animDelay) {
         ? `<div class="contractor-notes-box admin-note"><b>${T('contractorAdminNote')}:</b> ${escapeHtml(r.admin_final_note)}</div>`
         : "";
 
-    let codes = ['A', 'B', 'C', 'D'];
-    let codeButtonsHtml = codes.map(c => `
-        <div class="inline-rev-code-wrap">
-            <button type="button" data-code="${c}" class="${selectedContractorCode[r.id] === c ? 'selected' : ''}"
-                onclick="event.stopPropagation(); pickContractorCode(${r.id}, '${c}')">${c}</button>
-            <div class="inline-rev-code-hint">${T('contractor' + c + 'Hint')}</div>
-        </div>
-    `).join('');
-
     let revLabel = r.revision_number ? `Revision ${r.revision_number}` : 'Original';
+
+    let deleteBtnHtml = isAdminRole()
+        ? `<button class="task-delete-btn" onclick="deleteContractorRequest(${r.id})">🗑️ ${T('deleteTaskBtn')}</button>`
+        : '';
 
     return `
     <div class="task contractor-task" style="animation-delay:${animDelay}s;" id="contractor-task-${r.id}">
         <div class="task-header-row">
             <div class="task-activity">${T('contractorChipLabel')}</div>
+            ${deleteBtnHtml}
         </div>
         <div class="title">${escapeHtml(r.title || '')}${r.submittal_no ? ' - ' + escapeHtml(r.submittal_no) : ''}</div>
         <div class="meta-tags">
@@ -2685,16 +2715,11 @@ function buildContractorCard(r, animDelay) {
                 <span class="code-tag code-open">${T('codeOpenPending')}</span>
             </div>
             <div class="small">${T('contractorSubmittedAt')}: ${escapeHtml(submittedAtStr)}</div>
-            <div class="inline-rev-upload">
-                <div class="inline-rev-filename has-file" style="cursor:pointer;" onclick="openContractorReviewFile(${r.id})">
-                    <i class="fa-solid fa-circle-check"></i> ${escapeHtml(r.file_name || T('contractorReviewFile'))}
-                </div>
-                <button type="button" class="link-btn" onclick="event.stopPropagation(); openContractorDownload(${r.id})">
+            <div style="margin-top: 8px; display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                ${buildContractorUploadHtml(r.id)}
+                <button type="button" class="link-btn view-btn" title="${escapeHtml(r.file_name || '')}" onclick="openContractorDownload(${r.id})">
                     <i class="fa-solid fa-download"></i> ${T('contractorDownloadFile')}
                 </button>
-                ${commentRequiredForCode(selectedContractorCode[r.id]) ? `<textarea class="contractor-comment-box" id="contractor-comment-${r.id}" placeholder="${T('contractorCommentPlaceholder')}"></textarea>` : `<textarea class="contractor-comment-box" id="contractor-comment-${r.id}" style="display:none;"></textarea>`}
-                <div class="inline-rev-codes">${codeButtonsHtml}</div>
-                <button type="button" class="inline-rev-send" onclick="openAnnotationModal(${r.id})">📨 ${T('revCodeSend')}</button>
             </div>
         </div>
         <div class="status-container">
@@ -2705,525 +2730,81 @@ function buildContractorCard(r, animDelay) {
     `;
 }
 
-function initSignaturePad() {
-    let canvas = document.getElementById('sigCanvas');
-    let ratio = Math.max(window.devicePixelRatio || 1, 1);
-    canvas.width = canvas.offsetWidth * ratio;
-    canvas.height = canvas.offsetHeight * ratio;
-    canvas.getContext('2d').scale(ratio, ratio);
-    sigPad = new SignaturePad(canvas, { backgroundColor: 'rgba(255,255,255,0)', penColor: '#0f172a' });
-    sigPad.addEventListener('beginStroke', () => {
-        document.getElementById('sigHint').style.display = 'none';
-    });
-}
-
-function clearSignaturePad() {
-    if (sigPad) sigPad.clear();
-    document.getElementById('sigHint').style.display = 'block';
-}
-
-function openSigDrawModal() {
-    document.getElementById('sigOverlay').classList.add('active');
-    setTimeout(() => { if (!sigPad) initSignaturePad(); else clearSignaturePad(); }, 30);
-}
-
-function closeSigDrawModal() {
-    document.getElementById('sigOverlay').classList.remove('active');
-    pendingSigPos = null;
-}
-
-function confirmSigDraw() {
-    if (!sigPad || sigPad.isEmpty()) {
-        notify.error('يرجى رسم التوقيع أولًا.');
-        return;
-    }
-    let dataUrl = sigPad.toDataURL('image/png');
-    document.getElementById('sigOverlay').classList.remove('active');
-    if (pendingSigPos) {
-        placeSignatureAt(pendingSigPos.x, pendingSigPos.y, dataUrl);
-        pendingSigPos = null;
-    }
-}
-
-function handleSigImageUpload(input) {
-    let file = input.files && input.files[0];
-    if (!file) return;
-    let reader = new FileReader();
-    reader.onload = function () {
-        document.getElementById('sigOverlay').classList.remove('active');
-        if (pendingSigPos) {
-            placeSignatureAt(pendingSigPos.x, pendingSigPos.y, reader.result);
-            pendingSigPos = null;
-        }
-        input.value = '';
-    };
-    reader.onerror = function () {
-        notify.error('تعذر قراءة الصورة، يرجى تجربة صورة أخرى.');
-        input.value = '';
-    };
-    reader.readAsDataURL(file);
-}
-
-function populateFontFamilySelect() {
-    let sel = document.getElementById('fontFamilySelect');
-    sel.innerHTML = FONT_OPTIONS.map(f => `<option value="${f.key}">${f.label}</option>`).join('');
-}
-
-function fontOptionByKey(key) {
-    return FONT_OPTIONS.find(f => f.key === key) || FONT_OPTIONS[0];
-}
-
-function applyTextItemStyle(el, fontSize, fontFamilyKey) {
-    let opt = fontOptionByKey(fontFamilyKey);
-    let scale = (annotState && annotState.renderScale) ? annotState.renderScale : 1;
-    el.style.fontSize = (fontSize * scale) + 'px';
-    el.style.fontFamily = opt.css;
-    el.style.fontWeight = opt.weight;
-}
-
-function updateFontControlsUI() {
-    let fontSize = selectedAnnotItem ? selectedAnnotItem.fontSize : (annotState ? annotState.fontSize : 15);
-    let fontFamily = selectedAnnotItem ? selectedAnnotItem.fontFamily : (annotState ? annotState.fontFamily : 'HelveticaBold');
-    document.getElementById('fontSizeVal').textContent = fontSize;
-    document.getElementById('fontFamilySelect').value = fontFamily;
-}
-
-function selectAnnotItem(item, el) {
-    if (selectedAnnotEl) selectedAnnotEl.classList.remove('annot-selected');
-    if (!item || item.type !== 'text') {
-        selectedAnnotItem = null;
-        selectedAnnotEl = null;
-    } else {
-        selectedAnnotItem = item;
-        selectedAnnotEl = el;
-        el.classList.add('annot-selected');
-    }
-    updateFontControlsUI();
-}
-
-function changeFontSize(delta) {
-    if (!annotState) return;
-    if (selectedAnnotItem) {
-        selectedAnnotItem.fontSize = Math.max(8, Math.min(60, (selectedAnnotItem.fontSize || 15) + delta));
-        applyTextItemStyle(selectedAnnotEl, selectedAnnotItem.fontSize, selectedAnnotItem.fontFamily);
-    } else {
-        annotState.fontSize = Math.max(8, Math.min(60, (annotState.fontSize || 15) + delta));
-    }
-    updateFontControlsUI();
-}
-
-function changeFontFamily(key) {
-    if (!annotState) return;
-    if (selectedAnnotItem) {
-        selectedAnnotItem.fontFamily = key;
-        applyTextItemStyle(selectedAnnotEl, selectedAnnotItem.fontSize, key);
-    } else {
-        annotState.fontFamily = key;
-    }
-    updateFontControlsUI();
-}
-
-function makeItemDraggable(el) {
-    function startDrag(e) {
-        if (e.target.classList.contains('del-btn')) return;
-        draggingEl = el;
-        let point = e.touches ? e.touches[0] : e;
-        dragStartX = point.clientX; dragStartY = point.clientY;
-        dragOrigLeft = parseFloat(el.style.left); dragOrigTop = parseFloat(el.style.top);
-        if (e.cancelable) e.preventDefault();
-    }
-    el.addEventListener('mousedown', startDrag);
-    el.addEventListener('touchstart', startDrag, { passive: true });
-}
-document.addEventListener('mousemove', onAnnotDragMove);
-document.addEventListener('touchmove', onAnnotDragMove, { passive: false });
-document.addEventListener('mouseup', endAnnotDrag);
-document.addEventListener('touchend', endAnnotDrag);
-function onAnnotDragMove(e) {
-    if (!draggingEl) return;
-    let point = e.touches ? e.touches[0] : e;
-    let dx = point.clientX - dragStartX, dy = point.clientY - dragStartY;
-    let newLeft = dragOrigLeft + dx, newTop = dragOrigTop + dy;
-    draggingEl.style.left = newLeft + 'px';
-    draggingEl.style.top = newTop + 'px';
-    if (draggingEl._item) { draggingEl._item.x = newLeft; draggingEl._item.y = newTop; }
-}
-function endAnnotDrag() { draggingEl = null; }
-
-function addFinalizedTextItem(x, y, text, fontSize, fontFamily) {
-    let layer = document.getElementById('annotLayer');
-    let id = 'ai_' + Date.now() + Math.random().toString(36).slice(2, 6);
-    let div = document.createElement('div');
-    div.className = 'annot-item text-item';
-    div.style.left = x + 'px';
-    div.style.top = y + 'px';
-    div.textContent = text;
-    let delBtn = document.createElement('div');
-    delBtn.className = 'del-btn';
-    delBtn.textContent = '×';
-    let item = { id, type: 'text', text, x, y, fontSize: fontSize || 15, fontFamily: fontFamily || 'HelveticaBold' };
-    delBtn.onclick = function (e) {
-        e.stopPropagation();
-        div.remove();
-        annotState.items = annotState.items.filter(it => it.id !== id);
-        if (selectedAnnotItem === item) selectAnnotItem(null, null);
-    };
-    div.appendChild(delBtn);
-    div._item = item;
-    applyTextItemStyle(div, item.fontSize, item.fontFamily);
-    div.addEventListener('click', function (e) {
-        e.stopPropagation();
-        selectAnnotItem(item, div);
-    });
-    makeItemDraggable(div);
-    layer.appendChild(div);
-    annotState.items.push(item);
-    selectAnnotItem(item, div);
-}
-
-function createTextItemAt(x, y) {
-    let layer = document.getElementById('annotLayer');
-    let fontSize = annotState.fontSize || 15;
-    let fontFamily = annotState.fontFamily || 'HelveticaBold';
-    let opt = fontOptionByKey(fontFamily);
-    let scale = annotState.renderScale || 1;
-    let input = document.createElement('input');
-    input.type = 'text';
-    input.placeholder = 'اكتب هنا...';
-    input.style.cssText = `position:absolute; left:${x}px; top:${y}px; font-size:${fontSize * scale}px;
-        font-family:${opt.css}; font-weight:${opt.weight}; color:#c0202b; border:1px dashed #c0202b;
-        background:rgba(255,255,255,0.9); padding:2px 5px; border-radius:3px; min-width:80px; z-index:5;`;
-    layer.appendChild(input);
-    input.focus();
-    let committed = false;
-    function commit() {
-        if (committed) return;
-        committed = true;
-        let val = input.value.trim();
-        input.remove();
-        if (val) addFinalizedTextItem(x, y, val, fontSize, fontFamily);
-    }
-    input.addEventListener('keydown', function (e) {
-        if (e.key === 'Enter') { e.preventDefault(); commit(); }
-        if (e.key === 'Escape') { committed = true; input.remove(); }
-    });
-    input.addEventListener('blur', commit);
-}
-
-function placeSignatureAt(x, y, dataUrl) {
-    let layer = document.getElementById('annotLayer');
-    let id = 'ai_' + Date.now() + Math.random().toString(36).slice(2, 6);
-    let div = document.createElement('div');
-    div.className = 'annot-item sig-item';
-    div.style.left = x + 'px';
-    div.style.top = y + 'px';
-    let img = document.createElement('img');
-    img.src = dataUrl;
-    div.appendChild(img);
-    let delBtn = document.createElement('div');
-    delBtn.className = 'del-btn';
-    delBtn.textContent = '×';
-    let item = { id, type: 'sig', dataUrl, x, y };
-    delBtn.onclick = function (e) {
-        e.stopPropagation();
-        div.remove();
-        annotState.items = annotState.items.filter(it => it.id !== id);
-    };
-    div.appendChild(delBtn);
-    div._item = item;
-    div.addEventListener('click', function (e) {
-        e.stopPropagation();
-        selectAnnotItem(null, null);
-    });
-    makeItemDraggable(div);
-    layer.appendChild(div);
-    annotState.items.push(item);
-}
-
-function handleAnnotLayerClick(e) {
-    if (!annotState) return;
-    if (e.target.closest && e.target.closest('.annot-item')) return;
-    selectAnnotItem(null, null);
-    if (!annotState.tool) return;
-    let layer = document.getElementById('annotLayer');
-    let rect = layer.getBoundingClientRect();
-    let x = e.clientX - rect.left;
-    let y = e.clientY - rect.top;
-    if (annotState.tool === 'text') {
-        createTextItemAt(x, y);
-    } else if (annotState.tool === 'sig') {
-        pendingSigPos = { x, y };
-        openSigDrawModal();
-    }
-}
-
-function setAnnotTool(tool) {
-    if (!annotState) return;
-    annotState.tool = (annotState.tool === tool) ? null : tool;
-    document.getElementById('toolTextBtn').classList.toggle('active-tool', annotState.tool === 'text');
-    document.getElementById('toolSigBtn').classList.toggle('active-tool', annotState.tool === 'sig');
-    document.getElementById('annotLayer').classList.toggle('tool-none', !annotState.tool);
-    document.getElementById('annotHint').textContent = annotState.tool === 'text'
-        ? 'انقر في أي مكان بالصفحة لإضافة نص هناك.'
-        : annotState.tool === 'sig'
-            ? 'انقر في المكان الذي تريد وضع التوقيع فيه.'
-            : 'اختر "نص" أو "توقيع" أعلاه، ثم انقر في أي مكان بالصفحة للإضافة.';
-}
-
-function clearAllAnnotations() {
-    if (!annotState || annotState.items.length === 0) return;
-    notify.confirm('هل تريد مسح كل النصوص والتوقيعات التي أضفتها؟').then(ok => {
-        if (!ok) return;
-        document.getElementById('annotLayer').innerHTML = '';
-        annotState.items = [];
-    });
-}
-
-async function openAnnotationModal(id) {
-    let code = selectedContractorCode[id];
-    if (!code) { notify.error(T('contractorErrNoCode')); return; }
-    if (!validateCommentForCode(id, code)) return;
-    let req = contractorRequests.find(r => r.id === id);
+// المهندس يرفع الملف الجديد + الكود => الطلب يروح للأدمن، وملف الريكوست القديم بيتمسح
+async function submitContractorInlineUpload(id) {
+    let uid = 'creq_' + id;
+    let req = contractorRequests.find(r => String(r.id) === String(id));
     if (!req) return;
 
-    let isPdf = /\.pdf($|\?)/i.test(req.file_name || '');
-    if (!isPdf) {
-        if (!(await notify.confirm('هذا الملف ليس بصيغة PDF، فلا يمكن الكتابة عليه مباشرة. هل تريد إرسال الطلب إلى الأدمن للموافقة كما هو (من دون كتابة على الملف)؟'))) return;
-        submitForFinalApproval(id, null);
-        return;
-    }
+    let input = document.getElementById(`rf-${uid}`);
+    let file = input && input.files && input.files[0];
+    let code = inlineRevCode[uid];
+    if (!file) { notify.error(T('revCodeNoFileYet')); return; }
+    if (!code) { notify.error(T('contractorErrNoCode')); return; }
 
-    openLock('جاري تجهيز الملف...');
+    let validationError = validateFile(file);
+    if (validationError) { notify.error(validationError); return; }
+
+    openLock(T('contractorWorking'));
     try {
-        let fetchLink = await resolveFileLinkForDisplay(req.file_link);
-        let response = await fetch(fetchLink);
-        if (!response.ok) throw new Error('تعذر تحميل الملف.');
-        let arrayBuffer = await response.arrayBuffer();
-
-        pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js";
-        let pdf = await pdfjsLib.getDocument({ data: arrayBuffer.slice(0) }).promise;
-        let page = await pdf.getPage(1);
-        let viewport1 = page.getViewport({ scale: 1 });
-
-        document.getElementById('annotOverlay').classList.add('active');
-
-        let containerWidth = document.getElementById('annotCanvasArea').clientWidth - 28;
-        let containerHeight = document.getElementById('annotCanvasArea').clientHeight - 28;
-        let scaleByWidth = containerWidth / viewport1.width;
-        let scaleByHeight = containerHeight / viewport1.height;
-        let scale = Math.min(4, Math.max(0.5, Math.min(scaleByWidth, scaleByHeight)));
-        let viewport = page.getViewport({ scale });
-
-        let canvas = document.getElementById('pdfRenderCanvas');
-        canvas.width = viewport.width;
-        canvas.height = viewport.height;
-        await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
-
-        let layer = document.getElementById('annotLayer');
-        layer.innerHTML = '';
-        layer.style.width = viewport.width + 'px';
-        layer.style.height = viewport.height + 'px';
-        let pageWrap = document.getElementById('annotPageWrap');
-        pageWrap.style.width = viewport.width + 'px';
-        pageWrap.style.height = viewport.height + 'px';
-
-        annotState = {
-            requestId: id, req, code,
-            pdfBytes: arrayBuffer,
-            pageWidthPt: viewport1.width,
-            pageHeightPt: viewport1.height,
-            renderScale: scale,
-            items: [],
-            tool: null,
-            fontSize: 15,
-            fontFamily: 'HelveticaBold'
-        };
-        selectedAnnotItem = null;
-        selectedAnnotEl = null;
-        populateFontFamilySelect();
-        updateFontControlsUI();
-        setAnnotTool(null);
-    } catch (err) {
-        console.error('openAnnotationModal error:', err);
-        document.getElementById('annotOverlay').classList.remove('active');
-        notify.error('حدث خطأ أثناء تجهيز الملف للكتابة عليه: ' + (err.message || ''));
-    } finally {
-        closeLock();
-    }
-}
-
-function closeAnnotationModal() {
-    if (annotState && annotState.items.length > 0) {
-        notify.confirm('سيتم الإغلاق من دون إرسال - أي محتوى كتبته سيُفقد. هل أنت متأكد؟').then(ok => {
-            if (!ok) return;
-            document.getElementById('annotOverlay').classList.remove('active');
-            document.getElementById('annotLayer').innerHTML = '';
-            annotState = null;
-            selectedAnnotItem = null;
-            selectedAnnotEl = null;
-        });
-        return;
-    }
-    document.getElementById('annotOverlay').classList.remove('active');
-    document.getElementById('annotLayer').innerHTML = '';
-    annotState = null;
-    selectedAnnotItem = null;
-    selectedAnnotEl = null;
-}
-
-function renderTextItemToImage(text, fontSizePt, fontOpt) {
-    let isRtl = /[\u0600-\u06FF]/.test(text);
-    let dpr = 6;
-
-    let measureCanvas = document.createElement('canvas');
-    let mctx = measureCanvas.getContext('2d');
-    let weightPrefix = (parseInt(fontOpt.weight, 10) >= 700) ? 'bold ' : '';
-    let fontCss = `${weightPrefix}${fontSizePt}px ${fontOpt.css}`;
-    mctx.font = fontCss;
-    let metrics = mctx.measureText(text);
-    let textWidth = Math.max(metrics.width, 2);
-    let ascent = metrics.actualBoundingBoxAscent || fontSizePt * 0.8;
-    let descent = metrics.actualBoundingBoxDescent || fontSizePt * 0.25;
-    let textHeight = Math.max(ascent + descent, fontSizePt);
-    let pad = 2;
-
-    let canvas = document.createElement('canvas');
-    canvas.width = Math.ceil((textWidth + pad * 2) * dpr);
-    canvas.height = Math.ceil((textHeight + pad * 2) * dpr);
-    let ctx = canvas.getContext('2d');
-    ctx.scale(dpr, dpr);
-    ctx.font = fontCss;
-    ctx.fillStyle = 'rgb(192,32,43)';
-    ctx.textBaseline = 'alphabetic';
-    ctx.direction = isRtl ? 'rtl' : 'ltr';
-    ctx.textAlign = isRtl ? 'right' : 'left';
-    let drawX = isRtl ? (textWidth + pad) : pad;
-    ctx.fillText(text, drawX, pad + ascent);
-
-    return {
-        dataUrl: canvas.toDataURL('image/png'),
-        widthPt: textWidth + pad * 2,
-        heightPt: textHeight + pad * 2
-    };
-}
-
-async function bakeAnnotationsIntoPdf(state) {
-    let pdfDoc = await PDFLib.PDFDocument.load(state.pdfBytes.slice(0));
-    let page = pdfDoc.getPages()[0];
-
-    for (let item of state.items) {
-        let pdfX = item.x / state.renderScale;
-        let pdfYFromTop = item.y / state.renderScale;
-
-        if (item.type === 'text') {
-            let fontSize = item.fontSize || 13;
-            let fontOpt = fontOptionByKey(item.fontFamily || 'HelveticaBold');
-            let rendered = renderTextItemToImage(item.text, fontSize, fontOpt);
-            let textBytes = dataUrlToUint8Array(rendered.dataUrl);
-            let textImage = await pdfDoc.embedPng(textBytes);
-            let pdfY = state.pageHeightPt - pdfYFromTop - rendered.heightPt;
-            page.drawImage(textImage, { x: pdfX, y: pdfY, width: rendered.widthPt, height: rendered.heightPt });
-        } else if (item.type === 'sig') {
-            let sigBytes = dataUrlToUint8Array(item.dataUrl);
-            let sigImage = await pdfDoc.embedPng(sigBytes);
-            let displayWidthPx = 130;
-            let sigWidthPt = displayWidthPx / state.renderScale;
-            let sigHeightPt = sigWidthPt * (sigImage.height / sigImage.width);
-            let pdfY = state.pageHeightPt - pdfYFromTop - sigHeightPt;
-            page.drawImage(sigImage, { x: pdfX, y: pdfY, width: sigWidthPt, height: sigHeightPt });
-        }
-    }
-
-    let bytes = await pdfDoc.save();
-    return new Blob([bytes], { type: 'application/pdf' });
-}
-
-function commentRequiredForCode(code) {
-    return code === 'B' || code === 'C' || code === 'D';
-}
-
-function validateCommentForCode(id, code) {
-    if (!commentRequiredForCode(code)) return true;
-    let el = document.getElementById(`contractor-comment-${id}`);
-    let comment = (el && el.value ? el.value : '').trim();
-    if (!comment) {
-        notify.error(T('contractorErrCommentRequired'));
-        return false;
-    }
-    return true;
-}
-
-async function submitAnnotatedRequest() {
-    if (!annotState) return;
-    let id = annotState.requestId;
-    let req = annotState.req;
-    let code = annotState.code;
-
-    if (!validateCommentForCode(id, code)) return;
-
-    document.getElementById('annotSubmitBtn').disabled = true;
-    openLock('جاري إنشاء النسخة النهائية...');
-
-    try {
-        let stampedBlob = (annotState.items.length > 0)
-            ? await bakeAnnotationsIntoPdf(annotState)
-            : new Blob([annotState.pdfBytes], { type: 'application/pdf' });
-
-        let safeName = (req.file_name || 'file.pdf').replace(/[^a-zA-Z0-9._-]/g, '_');
+        let safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
         let path = `contractor-requests/${Date.now()}_final_${safeName}`;
         const { error: uploadError } = await supabaseClient.storage
             .from(ATTACHMENTS_BUCKET)
-            .upload(path, stampedBlob, { upsert: false, contentType: 'application/pdf' });
+            .upload(path, file, { upsert: false, contentType: file.type || undefined });
         if (uploadError) throw uploadError;
 
-        await finishSubmitForFinalApproval(id, code, path);
-        document.getElementById('annotOverlay').classList.remove('active');
-        document.getElementById('annotLayer').innerHTML = '';
-        annotState = null;
-        selectedAnnotItem = null;
-        selectedAnnotEl = null;
-        notify.success('تم إرسال الطلب إلى الأدمن للموافقة النهائية.');
-    } catch (err) {
-        console.error('submitAnnotatedRequest error:', err);
-        notify.error(err.message || 'حدث خطأ أثناء الإرسال.');
-    } finally {
-        document.getElementById('annotSubmitBtn').disabled = false;
-        closeLock();
-    }
-}
+        await finishSubmitForFinalApproval(id, code, path, { fileName: file.name, oldReq: req });
 
-async function submitForFinalApproval(id, finalFileLink) {
-    let code = selectedContractorCode[id];
-    if (!code) { notify.error(T('contractorErrNoCode')); return; }
-    if (!validateCommentForCode(id, code)) return;
-    openLock(T('contractorWorking'));
-    try {
-        await finishSubmitForFinalApproval(id, code, finalFileLink);
+        delete inlineRevCode[uid];
+        clearRevSelectionActive(uid);
+        render();
         notify.success('تم إرسال الطلب إلى الأدمن للموافقة النهائية.');
     } catch (err) {
-        console.error('submitForFinalApproval error:', err);
+        console.error('submitContractorInlineUpload error:', err);
         notify.error(err.message || T('contractorErrSubmit'));
     } finally {
         closeLock();
     }
 }
 
-async function finishSubmitForFinalApproval(id, code, finalFileLink) {
+// بعد ما الملف الجديد يتحفظ: امسح ملف الريكوست القديم (من التخزين ومن درايف)
+async function removeOldContractorFile(oldReq, newPath) {
+    try {
+        let oldLink = oldReq && oldReq.file_link;
+        if (oldLink && oldLink !== newPath && !/^https?:/i.test(oldLink)) {
+            await supabaseClient.storage.from(ATTACHMENTS_BUCKET).remove([oldLink]);
+        }
+    } catch (e) { console.warn('Could not remove old storage file:', e); }
+    try {
+        let oldDrive = oldReq && oldReq.drive_file_url;
+        if (oldDrive) {
+            await fetch(GOOGLE_SCRIPT_UPLOAD_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain' },
+                body: JSON.stringify({ action: 'delete', fileUrl: oldDrive })
+            });
+        }
+    } catch (e) { console.warn('Could not remove old Drive file:', e); }
+}
+
+async function finishSubmitForFinalApproval(id, code, finalFileLink, opts) {
+    opts = opts || {};
     let commentEl = document.getElementById(`contractor-comment-${id}`);
     let comment = (commentEl && commentEl.value ? commentEl.value : '').trim();
     let sentAt = new Date().toISOString();
 
-    const { error: updateError } = await supabaseClient
-        .from('contractor_requests')
-        .update({
-            status: 'pending_final_admin',
-            code: code,
-            engineer_comment: comment || null,
-            engineer_reviewed_at: sentAt,
-            final_file_link: finalFileLink
-        })
-        .eq('id', id);
+    // مراجعة المهندس بتتسجل عبر دالة الخادم (بتتأكد إن الريكوست متعيّن له وإن الملف موجود ونوعه مسموح)
+    const { error: updateError } = await supabaseClient.rpc('submit_contractor_engineer_review', {
+        p_request_id: id,
+        p_code: code,
+        p_comment: comment || null,
+        p_final_file_link: finalFileLink,
+        p_file_name: (opts.fileName || null)
+    });
     if (updateError) throw updateError;
+
+    if (opts.oldReq) await removeOldContractorFile(opts.oldReq, finalFileLink);
 
     contractorRequests = contractorRequests.filter(r => r.id !== id);
     let key = myTaskBucketKey();

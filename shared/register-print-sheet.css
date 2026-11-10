@@ -1,0 +1,62 @@
+/* Print-only sheet for "Print issues". Hidden on screen. */
+#printSheet{display:none}
+@media print{
+ body.register-page:not(.register-summary):not(.register-print-embed)::before{display:none!important}
+ body.register-page:not(.register-summary):not(.register-print-embed) .register-brand,
+ body.register-page:not(.register-summary):not(.register-print-embed) .register-main,
+ body.register-page:not(.register-summary):not(.register-print-embed) .nav-container,
+ body.register-page:not(.register-summary):not(.register-print-embed) dialog{display:none!important}
+ body.register-page:not(.register-summary):not(.register-print-embed) #printSheet{display:block!important}
+ #printSheet,#printSheet *{font-family:"Inter","Segoe UI",Roboto,Arial,sans-serif!important;box-sizing:border-box;letter-spacing:0!important;text-transform:none!important}
+ #printSheet{color:#0f1b33;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+ #printSheet h1,#printSheet h2,#printSheet h3{margin:0!important;padding:0!important;border:0!important;background:none!important}
+
+ #printSheet .ps-head{display:flex;justify-content:space-between;align-items:flex-end;background:#0f2447;color:#fff!important;padding:6mm 7mm 5mm;border-bottom:1.2mm solid #2f7bf5;margin-bottom:5mm}
+ #printSheet .ps-brand{font-size:8pt!important;font-weight:600;color:#9fb4dc!important;margin-bottom:2mm}
+ #printSheet .ps-head h1.ps-title{font-size:20pt!important;font-weight:700!important;line-height:1.1!important;color:#fff!important}
+ #printSheet .ps-project{font-size:9pt!important;color:#c7d5ef!important;margin-top:1.5mm}
+ #printSheet .ps-date{text-align:right;font-size:7.5pt!important;color:#9fb4dc!important;line-height:1.3}
+ #printSheet .ps-date strong{display:block;font-size:11pt!important;font-weight:700;color:#fff!important;margin-top:.8mm}
+
+ #printSheet .ps-kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:2.5mm;margin-bottom:6mm}
+ #printSheet .ps-kpi{border:1px solid #d5dce8;border-top:1.2mm solid #0f2447;padding:2.5mm 2mm 2.2mm;text-align:center;background:#f8fafd}
+ #printSheet .ps-kpi b{display:block;font-size:17pt!important;font-weight:700;line-height:1.1;color:#0f2447}
+ #printSheet .ps-kpi span{display:block;font-size:7.5pt!important;font-weight:500;color:#5b6a85;margin-top:.8mm}
+ #printSheet .ps-kpi.ps-k-issue{border-top-color:#d6405a}
+ #printSheet .ps-kpi.ps-k-risk{border-top-color:#e09a14}
+ #printSheet .ps-kpi.ps-k-high{border-top-color:#a31d33}
+ #printSheet .ps-kpi.ps-k-over{border-top-color:#6b7a96}
+
+ #printSheet .ps-group{break-inside:auto;margin-bottom:4mm}
+ #printSheet .ps-group-head{display:flex;align-items:center;gap:2.5mm;break-after:avoid;page-break-after:avoid;margin-bottom:2.5mm}
+ #printSheet .ps-group-head h2{font-size:10.5pt!important;font-weight:700!important;color:#0f2447!important;white-space:nowrap}
+ #printSheet .ps-group-head .ps-count{font-size:7.5pt!important;font-weight:600;color:#fff;background:#0f2447;border-radius:10mm;padding:.4mm 2.4mm}
+ #printSheet .ps-group-head::after{content:"";flex:1;height:0;border-top:1px solid #cfd8e6}
+ #printSheet .ps-group.ps-g-risk .ps-count{background:#5c6c88}
+
+ #printSheet .ps-list{list-style:none;margin:0;padding:0}
+ #printSheet .ps-card{display:flex;border:1px solid #d5dce8;border-radius:1.5mm;overflow:hidden;margin-bottom:2.5mm;break-inside:avoid;page-break-inside:avoid;background:#fff}
+ #printSheet .ps-num{flex:0 0 11mm;display:flex;align-items:center;justify-content:center;background:#0f2447;color:#fff;font-size:11pt!important;font-weight:700}
+ #printSheet .ps-risk .ps-num{background:#5c6c88}
+ #printSheet .ps-decision .ps-num{background:#3f4f78}
+ #printSheet .ps-body{flex:1;min-width:0;padding:2.2mm 3.5mm 2mm}
+ #printSheet .ps-top{display:flex;justify-content:space-between;align-items:center}
+ #printSheet .ps-kind{font-size:7.5pt!important;font-weight:600;color:#5b6a85}
+ #printSheet .ps-name{font-size:10pt!important;font-weight:600;line-height:1.35;margin:1mm 0 1.8mm;color:#0f1b33;overflow-wrap:anywhere}
+ #printSheet .ps-desc{font-size:8pt!important;line-height:1.4;color:#51607c;margin:-.6mm 0 1.8mm;overflow-wrap:anywhere}
+ #printSheet .ps-meta{display:flex;justify-content:space-between;align-items:center;border-top:1px solid #e3e8f0;padding-top:1.6mm;font-size:8pt!important;color:#5b6a85}
+ #printSheet .ps-meta b{font-weight:600;color:#0f1b33}
+ #printSheet .ps-meta .ps-late b{color:#a31d33}
+
+ #printSheet .ps-badge{font-size:7.5pt!important;font-weight:700;padding:.5mm 2.6mm;border-radius:10mm;border:1px solid}
+ #printSheet .ps-badge.ps-critical{background:#7f1226;border-color:#7f1226;color:#fff}
+ #printSheet .ps-badge.ps-high{background:#fdecef;border-color:#f0b4bf;color:#a31d33}
+ #printSheet .ps-badge.ps-medium{background:#fff5df;border-color:#f1d38f;color:#8a5a00}
+ #printSheet .ps-badge.ps-low{background:#e9f6ee;border-color:#b5dcc3;color:#1d6b3c}
+ #printSheet .ps-status{display:inline-block;margin-inline-start:1mm;font-weight:600;color:#0f2447}
+
+ #printSheet .ps-empty{padding:10mm;text-align:center;color:#5b6a85;border:1px dashed #cfd8e6}
+ @page{size:A4 portrait;margin:10mm 10mm 15mm;
+  @bottom-left{content:"MDCEO · Project Portal";font:7.5pt "Inter","Segoe UI",Arial,sans-serif;color:#5b6a85}
+  @bottom-right{content:"Page " counter(page) " of " counter(pages);font:7.5pt "Inter","Segoe UI",Arial,sans-serif;color:#5b6a85}}
+}

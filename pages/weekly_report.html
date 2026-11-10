@@ -881,7 +881,7 @@ function perfRenderManpower(rows) {
 // Pure fetch — talks to Supabase only, no DOM/chart work. Used both for the
 // initial live load and to grab a fresh snapshot right before Save.
 async function fetchPerfData() {
-  const { data, error } = await client.from('project_performance').select('*').eq('id', 1).single();
+  const { data, error } = await client.from('project_performance').select('*').eq('id', ((window.getSelectedCompanyId && window.getSelectedCompanyId()) || 1)).single();
   if (error) throw error;
   if (!data) throw new Error('no data');
   return data;
@@ -1304,7 +1304,7 @@ function resizeImageToBlob(file, maxWidth = 1280, quality = 0.75) {
 async function uploadPhotoToStorage(blob) {
   const now = new Date();
   const folder = now.getFullYear() + '/' + String(now.getMonth() + 1).padStart(2, '0');
-  const path = folder + '/' + crypto.randomUUID() + '.jpg';
+  const path = window.getCompanyFolder() + '/' + folder + '/' + crypto.randomUUID() + '.jpg';
   const { error } = await client.storage
     .from(PHOTO_BUCKET)
     .upload(path, blob, { contentType: 'image/jpeg', upsert: false });

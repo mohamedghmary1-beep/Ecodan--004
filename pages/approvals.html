@@ -847,6 +847,7 @@ async function uploadAttachmentToDrive(req) {
             filename: req.file_name,
             mimeType: blob.type || "application/octet-stream",
             data: base64,
+            companyName: window.getCompanyName(req.project_id),
             taskNo: req.task_key,
             revName: req.revision_name,
             notify: false,
@@ -1000,6 +1001,7 @@ async function finalLoadRequests() {
     const { data, error } = await supabaseClient
         .from('contractor_requests')
         .select('*')
+        .is('deleted_at', null)
         .eq('status', 'pending_final_admin')
         .order('engineer_reviewed_at', { ascending: true });
 
@@ -1084,72 +1086,12 @@ async function finalApproveRequest(id) {
 
     finalOpenLock('جاري الاعتماد...');
     try {
-        let today = new Date().toISOString().slice(0, 10);
-        let newSubmittalId, linkColumn;
-
-        let existing = null;
-        if (req.submittal_no) {
-            const { data: existingRows, error: findError } = await supabaseClient
-                .from('submittals')
-                .select('*')
-                .eq('no', req.submittal_no)
-                .limit(1);
-            if (findError) throw findError;
-            existing = (existingRows && existingRows[0]) ? existingRows[0] : null;
-        }
-
-        if (existing) {
-            let freeSlot = FINAL_REVISION_SLOTS.find(slot => !existing['submitted_on' + slot]);
-            if (freeSlot === undefined) {
-                const { data: inserted, error: insErr } = await supabaseClient
-                    .from('submittals')
-                    .insert({
-                        no: req.submittal_no, title: req.title, discipline: req.discipline,
-                        activity: req.activity || null, rev: 'R00',
-                        action_by: req.engineer_username || null,
-                        submitted_on: today, received_on: today, code: req.code
-                    }).select();
-                if (insErr) throw insErr;
-                newSubmittalId = inserted[0].id;
-                linkColumn = 'link';
-            } else {
-                let payload = { rev: finalSlotLabel(freeSlot) };
-                payload['submitted_on' + freeSlot] = today;
-                payload['received_on' + freeSlot] = today;
-                payload['code' + freeSlot] = req.code;
-                const { error: updErr } = await supabaseClient
-                    .from('submittals')
-                    .update(payload)
-                    .eq('id', existing.id);
-                if (updErr) throw updErr;
-                newSubmittalId = existing.id;
-                linkColumn = 'link' + freeSlot;
-            }
-        } else {
-            const { data: inserted, error: insErr } = await supabaseClient
-                .from('submittals')
-                .insert({
-                    no: req.submittal_no || null, title: req.title, discipline: req.discipline,
-                    activity: req.activity || null, rev: 'R00',
-                    action_by: req.engineer_username || null,
-                    submitted_on: today, received_on: today, code: req.code
-                }).select();
-            if (insErr) throw insErr;
-            newSubmittalId = inserted[0].id;
-            linkColumn = 'link';
-        }
-
-        const { error: updateError } = await supabaseClient
-            .from('contractor_requests')
-            .update({
-                status: 'completed',
-                created_submittal_id: newSubmittalId,
-                drive_status: 'pending',
-                admin_final_reviewed_by: window.currentUsername || null,
-                admin_final_reviewed_at: new Date().toISOString()
-            })
-            .eq('id', id);
-        if (updateError) throw updateError;
+        // إنشاء/تحديث الـ submittal وتحويل الحالة لـ completed بيتم في دالة واحدة على الخادم
+        const { data: finalized, error: finalizeError } = await supabaseClient
+            .rpc('finalize_contractor_request', { p_request_id: id });
+        if (finalizeError) throw finalizeError;
+        const newSubmittalId = finalized && finalized.submittal_id;
+        const linkColumn = finalized && finalized.link_column;
 
         finalRequests = finalRequests.filter(r => r.id !== id);
         renderFinalTab();
@@ -1184,6 +1126,7 @@ async function finalPushFileToDriveInBackground(req, newSubmittalId, linkColumn,
                 filename: req.file_name,
                 mimeType: blob.type || "application/pdf",
                 data: base64,
+                companyName: window.getCompanyName(req.project_id),
                 taskNo: req.submittal_no || req.title,
                 revName: "Original",
                 notify: false,
@@ -1204,9 +1147,7 @@ async function finalPushFileToDriveInBackground(req, newSubmittalId, linkColumn,
         if (submittalUpdateError) console.error('Could not update submittals link column:', submittalUpdateError);
 
         const { error: reqUpdateError } = await supabaseClient
-            .from('contractor_requests')
-            .update({ file_link: driveUrl, drive_status: 'done' })
-            .eq('id', requestId);
+            .rpc('mark_contractor_drive_upload', { p_request_id: requestId, p_status: 'done', p_drive_url: driveUrl });
         if (reqUpdateError) console.error('Could not update contractor_requests.file_link:', reqUpdateError);
 
         deleteFromAttachmentsStorage(req.file_link);
@@ -1215,9 +1156,7 @@ async function finalPushFileToDriveInBackground(req, newSubmittalId, linkColumn,
     } catch (err) {
         console.error('Background Drive upload failed:', err);
         await supabaseClient
-            .from('contractor_requests')
-            .update({ drive_status: 'failed' })
-            .eq('id', requestId);
+            .rpc('mark_contractor_drive_upload', { p_request_id: requestId, p_status: 'failed', p_drive_url: null });
         return false;
     }
 }
@@ -1234,15 +1173,7 @@ async function finalRejectRequest(id) {
     finalOpenLock('جاري الإرسال للمهندس...');
     try {
         const { error } = await supabaseClient
-            .from('contractor_requests')
-            .update({
-                status: 'pending_engineer',
-                admin_final_note: note,
-                final_file_link: null,
-                admin_final_reviewed_by: window.currentUsername || null,
-                admin_final_reviewed_at: new Date().toISOString()
-            })
-            .eq('id', id);
+            .rpc('return_contractor_request_to_engineer', { p_request_id: id, p_note: note });
         if (error) throw error;
 
         finalRequests = finalRequests.filter(r => r.id !== id);
@@ -1279,6 +1210,7 @@ async function loadContractorRequests() {
         const { data: rows, error } = await supabaseClient
             .from('contractor_requests')
             .select('*')
+            .is('deleted_at', null)
             .order('requested_at', { ascending: false });
         if (error) throw error;
         contractorRequests = rows || [];
@@ -1363,6 +1295,12 @@ async function reviewContractorRequest(id) {
     if (!req) return;
     let t = dictionary[currentLang];
 
+    // أول ما الأدمن يفتح المراجعة بنسجّل إن المراجعة بدأت (بعدها المقاول ما يقدرش يعدّل الريكوست مباشرة)
+    if (req.status === 'pending_admin') {
+        supabaseClient.rpc('begin_contractor_request_review', { p_request_id: id })
+            .then(function (r) { if (r.error) console.warn('begin review:', r.error.message); });
+    }
+
     document.getElementById('reviewModalTitle').textContent = `${t.reviewModalTitle}: ${req.file_name || ''}`;
 
     let displayLink = await resolveFileLinkForDisplay(req.file_link);
@@ -1397,18 +1335,8 @@ async function approveContractorRequest(id) {
 
     let overrideSelect = document.getElementById(`eng-override-${id}`);
     let chosenEngineerId = overrideSelect ? overrideSelect.value : req.engineer_id;
-    let chosenEngineer = contractorEngineers.find(e => e.id === chosenEngineerId);
-
     const { error } = await supabaseClient
-        .from('contractor_requests')
-        .update({
-            status: 'pending_engineer',
-            engineer_id: chosenEngineerId,
-            engineer_username: chosenEngineer ? chosenEngineer.username : req.engineer_username,
-            admin_reviewed_at: new Date().toISOString(),
-            admin_reviewed_by: window.currentUsername || null
-        })
-        .eq('id', id);
+        .rpc('approve_contractor_request', { p_request_id: id, p_engineer_id: chosenEngineerId });
 
     if (error) {
         console.error(error);
@@ -1422,16 +1350,14 @@ async function approveContractorRequest(id) {
 
 async function rejectContractorRequest(id) {
     let t = dictionary[currentLang];
-    if (!(await notify.confirm(t.confirmRejectContractor))) return;
+    // سبب الرفض إجباري (الدالة على الخادم بترفض من غيره) وبيظهر للمقاول
+    let note = await notify.prompt(currentLang === 'ar' ? 'اكتب سبب الرفض (هيوصل للمقاول):' : 'Write the rejection reason (the contractor will see it):');
+    if (note === null) return;
+    note = String(note).trim();
+    if (!note) { notify.error(currentLang === 'ar' ? 'لازم تكتب سبب الرفض.' : 'A rejection reason is required.'); return; }
 
     const { error } = await supabaseClient
-        .from('contractor_requests')
-        .update({
-            status: 'rejected_admin',
-            admin_reviewed_at: new Date().toISOString(),
-            admin_reviewed_by: window.currentUsername || null
-        })
-        .eq('id', id);
+        .rpc('reject_contractor_request', { p_request_id: id, p_note: note });
 
     if (error) {
         console.error(error);

@@ -871,7 +871,7 @@ async function saveDashboard() {
   }
 
   const payload = {
-    id: 1,
+    id: ((window.getSelectedCompanyId && window.getSelectedCompanyId()) || 1),
     contract_value_no_vat: parseFloat(document.getElementById('f_contract_value_no_vat').value) || null,
     contract_value_vat: parseFloat(document.getElementById('f_contract_value_vat').value) || null,
     approved_change_order: document.getElementById('f_approved_change_order').value || '-',
@@ -963,7 +963,7 @@ async function loadDashboard(snapshot) {
       const result = await client
         .from('project_performance')
         .select('*')
-        .eq('id', 1)
+        .eq('id', ((window.getSelectedCompanyId && window.getSelectedCompanyId()) || 1))
         .single();
       if (result.error) throw result.error;
       data = result.data;

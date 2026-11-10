@@ -984,7 +984,7 @@ function perfSetNoteMode(mode) {
 
 async function loadPerformanceDashboard() {
   try {
-    const { data, error } = await client.from('project_performance').select('*').eq('id', 1).single();
+    const { data, error } = await client.from('project_performance').select('*').eq('id', ((window.getSelectedCompanyId && window.getSelectedCompanyId()) || 1)).single();
     if (error) throw error;
     if (!data) throw new Error('no data');
     lastLoadedLivePerfData = data;

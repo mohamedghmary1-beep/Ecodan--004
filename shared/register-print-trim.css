@@ -1,0 +1,42 @@
+/* Print only (Print issues). Load LAST. Screen is not affected. */
+@media print{
+ html body.register-page:not(.register-summary) #registerMain .register-analytics,
+ html body.register-page:not(.register-summary) #registerMain #financialTrendCard,
+ html body.register-page:not(.register-summary) #registerMain #topKpis,
+ html body.register-page:not(.register-summary) #registerMain #registerState,
+ html body.register-page:not(.register-summary) #registerMain .register-datebar{display:none!important}
+
+ html body.register-page:not(.register-summary) #registerMain #printKpis{display:grid!important;grid-template-columns:repeat(var(--print-kpi-cols,3),minmax(0,1fr));gap:3mm;margin:0 0 6mm!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+ #printKpis .print-kpi{display:flex;align-items:center;gap:3mm;border:1px solid #c9d9ec;border-radius:3mm;padding:3.5mm 3.5mm;background:#f7faff}
+ #printKpis .print-kpi-icon{flex:0 0 9mm;width:9mm;height:9mm;border-radius:2.5mm;background:#e3edff;color:#1a56db;display:grid;place-items:center;font-size:11pt}
+ #printKpis .print-kpi b{display:block;font-size:19pt;line-height:1.05;font-weight:700;color:#173f7f}
+ #printKpis .print-kpi span:not(.print-kpi-icon){display:block;font-size:8.5pt;color:#5b7aa3;margin-top:.6mm}
+
+ html body.register-page:not(.register-summary) #registerMain .register-table-section{break-before:auto!important;page-break-before:auto!important;border:0!important;border-radius:0!important;padding:0!important;box-shadow:none!important;background:none!important}
+ html body.register-page:not(.register-summary) #registerMain .register-table-title{justify-content:space-between!important;align-items:baseline!important;text-align:left!important;border:0!important;padding:0 0 2mm!important;margin:0!important}
+ html body.register-page:not(.register-summary) #registerMain .register-table-title h2{width:auto!important;text-align:left!important;font-size:12pt!important;font-weight:700!important;color:#173f7f!important;padding:0!important}
+ html body.register-page:not(.register-summary) #registerMain .register-print-meta{border:0!important;background:none!important;padding:0!important;margin:0 0 3mm!important;color:#5b7aa3!important;font-size:8.5pt!important}
+ html body.register-page:not(.register-summary) #registerMain .register-table-scroll{border:1px solid #c9d9ec!important;border-radius:3mm!important;overflow:hidden!important}
+
+ html body.register-page:not(.register-summary) #registerMain #registerTable{width:100%!important;table-layout:fixed!important;border-collapse:collapse!important}
+ html body.register-page:not(.register-summary) #registerMain #registerTable th{background:#eaf2fc!important;color:#38577e!important;font-size:8.5pt!important;font-weight:700!important;padding:2.6mm 2.5mm!important;border-bottom:1px solid #c9d9ec!important;text-align:left!important}
+ html body.register-page:not(.register-summary) #registerMain #registerTable td{font-size:9pt!important;color:#1c3558!important;padding:2.6mm 2.5mm!important;border-bottom:.5px solid #e1eaf5!important;vertical-align:middle!important;background:#fff!important}
+ html body.register-page:not(.register-summary) #registerMain #registerTable tbody tr:nth-child(even) td{background:#fafcff!important}
+ html body.register-page:not(.register-summary) #registerMain #registerTable tbody tr:last-child td{border-bottom:0!important}
+ html body.register-page:not(.register-summary) #registerMain #registerTable td:nth-child(2){font-weight:600!important}
+ html body.register-page:not(.register-summary) #registerMain #registerTable .register-badge,
+ html body.register-page:not(.register-summary) #registerMain #registerTable .register-print-type{display:inline-block;font-size:8pt!important;font-weight:600!important;padding:.6mm 2.4mm!important;border-radius:1.4mm!important;min-width:0!important;white-space:nowrap!important}
+ html body.register-page:not(.register-summary) #registerMain #registerTable .register-print-type{color:#38577e;background:#eaf2fc;border:1px solid #c9d9ec}
+ html body.register-page:not(.register-summary) #registerMain #registerTable th:nth-child(1){width:17mm!important}
+ html body.register-page:not(.register-summary) #registerMain #registerTable th:nth-child(3){width:19mm!important}
+ html body.register-page:not(.register-summary) #registerMain #registerTable th:nth-child(4){width:30mm!important}
+ html body.register-page:not(.register-summary) #registerMain #registerTable th:nth-child(5){width:25mm!important}
+ html body.register-page:not(.register-summary) #registerMain #registerTable td:nth-child(4) .register-badge{white-space:normal!important;text-align:center!important;line-height:1.25!important;max-width:100%!important}
+ html body.register-page:not(.register-summary) #registerMain #printWarnings:not([hidden]){display:block!important;margin:0 0 6mm;padding:3mm 4mm;border:1px solid #f1b4be;border-left:1.6mm solid #c0344d;border-radius:2.5mm;background:#fff5f6;break-inside:avoid;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+ #printWarnings .pw-title{font-size:9.5pt;font-weight:700;color:#a3223a;margin-bottom:1.5mm}
+ #printWarnings .pw-title span{display:inline-block;margin-inline-start:1.5mm;font-size:8pt;color:#fff;background:#c0344d;border-radius:5mm;padding:0 2mm}
+ #printWarnings ul{margin:0;padding:0;list-style:none}
+ #printWarnings li{font-size:8.8pt;line-height:1.4;color:#7a1c2e;padding:.8mm 0 .8mm 4mm;position:relative}
+ #printWarnings li::before{content:"";position:absolute;left:0;top:2.1mm;width:1.8mm;height:1.8mm;border-radius:50%;background:#c0344d}
+ #printWarnings li b{color:#a3223a}
+}

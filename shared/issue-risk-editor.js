@@ -67,7 +67,7 @@
   }catch(e){$('saveState').textContent='Save failed: '+e.message;notify.error(e.message);}finally{busy=false;$('saveItem').disabled=false;}
  }
  async function start(){if(started)return;started=true;api=new C.API(window.__guardClient);
-  try{context=await api.context();if(!context.projects.length)throw new Error('No accessible projects.');const requested=params.get('project');project=context.projects.some(p=>String(p.id)===requested)?requested:context.projects[0].id;
+  try{context=await api.context();if(!context.projects.length)throw new Error('No accessible projects.');const requested=params.get('project')||String(window.getSelectedCompanyId&&window.getSelectedCompanyId()||'');project=context.projects.some(p=>String(p.id)===requested)?requested:context.projects[0].id;
    if(params.get('id')){if(!C.TYPES.includes(params.get('kind')))throw new Error('Invalid item type.');await refreshRow(params.get('kind'),params.get('id'));project=row.project_id;}
    if(!row&&!context.manager&&!context.engineer)throw new Error('This account has read-only access.');
    if(context.manager||window.__currentProfile?.page_task==='yes'){try{tasks=await api.all('submittals',q=>q.order('id'));}catch{tasks=[];}}

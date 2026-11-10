@@ -23,21 +23,23 @@
   $('registerTabs').innerHTML=[['all','All Items',tabRows.length],['issues','Issues',tabRows.filter(r=>r.kind==='issue').length],['risks','Risks',tabRows.filter(r=>r.kind==='risk').length],['decisions','Decisions',tabRows.filter(r=>r.kind==='decision').length],['overdue','Overdue',tabRows.filter(r=>C.overdue(r)).length],['closed','Closed',tabRows.filter(C.closed).length]].map(([key,label,count])=>`<button type="button" data-tab="${key}" aria-pressed="${tab===key}">${label}<span class="register-tab-count">${count}</span></button>`).join('');
  }
  function renderTable(){
-  const activeFilters=currentFilters(),matching=C.filter(items,activeFilters);
+  const activeFilters=currentFilters(),matching=printing
+   ?[...C.filter(items,{...activeFilters,archived:false}),...C.filter(items,{...activeFilters,archived:true})]
+   :C.filter(items,activeFilters);
   filtered=C.sort(matching,sortKey,direction,true);const showAll=$('pageSize').value==='all',size=showAll?filtered.length||1:Number($('pageSize').value),pages=Math.max(1,Math.ceil(filtered.length/size));page=Math.min(page,pages-1);
   const rows=printing?filtered:filtered.slice(page*size,page*size+size);
-  $('registerRows').innerHTML=rows.map(r=>{const key=`${r.kind}:${r.id}`,type=r.kind==='decision'?'Decision Request':r.kind==='risk'?'Risk':'Issue',typeCell=r.kind==='risk'?'<span class="register-badge red register-risk-type">Risk</span>':type,sameDescription=String(r.description||'').trim().replace(/\s+/g,' ').toLocaleLowerCase()===String(r.title||'').trim().replace(/\s+/g,' ').toLocaleLowerCase(),description=printing&&r.description&&!sameDescription?`<div class="register-item-description">${E(r.description)}</div>`:'';return `<tr class="${r.kind==='risk'?'register-risk-row':''}"><td>${typeCell}</td><td>${E(r.title)}${description}</td><td>${badge(r.priority)}</td><td>${badge(r.status)}</td><td>${E(r.target_date||'—')}</td><td class="no-print"><div class="register-row-actions"><button data-action="view" data-key="${key}">Details</button>${mayEdit(r)?`<button type="button" class="register-button" data-action="edit" data-key="${key}">Edit</button>${r.kind!=='decision'||manager()?`<button data-action="lifecycle" data-key="${key}">${C.closed(r)?'Reopen':'Close'}</button>`:''}`:''}${manager()?`<button data-action="archive" data-key="${key}">${r.archived_at?'Restore':'Archive'}</button>`:''}</div></td></tr>`;}).join('')||'<tr><td colspan="6">No matching records. Change the filters or add your first item.</td></tr>';
+  $('registerRows').innerHTML=rows.map(r=>{const key=`${r.kind}:${r.id}`,type=r.kind==='decision'?'Decision Request':r.kind==='risk'?'Risk':'Issue',typeCell=r.kind==='risk'?'<span class="register-badge red register-risk-type">Risk</span>':(printing&&r.kind==='issue'?'<span class="register-print-type">Issue</span>':type),sameDescription=String(r.description||'').trim().replace(/\s+/g,' ').toLocaleLowerCase()===String(r.title||'').trim().replace(/\s+/g,' ').toLocaleLowerCase(),description=printing&&r.description&&!sameDescription?`<div class="register-item-description">${E(r.description)}</div>`:'';return `<tr class="${r.kind==='risk'?'register-risk-row':''}"><td>${typeCell}</td><td>${E(r.title)}${description}</td><td>${badge(r.priority)}</td><td>${badge(r.status)}</td><td>${E(r.target_date||'—')}</td><td class="no-print"><div class="register-row-actions"><button data-action="view" data-key="${key}">Details</button>${mayEdit(r)?`<a class="register-button" href="issue-risk-editor.html?project=${r.project_id}&kind=${r.kind}&id=${r.id}">Edit</a>${r.kind!=='decision'||manager()?`<button data-action="lifecycle" data-key="${key}">${C.closed(r)?'Reopen':'Close'}</button>`:''}`:''}${manager()?`<button data-action="archive" data-key="${key}">${r.archived_at?'Restore':'Archive'}</button>`:''}</div></td></tr>`;}).join('')||'<tr><td colspan="6">No matching records. Change the filters or add your first item.</td></tr>';
   $('resultCount').textContent=`${filtered.length} matching records${bucketFilter?' · '+bucketFilter:''}`;$('pageSummary').textContent=showAll?`All ${filtered.length} records`:`Page ${page+1} of ${pages}`;$('previousPage').disabled=showAll||page===0;$('nextPage').disabled=showAll||page>=pages-1;
-  $('printMeta').textContent=`${context.projects.find(p=>String(p.id)===String(project))?.name||'Project'} · Report date: ${C.today()} · ${filtered.length} records · All matching rows included`;$('printIdentity').textContent=`${context.projects.find(p=>String(p.id)===String(project))?.name||'Project'} · Report date: ${C.today()}`;
+  $('printMeta').textContent=`${context.projects.find(p=>String(p.id)===String(project))?.name||'Project'} · Report date: ${C.today()} · ${filtered.length} records · All matching rows included`;
   document.querySelectorAll('#registerTable th button[data-sort]').forEach(b=>b.closest('th').setAttribute('aria-sort',b.dataset.sort===sortKey?direction==='asc'?'ascending':'descending':'none'));
  }
  function renderProgress(){
   const summary=schedule.rows.find(r=>r.kind==='project');const source=performance?.weekly_table?.length?performance.weekly_table:summary&&schedule.date?[{week:schedule.date,plan:summary.schedule_pct==null?null:Number(summary.schedule_pct)*100,actual:summary.performance_pct==null?null:Number(summary.performance_pct)*100}]:[];
   const rows=C.progress(source,$('progressPeriod').value==='monthly');const has=rows.length>0&&rows.some(r=>r.actual!=null||r.plan!=null);
   $('progressChartBox').hidden=!has;$('progressEmpty').hidden=has;$('importScheduleAction').hidden=!manager();progressChart?.destroy();progressChart=null;
-  if(!has){$('progressHighlights').hidden=true;$('progressSummary').textContent='Progress uses the existing project performance source.';return;}
+  if(!has){window.__registerProgress=null;$('progressHighlights').hidden=true;$('progressSummary').textContent='Progress uses the existing project performance source.';return;}
   const last=rows.at(-1),valid=v=>v!=null&&Number.isFinite(Number(v))?Number(v):null;
-  const actual=valid(last.actual),planned=valid(last.plan),previousActual=rows.length>1?valid(rows.at(-2).actual):null,highlights=[];
+  window.__registerProgress={actual:valid(last.actual),planned:valid(last.plan)};const actual=valid(last.actual),planned=valid(last.plan),previousActual=rows.length>1?valid(rows.at(-2).actual):null,highlights=[];
   if(actual!=null){
    if(previousActual!=null){const change=actual-previousActual;highlights.push(change===0?`Actual completion remains at ${actual.toFixed(2)}% versus the previous period.`:`Actual completion ${change>0?'increased':'decreased'} by ${Math.abs(change).toFixed(2)} percentage points to ${actual.toFixed(2)}% versus the previous period.`);}
    else highlights.push(`Actual completion reached ${actual.toFixed(2)}%.`);
@@ -71,7 +73,7 @@
   if(results[0].status==='rejected')throw results[0].reason;items=results[0].value;events=results[1].status==='fulfilled'?results[1].value:[];performance=results[2].status==='fulfilled'?results[2].value:null;schedule=results[3].status==='fulfilled'?results[3].value:{rows:[],source:'Schedule unavailable'};
   const owner=$('ownerFilter').value,category=$('categoryFilter').value;$('ownerFilter').innerHTML='<option value="">All owners</option>'+[...new Map(items.filter(r=>r.owner_id).map(r=>[r.owner_id,r.owner])).entries()].map(([id,name])=>`<option value="${id}">${E(name||id)}</option>`).join('');$('ownerFilter').value=owner;
   $('categoryFilter').innerHTML='<option value="">All categories</option>'+[...new Set(items.map(r=>r.category).filter(Boolean))].sort().map(c=>`<option>${E(c)}</option>`).join('');$('categoryFilter').value=category;
-  $('dataDateLabel').textContent=`Report date: ${C.today()}`;$('addItem').hidden=!mayCreate();
+  $('dataDateLabel').textContent=`Report date: ${C.today()}`;$('addItem').hidden=!mayCreate();$('addItem').href=`issue-risk-editor.html?project=${project}`;
   $('editDataButton').hidden=!mayCreate()||printing;
   $('assessmentSettings').hidden=window.currentUserRole!=='super_admin';
   state(results.slice(1).some(r=>r.status==='rejected')?'Some analytics are unavailable; register records are current.':'');update();renderProgress();renderFinancial();reportPageReady();
@@ -86,23 +88,21 @@
   }catch(e){$('detailsContent').textContent='Could not load details: '+e.message;}
  }
  async function rowAction(event){const b=event.target.closest('[data-action]');if(!b)return;const row=items.find(r=>`${r.kind}:${r.id}`===b.dataset.key);if(!row)return;if(b.dataset.action==='view')return details(row);
-  if(b.dataset.action==='edit'){if(mayEdit(row))inlineEditor?.open(project,{kind:row.kind,id:row.id});return;}
   if(!mayEdit(row))return;const archive=b.dataset.action==='archive';if(archive&&!manager())return;
   if(!await notify.confirm(archive?(row.archived_at?'Restore this item?':'Archive this item? Its history will be preserved.'):(C.closed(row)?'Reopen this item?':'Close this item?')))return;
   b.disabled=true;try{await api.save(row.kind,row.id,archive?{archived_at:row.archived_at?null:new Date().toISOString()}:{status:C.closed(row)?'Open':'Closed'},row.version);await load();notify.success('Record updated.');}catch(e){notifyError(e);}finally{b.disabled=false;}
  }
  async function notifications(){
-  $('notificationDialog').showModal();$('notificationList').textContent='Loading…';try{const rows=await api.all('register_notifications',q=>q.order('created_at',{ascending:false}));$('notificationList').innerHTML=rows.map(r=>`<div class="register-history-item"><a href="#" data-open-item="${r.kind}:${r.item_id}:${r.project_id}">${E(r.message)}</a><p>${E(C.dateTime(r.created_at))}</p>${!r.is_read?`<button data-read="${r.id}">Mark read</button>`:''}</div>`).join('')||'No notifications.';}catch(e){$('notificationList').textContent=e.message;}
+  $('notificationDialog').showModal();$('notificationList').textContent='Loading…';try{const rows=await api.all('register_notifications',q=>q.order('created_at',{ascending:false}));$('notificationList').innerHTML=rows.map(r=>`<div class="register-history-item"><a href="issue-risk-editor.html?project=${r.project_id}&kind=${r.kind}&id=${r.item_id}">${E(r.message)}</a><p>${E(C.dateTime(r.created_at))}</p>${!r.is_read?`<button data-read="${r.id}">Mark read</button>`:''}</div>`).join('')||'No notifications.';}catch(e){$('notificationList').textContent=e.message;}
  }
  function excel(){if(!window.XLSX)return notifyError(new Error('Excel export library did not load. Reload with an internet connection.'));
   const rows=[['Type','Title','Priority','Status','Target Date'],...filtered.map(r=>[r.kind,r.title,r.priority,r.status,r.target_date])].map(row=>row.map(C.formulaSafe));const book=XLSX.utils.book_new();XLSX.utils.book_append_sheet(book,XLSX.utils.aoa_to_sheet(rows),'Register');XLSX.writeFile(book,`MDCEO-register-${project}-${C.today()}.xlsx`);
  }
  async function print(summary){document.body.classList.toggle('register-summary',summary);let style=$('registerPrintOrientation');if(!style){style=document.createElement('style');style.id='registerPrintOrientation';document.head.appendChild(style);}style.textContent='@media print{@page{size:A4 portrait;margin:10mm}}';await document.fonts.ready;await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));window.print();}
  async function start(){if(started)return;started=true;api=new C.API(window.__guardClient);
-  try{context=await api.context();if(!context.projects.length)throw new Error('You do not have access to a project register.');const requested=new URLSearchParams(location.search).get('project');project=context.projects.some(p=>String(p.id)===requested)?requested:String(context.projects[0].id);$('projectSelect').innerHTML=context.projects.map(p=>`<option value="${p.id}">${E(p.name)}</option>`).join('');$('projectSelect').value=project;
+  try{context=await api.context();if(!context.projects.length)throw new Error('You do not have access to a project register.');const requested=new URLSearchParams(location.search).get('project')||String(window.getSelectedCompanyId&&window.getSelectedCompanyId()||'');project=context.projects.some(p=>String(p.id)===requested)?requested:String(context.projects[0].id);$('projectSelect').innerHTML=context.projects.map(p=>`<option value="${p.id}">${E(p.name)}</option>`).join('');$('projectSelect').value=project;
    $('priorityFilter').innerHTML+=C.PRIORITIES.map(x=>`<option>${x}</option>`).join('');$('statusFilter').innerHTML+=C.STATUSES.map(x=>`<option>${x}</option>`).join('');await load();watchProject();
    inlineEditor=new window.RegisterInlineEditor({api,context,onSaved:load});
-   {const deep=(new URLSearchParams(location.search).get('edit')||'').split(':');if(deep.length===2&&C.TYPES.includes(deep[0])&&!printing){const row=items.find(r=>r.kind===deep[0]&&String(r.id)===deep[1]);if(row&&mayEdit(row))inlineEditor.open(project,{kind:row.kind,id:row.id});}}
    try{const notes=await api.all('register_notifications',q=>q.eq('is_read',false).order('id'));$('notificationCount').textContent=notes.length;}catch{}
   }catch(e){state(manager()||window.canEditDashboard?'Register access/setup is unavailable. Apply sql/issue_risk_register.sql and explicitly enable Issues & Risks in Permissions. '+e.message:'The register is not available. Contact your project administrator.',true);reportPageReady(e.message);}
  }
@@ -117,10 +117,6 @@
   channel.subscribe();
  }
  $('editDataButton').onclick=()=>inlineEditor?.open(project);
- $('addItemButton').onclick=e=>{e.stopPropagation();const list=$('addItemList');list.hidden=!list.hidden;$('addItemButton').setAttribute('aria-expanded',String(!list.hidden));};
- $('addItemList').onclick=e=>{const b=e.target.closest('[data-add-kind]');if(!b)return;$('addItemList').hidden=true;$('addItemButton').setAttribute('aria-expanded','false');if(mayCreate())inlineEditor?.open(project,{add:b.dataset.addKind});};
- document.addEventListener('click',e=>{if(!e.target.closest('#addItem')&&!$('addItemList').hidden){$('addItemList').hidden=true;$('addItemButton').setAttribute('aria-expanded','false');}});
- document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('addItemList').hidden){$('addItemList').hidden=true;$('addItemButton').setAttribute('aria-expanded','false');$('addItemButton').focus();}});
  window.addEventListener('focus',()=>{if(context&&!inlineEditor?.active)load().catch(notifyError);});
  $('assessmentSettings').onclick=async()=>{try{const r=await api.client.from('register_settings').select('*').eq('project_id',project).maybeSingle();if(r.error)throw r.error;const bands=r.data?.risk_bands||[];$('assessmentFields').innerHTML=bands.map((b,i)=>`<label class="register-field">${E(b.level)} maximum<input type="number" name="band${i}" required min="1" max="25" step="1" value="${b.max}"></label>`).join('');$('assessmentDialog').showModal();}catch(e){notifyError(e);}};
  $('closeAssessment').onclick=()=>$('assessmentDialog').close();
@@ -133,17 +129,40 @@
  $('clearDates').onclick=()=>{$('dateFrom').value='';$('dateTo').value='';state('');update();};
  $('resetFilters').onclick=()=>{['priorityFilter','statusFilter','ownerFilter','categoryFilter','registerSearch'].forEach(id=>$(id).value='');$('showArchived').checked=false;bucketFilter='';tab='all';page=0;update();};
  $('toggleFilters').onclick=()=>{$('filterPanel').hidden=!$('filterPanel').hidden;$('toggleFilters').setAttribute('aria-expanded',String(!$('filterPanel').hidden));};
- $('projectSelect').onchange=async()=>{project=$('projectSelect').value;page=0;items=[];events=[];performance=null;schedule={rows:[],date:null,source:'No schedule loaded for this project'};update();renderProgress();renderFinancial();watchProject();try{await load();}catch(e){state(e.message,true);}};
+ $('projectSelect').onchange=async()=>{project=$('projectSelect').value;if(window.setSelectedCompany)window.setSelectedCompany(project,{reload:false});page=0;items=[];events=[];performance=null;schedule={rows:[],date:null,source:'No schedule loaded for this project'};$('addItem').href='issue-risk-editor.html?project='+project;update();renderProgress();renderFinancial();watchProject();try{await load();}catch(e){state(e.message,true);}};
  $('progressPeriod').onchange=renderProgress;$('clearBucket').onclick=()=>{bucketFilter='';renderTable();};$('statusLegend').onclick=e=>{const b=e.target.closest('[data-bucket]');if(b){bucketFilter=b.dataset.bucket;page=0;renderTable();}};
  $('registerTable').querySelector('thead').onclick=e=>{const b=e.target.closest('[data-sort]');if(b){direction=sortKey===b.dataset.sort&&direction==='asc'?'desc':'asc';sortKey=b.dataset.sort;renderTable();}};
  $('pageSize').onchange=()=>{page=0;renderTable();};$('previousPage').onclick=()=>{page--;renderTable();};$('nextPage').onclick=()=>{page++;renderTable();};
  $('closeDetails').onclick=()=>$('registerDetails').close();$('closeNotifications').onclick=()=>$('notificationDialog').close();$('notificationsButton').onclick=notifications;
  $('detailsContent').onclick=async e=>{const b=e.target.closest('[data-download]');if(b)try{const url=await api.download(detailAttachments[Number(b.dataset.download)]);location.assign(url);}catch(error){notifyError(error);}};
- $('notificationList').onclick=async e=>{const link=e.target.closest('[data-open-item]');if(link){e.preventDefault();const [kind,id,pid]=link.dataset.openItem.split(':');if(String(pid)!==String(project)){location.assign('issue-risk-register.html?project='+encodeURIComponent(pid)+'&edit='+kind+':'+id);return;}$('notificationDialog').close();const row=items.find(r=>r.kind===kind&&String(r.id)===id);if(row&&mayEdit(row))inlineEditor?.open(project,{kind,id:row.id});else if(row)details(row);return;}
-  const b=e.target.closest('[data-read]');if(b){const r=await api.client.from('register_notifications').update({is_read:true}).eq('id',b.dataset.read);if(r.error)notifyError(r.error);else{b.remove();$('notificationCount').textContent=Math.max(0,Number($('notificationCount').textContent)-1);}}};
+ $('notificationList').onclick=async e=>{const b=e.target.closest('[data-read]');if(b){const r=await api.client.from('register_notifications').update({is_read:true}).eq('id',b.dataset.read);if(r.error)notifyError(r.error);else{b.remove();$('notificationCount').textContent=Math.max(0,Number($('notificationCount').textContent)-1);}}};
  $('exportExcel').onclick=excel;$('exportPdf').onclick=()=>print(false);$('exportSummary').onclick=()=>print(true);
+ function buildPrintKpis(){
+  let host=$('printKpis');
+  if(!host){host=document.createElement('section');host.id='printKpis';host.setAttribute('aria-hidden','true');$('topKpis').insertAdjacentElement('beforebegin',host);}
+  const rows=filtered,of=k=>rows.filter(r=>r.kind===k),open=k=>of(k).every(r=>!C.closed(r));
+  host.innerHTML=[['fa-clipboard-list','Total items',rows.length],['fa-circle-exclamation',open('issue')?'Open issues':'Issues',of('issue').length],['fa-triangle-exclamation',open('risk')?'Open risks':'Risks',of('risk').length]].map(([i,l,n])=>`<div class="print-kpi"><span class="print-kpi-icon"><i class="fa-solid ${i}" aria-hidden="true"></i></span><div><b>${n}</b><span>${l}</span></div></div>`).join('');
+  buildPrintWarnings();
+ }
+ function buildPrintWarnings(){
+  let host=$('printWarnings');
+  if(!host){host=document.createElement('section');host.id='printWarnings';host.setAttribute('aria-hidden','true');document.querySelector('.register-table-section').insertAdjacentElement('beforebegin',host);}
+  const list=[],num=v=>v!=null&&v!==''&&Number.isFinite(Number(v))?Number(v):null,pf=performance||{},pg=window.__registerProgress;
+  if(pg&&pg.actual!=null&&pg.planned!=null&&pg.actual<pg.planned){const spi=num(pf.spi);list.push(`<b>Schedule delay:</b> actual ${pg.actual.toFixed(1)}% vs planned ${pg.planned.toFixed(1)}% (${(pg.actual-pg.planned).toFixed(1)} pts)${spi?` · SPI ${spi.toFixed(2)}`:''}`);}
+  const mp=num(pf.manpower_planned),ma=num(pf.manpower_actual);
+  if(mp>0&&ma>0&&ma<mp)list.push(`<b>Manpower below plan:</b> ${ma} vs ${mp} persons (−${mp-ma}, −${Math.round((mp-ma)/mp*100)}%)`);
+  const day=v=>{const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(v||'');return m?Date.UTC(+m[1],+m[2]-1,+m[3]):null;};
+  const exp=day(pf.expected_finish_date),useEot=!!day(pf.finish_date_after_eot),base=day(useEot?pf.finish_date_after_eot:pf.contract_finish_phase1);
+  if(exp!=null&&base!=null&&exp>base)list.push(`<b>Late finish:</b> expected finish ${E(String(pf.expected_finish_date).slice(0,10))} is ${Math.round((exp-base)/86400000)} days after the ${useEot?'finish date after EOT':'contract finish date'} (${E(String(useEot?pf.finish_date_after_eot:pf.contract_finish_phase1).slice(0,10))})`);
+  const late=filtered.filter(r=>C.overdue(r)).length,high=filtered.filter(r=>/^(high|critical)$/i.test(r.priority||'')&&!C.closed(r)).length,parts=[];
+  if(high)parts.push(`${high} high-priority open item${high>1?'s':''}`);if(late)parts.push(`${late} overdue`);
+  if(parts.length)list.push(`<b>Register:</b> ${parts.join(' · ')}`);
+  host.innerHTML=list.length?`<div class="pw-title"><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i> Early warnings <span>${list.length}</span></div><ul>${list.map(t=>`<li>${t}</li>`).join('')}</ul>`:'';
+  host.hidden=!list.length;
+ }
  window.addEventListener('beforeprint',()=>{
   printing=true;renderTable();
+  buildPrintKpis();
   // Chromium can dispatch beforeprint while containers still have screen dimensions.
   // Size the live canvases to the known A4 content boxes instead of measuring those boxes.
   if(document.body.classList.contains('register-summary')){

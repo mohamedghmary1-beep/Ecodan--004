@@ -44,6 +44,16 @@
     const guardClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     window.__guardClient = guardClient; // reused by pages that need the same authed client
 
+    // Company switcher: scopes every page's queries to the selected company and
+    // adds the "Company" dropdown to the nav. Loaded synchronously (parse time) so
+    // it is in place before any page script queries data.
+    try {
+        const here = document.currentScript && document.currentScript.src;
+        if (here && document.readyState === 'loading') {
+            document.write('<script src="' + here.replace(/auth-guard\.js.*$/, 'company-switcher.js?v=1') + '"><' + '/script>');
+        }
+    } catch (e) { console.warn('AuthGuard: company switcher not loaded', e); }
+
     // Pages that ONLY the "administrator" (super-admin) role can open.
     const ADMIN_ONLY_PAGES = ['team_overview.html', 'final-approval.html', 'permissions.html'];
 
@@ -317,6 +327,169 @@
         label.textContent = (window.getCurrentLang && window.getCurrentLang() === 'ar') ? 'الإعدادات' : 'Settings';
     }
 
+    // ------------------------------------------------------------------
+    // Notification bell (request_notifications). One shared implementation
+    // for every page: unread badge, dropdown list, mark-as-read, and a
+    // realtime subscription so new notifications show up without a refresh.
+    // Rows are created by the notify_request_change() DB trigger.
+    // ------------------------------------------------------------------
+    function injectNotificationBell(userId, role, profile) {
+        if (document.getElementById('mdceoBell')) return;
+        const isAr = function () { return !(window.getCurrentLang && window.getCurrentLang() === 'en'); };
+
+        if (!document.getElementById('mdceoBellStyle')) {
+            const style = document.createElement('style');
+            style.id = 'mdceoBellStyle';
+            style.textContent =
+                '.mdceo-bell{position:fixed;top:12px;inset-inline-end:16px;z-index:9000;font-family:inherit}' +
+                '.mdceo-bell-btn{position:relative;display:flex;align-items:center;justify-content:center;width:42px;height:42px;cursor:pointer;border:1px solid #dce8ff;background:#fff;color:#1e3a8a;font-size:18px;border-radius:50%;box-shadow:0 4px 14px #14213d26;padding:0}' +
+                '.mdceo-bell-btn:hover{background:#f0f5ff}' +
+                '.mdceo-bell-btn.has-unread svg{animation:mdceoBellRing 1.4s ease 1}' +
+                '@keyframes mdceoBellRing{0%,100%{transform:rotate(0)}15%{transform:rotate(14deg)}30%{transform:rotate(-12deg)}45%{transform:rotate(8deg)}60%{transform:rotate(-6deg)}}' +
+                '.mdceo-bell-badge{position:absolute;top:-4px;inset-inline-end:-4px;min-width:20px;height:20px;padding:0 5px;box-sizing:border-box;border-radius:10px;background:#ef4444;color:#fff;border:2px solid #fff;font-size:11px;font-weight:800;line-height:16px;text-align:center}' +
+                '.mdceo-bell-badge[hidden]{display:none}' +
+                '.mdceo-bell-panel{display:none;position:fixed;z-index:9001;top:62px;inset-inline-end:16px;width:min(400px,calc(100vw - 24px));max-height:calc(100vh - 80px);background:#fff;border:1px solid #dce8ff;border-radius:14px;box-shadow:0 18px 40px #14213d38;overflow:hidden;color:#14213d;text-align:start;direction:inherit}' +
+                '.mdceo-bell.open .mdceo-bell-panel{display:flex;flex-direction:column}' +
+                '.mdceo-bell-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:13px 16px;border-bottom:1px solid #e8eefc;font-weight:800;font-size:15px;flex-shrink:0}' +
+                '.mdceo-bell-head button{border:0;background:none;color:#1d4ed8;font:inherit;font-size:12.5px;font-weight:700;cursor:pointer;padding:0}' +
+                '.mdceo-bell-list{overflow:auto;flex:1}' +
+                '.mdceo-bell-item{display:block;width:100%;border:0;border-bottom:1px solid #f1f5fd;background:#fff;font:inherit;text-align:start;padding:12px 16px;cursor:pointer;white-space:normal}' +
+                '.mdceo-bell-item:hover{background:#f6f9ff}' +
+                '.mdceo-bell-item.unread{background:#eff6ff;border-inline-start:4px solid #2563eb}' +
+                '.mdceo-bell-item .t{font-size:13.5px;font-weight:800;line-height:1.5}' +
+                '.mdceo-bell-item .m{font-size:12.5px;color:#334155;margin-top:3px;line-height:1.5;word-break:break-word}' +
+                '.mdceo-bell-item .d{font-size:11px;color:#94a3b8;margin-top:4px}' +
+                '.mdceo-bell-empty{padding:30px 16px;text-align:center;color:#94a3b8;font-size:13.5px}' +
+                '@media (max-width:900px){.mdceo-bell{top:8px;inset-inline-end:10px}.mdceo-bell-panel{top:56px;inset-inline-end:10px}}';
+            document.head.appendChild(style);
+        }
+
+        const wrap = document.createElement('div');
+        wrap.id = 'mdceoBell';
+        wrap.className = 'mdceo-bell';
+        wrap.innerHTML =
+            '<button type="button" class="mdceo-bell-btn" aria-haspopup="true" aria-label="Notifications">' +
+            '<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path d="M12 2a6 6 0 0 0-6 6v3.6c0 .5-.2 1-.5 1.4L4 15.3c-.7.9-.1 2.2 1.1 2.2h13.8c1.2 0 1.8-1.3 1.1-2.2L18.5 13c-.3-.4-.5-.9-.5-1.4V8a6 6 0 0 0-6-6zm0 20a3 3 0 0 0 2.8-2H9.2A3 3 0 0 0 12 22z"/></svg><span class="mdceo-bell-badge" hidden>0</span></button>' +
+            '<div class="mdceo-bell-panel" role="dialog">' +
+            '<div class="mdceo-bell-head"><span data-role="title"></span><button type="button" data-role="readall"></button></div>' +
+            '<div class="mdceo-bell-list"></div></div>';
+
+        document.body.appendChild(wrap);
+
+        const btn = wrap.querySelector('.mdceo-bell-btn');
+        const badge = wrap.querySelector('.mdceo-bell-badge');
+        const listEl = wrap.querySelector('.mdceo-bell-list');
+        const titleEl = wrap.querySelector('[data-role="title"]');
+        const readAllBtn = wrap.querySelector('[data-role="readall"]');
+        let items = [];
+
+        function kindText(kind, fallback) {
+            const ar = isAr();
+            const map = {
+                submitted:           ['طلب جديد بانتظار مراجعة الأدمن', 'New request awaiting admin review'],
+                pending_admin:       ['طلب جديد بانتظار مراجعة الأدمن', 'New request awaiting admin review'],
+                pending_engineer:    ['تم تحويل الطلب للمهندس للمراجعة', 'Request sent to the engineer for review'],
+                pending_final_admin: ['انتهت مراجعة المهندس - بانتظار الاعتماد النهائي', 'Engineer review done - awaiting final approval'],
+                completed:           ['تم اعتماد الطلب', 'Request approved'],
+                rejected_admin:      ['تم رفض الطلب من الأدمن', 'Request rejected by admin'],
+                rejected_engineer:   ['تم رفض الطلب من المهندس', 'Request rejected by engineer'],
+                withdrawn:           ['تم سحب الطلب', 'Request withdrawn'],
+                returned:            ['تم إرجاع الطلب', 'Request returned']
+            };
+            const entry = map[kind];
+            return entry ? entry[ar ? 0 : 1] : (fallback || kind || '');
+        }
+
+        function targetFor(n) {
+            if (role === 'contractor') return 'contractor-submit.html?request=' + encodeURIComponent(n.request_id);
+            if (n.kind === 'pending_engineer' && profile.is_engineer) return 'task-list.html';
+            return 'approvals.html';
+        }
+
+        function render() {
+            const ar = isAr();
+            titleEl.textContent = ar ? 'الإشعارات' : 'Notifications';
+            readAllBtn.textContent = ar ? 'تحديد الكل كمقروء' : 'Mark all as read';
+            const unread = items.filter(function (n) { return !n.is_read; }).length;
+            badge.hidden = unread === 0;
+            btn.classList.toggle('has-unread', unread > 0);
+            badge.textContent = unread > 99 ? '99+' : String(unread);
+            readAllBtn.style.display = unread ? '' : 'none';
+            listEl.textContent = '';
+            if (!items.length) {
+                const empty = document.createElement('div');
+                empty.className = 'mdceo-bell-empty';
+                empty.textContent = ar ? 'لا توجد إشعارات' : 'No notifications yet';
+                listEl.appendChild(empty);
+                return;
+            }
+            items.forEach(function (n) {
+                const el = document.createElement('button');
+                el.type = 'button';
+                el.className = 'mdceo-bell-item' + (n.is_read ? '' : ' unread');
+                const t = document.createElement('div'); t.className = 't'; t.textContent = kindText(n.kind, n.title);
+                const m = document.createElement('div'); m.className = 'm'; m.textContent = n.message || '';
+                const d = document.createElement('div'); d.className = 'd';
+                d.textContent = new Date(n.created_at).toLocaleString(ar ? 'ar-EG' : 'en-US');
+                el.appendChild(t); el.appendChild(m); el.appendChild(d);
+                el.addEventListener('click', async function () {
+                    if (!n.is_read) {
+                        n.is_read = true;
+                        render();
+                        await guardClient.from('request_notifications').update({ is_read: true }).eq('id', n.id);
+                    }
+                    window.location.href = targetFor(n);
+                });
+                listEl.appendChild(el);
+            });
+        }
+
+        async function load() {
+            const res = await guardClient
+                .from('request_notifications')
+                .select('id, request_id, kind, title, message, is_read, created_at')
+                .order('created_at', { ascending: false })
+                .limit(40);
+            if (res.error) { console.warn('Notifications unavailable:', res.error.message); return; }
+            items = res.data || [];
+            render();
+        }
+
+        btn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            wrap.classList.toggle('open');
+        });
+        document.addEventListener('click', function (e) { if (!wrap.contains(e.target)) wrap.classList.remove('open'); });
+        readAllBtn.addEventListener('click', async function () {
+            items.forEach(function (n) { n.is_read = true; });
+            render();
+            await guardClient.from('request_notifications').update({ is_read: true })
+                .eq('recipient', userId).eq('is_read', false);
+        });
+
+        render();
+        load();
+
+        // Realtime: a new row for this user -> toast + refresh the list.
+        try {
+            guardClient
+                .channel('request-notifications-' + userId)
+                .on('postgres_changes',
+                    { event: 'INSERT', schema: 'public', table: 'request_notifications', filter: 'recipient=eq.' + userId },
+                    function (payload) {
+                        const n = payload && payload.new;
+                        if (n && window.notify && window.notify.info) {
+                            window.notify.info(kindText(n.kind, n.title) + (n.message ? ' - ' + n.message : ''));
+                        }
+                        load();
+                    })
+                .subscribe();
+        } catch (e) { console.warn('Realtime notifications unavailable', e); }
+
+        // Safety net when realtime is unavailable: refresh every 60s.
+        setInterval(function () { if (!document.hidden) load(); }, 60000);
+    }
+
     async function init() {
         const page = currentPage();
 
@@ -388,6 +561,7 @@
         reveal();
         injectNavAccountActions();
         injectSettingsNavItem();
+        injectNotificationBell(session.user.id, role, profile);
         showWelcome(profile.username, session.user.id);
         setupPageTransitions();
 
