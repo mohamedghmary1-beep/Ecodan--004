@@ -130,6 +130,8 @@
         .field-hint.success { color: var(--success); font-weight: 600; }
         .field-hint.error { color: var(--danger); font-weight: 600; }
         .field-hint.info { color: #b45309; font-weight: 600; }
+        .use-suggested-btn { margin-inline-start: 6px; padding: 2px 10px; border-radius: 6px; border: 1px solid currentColor; background: transparent; color: var(--primary); font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
+        .use-suggested-btn:hover { background: rgba(0,0,0,0.05); }
         .form-group input:focus,
         .form-group select:focus,
         .form-group textarea:focus {
@@ -479,6 +481,11 @@
 const SUPABASE_URL = "https://uhhtvpxtpayovbtmnstz.supabase.co";
 const SUPABASE_KEY = "sb_publishable_QsS0UhLBORy6mOaBDgW62g_9OacC3oO";
 const supabaseClient = window.__guardClient;
+// اللغة الحالية (ar / en) - بتتقرا من lang.js في كل مرة عشان تتحدّث لما المستخدم يبدّل اللغة.
+// المتغير currentLang كان مستخدم في الصفحة من غير ما يتعرّف، وده اللي كان بيوقف رسم قائمة الريكوستات.
+function getLang() {
+    return (typeof window.getCurrentLang === 'function') ? window.getCurrentLang() : 'ar';
+}
 const ATTACHMENTS_BUCKET = "task-attachments";
 const REQUEST_ATTACHMENTS_BUCKET = "contractor-request-attachments";
 
@@ -526,7 +533,11 @@ const dictionary = {
         errDuplicateApproved: "رقم الريكوست ده معتمد بالفعل - مينفعش يتبعت تاني بنفس الرقم.",
         errNoRevisionSlots: "رقم الريكوست ده وصل لأقصى عدد مراجعات مسموح (4). كلم الأدمن.",
         hintIsRevision: "الرقم ده اترفض قبل كده - هيتسجل كمراجعة جديدة (Revision) لو بعتّه.",
-        hintNewNo: "رقم جديد ✓",
+        hintNewNo: "رقم جديد ✓ - مش موجود في النظام",
+        hintExistsInSystem: "الرقم ده موجود في النظام",
+        hintLastInSeries: "آخر رقم في نفس النوع:",
+        hintNextInSeries: "الرقم التالي المتاح:",
+        btnUseSuggested: "استخدمه",
         noRequests: "مفيش ريكوستات اتبعتت لسه.",
         errFile: "من فضلك اختار ملف.",
         errBadExt: "مسموح برفع ملفات PDF / Excel / Word / CAD بس.",
@@ -634,7 +645,11 @@ const dictionary = {
         errDuplicateApproved: "This Submittal No. has already been approved - it can't be submitted again with the same number.",
         errNoRevisionSlots: "This Submittal No. has reached the maximum number of revisions (4). Please contact the admin.",
         hintIsRevision: "This number was rejected before - submitting will register it as a new Revision.",
-        hintNewNo: "New number ✓",
+        hintNewNo: "New number ✓ - not in the system",
+        hintExistsInSystem: "This number already exists in the system",
+        hintLastInSeries: "Last number of this type:",
+        hintNextInSeries: "Next available:",
+        btnUseSuggested: "Use it",
         noRequests: "No requests submitted yet.",
         errFile: "Please choose a file.",
         errBadExt: "Only PDF / Excel / Word / CAD files are allowed.",
@@ -872,6 +887,28 @@ function closeLock() {
 async function checkSubmittalNoStatus(no) {
     if (!no) return { ok: true };
 
+    // الفحص الأساسي من الخادم (دالة check_submittal_no): بتشوف كل الريكوستات وسجل الـ submittals،
+    // وبترجع كمان الرقم التالي المتاح في نفس النوع (نفس البادئة، مثلاً IT-MD-CIV-IR-).
+    // لو الدالة لسه مش متطبقة على قاعدة البيانات، بنرجع للفحص القديم تحت من غير ما الصفحة تقف.
+    const { data: chk, error: chkErr } = await supabaseClient.rpc('check_submittal_no', { p_no: no });
+    if (!chkErr && chk && chk.state) {
+        const extra = {
+            existsInSystem: !!chk.exists_in_system,
+            existingTitle: chk.existing_title || null,
+            nextRevision: chk.next_revision || null,
+            lastInSeries: chk.last_in_series || null,
+            suggested: chk.suggested_next || null
+        };
+        switch (chk.state) {
+            case 'duplicate_active':    return Object.assign({ ok: false, key: 'errDuplicateActive' }, extra);
+            case 'duplicate_approved':  return Object.assign({ ok: false, key: 'errDuplicateApproved' }, extra);
+            case 'no_revision_slots':   return Object.assign({ ok: false, key: 'errNoRevisionSlots' }, extra);
+            case 'revision':            return Object.assign({ ok: true, isRevision: true }, extra);
+            default:                    return Object.assign({ ok: true }, extra);
+        }
+    }
+    if (chkErr) console.warn('check_submittal_no RPC unavailable, using legacy check:', chkErr.message || chkErr);
+
     // مقارنة الرقم بتتعمل من غير حساسية لحالة الحروف (case-insensitive)
     // ومن غير فراغات زيادة، عشان "IT-MD-CIV-IR-038" و"it-md-civ-ir-038"
     // يتحسبوا نفس الرقم بالظبط. بنعمل escape لأي حرف % أو _ موجود فعلاً
@@ -920,6 +957,34 @@ async function checkSubmittalNoStatus(no) {
 
 // فحص فوري: بيحصل لحظة ما المقاول يسيب خانة "رقم الريكوست" (blur)، عشان
 // يعرف على طول لو في مشكلة قبل ما يكمل باقي الفورم أو يرفع ملف من غير فايدة.
+// ---- عرض نتيجة فحص الرقم: هل موجود في النظام + الرقم التالي في نفس النوع ----
+function setHintHtml(el, html) { el.innerHTML = html; }
+
+function existsDetailsHtml(r) {
+    if (!r || !r.existsInSystem) return '';
+    let t = r.existingTitle ? ' - ' + escapeHtml(r.existingTitle) : '';
+    return '<div style="font-weight:500;margin-top:3px;">' + escapeHtml(T('hintExistsInSystem')) + t + '</div>';
+}
+
+function suggestionHtml(r, typed) {
+    if (!r || !r.suggested) return '';
+    if (String(r.suggested).toLowerCase() === String(typed || '').trim().toLowerCase()) return '';
+    let last = r.lastInSeries
+        ? escapeHtml(T('hintLastInSeries')) + ' <b dir="ltr">' + escapeHtml(r.lastInSeries) + '</b> - '
+        : '';
+    return '<div style="font-weight:500;margin-top:3px;">' + last +
+        escapeHtml(T('hintNextInSeries')) + ' <b dir="ltr">' + escapeHtml(r.suggested) + '</b> ' +
+        '<button type="button" class="use-suggested-btn" data-no="' + escapeHtml(r.suggested) + '" ' +
+        'onclick="useSuggestedNo(this.dataset.no)">' + escapeHtml(T('btnUseSuggested')) + '</button></div>';
+}
+
+function useSuggestedNo(no) {
+    let input = document.getElementById('f-no');
+    input.value = no;
+    liveCheckSubmittalNo();
+    input.focus();
+}
+
 let liveCheckToken = 0;
 async function liveCheckSubmittalNo() {
     let no = document.getElementById('f-no').value.trim();
@@ -936,13 +1001,14 @@ async function liveCheckSubmittalNo() {
 
         if (!result.ok) {
             hintEl.className = 'field-hint error';
-            hintEl.textContent = T(result.key);
+            setHintHtml(hintEl, T(result.key) + existsDetailsHtml(result) + suggestionHtml(result, no));
         } else if (result.isRevision) {
             hintEl.className = 'field-hint info';
-            hintEl.textContent = T('hintIsRevision');
+            let rev = result.nextRevision ? ' (R0' + result.nextRevision + ')' : '';
+            setHintHtml(hintEl, T('hintIsRevision') + rev + existsDetailsHtml(result) + suggestionHtml(result, no));
         } else {
             hintEl.className = 'field-hint success';
-            hintEl.textContent = T('hintNewNo');
+            setHintHtml(hintEl, T('hintNewNo') + suggestionHtml(result, no));
         }
     } catch (err) {
         if (myToken !== liveCheckToken) return;
@@ -987,7 +1053,8 @@ async function handleSubmit(event) {
         // بنعيده هنا كضمانة أخيرة قبل ما نبعت أي حاجة فعليًا لقاعدة البيانات.
         let statusCheck = await checkSubmittalNoStatus(no);
         if (!statusCheck.ok) {
-            showMsg(T(statusCheck.key), 'error');
+            showMsg(T(statusCheck.key) + (statusCheck.suggested
+                ? ' ' + T('hintNextInSeries') + ' ' + statusCheck.suggested : ''), 'error');
             submitBtn.disabled = false;
             closeLock();
             return;
@@ -1049,7 +1116,7 @@ async function handleSubmit(event) {
         const serverMsg = String((err && err.message) || '');
         let friendly = null;
         if (/conflicts with an active/i.test(serverMsg)) friendly = T('errDuplicateActive');
-        else if (/permission required/i.test(serverMsg)) friendly = (currentLang === 'ar')
+        else if (/permission required/i.test(serverMsg)) friendly = (getLang() === 'ar')
             ? 'حسابك مش متفعّل لإرسال ريكوستات المقاولين. كلّم الأدمن عشان يفعّله.'
             : 'Your account is not enabled to submit contractor requests. Please contact the admin.';
         showMsg(friendly || serverMsg || T('errSave'), 'error');
@@ -1233,7 +1300,7 @@ function renderTimeline(request) {
     if (rows === null) return `<div class="req-meta" style="color:var(--danger);">${T('tlError')}</div>`;
     const events = rows.map(h => timelineEvent(h, request)).filter(Boolean);
     if (!events.length) return `<div class="req-meta">${T('tlEmpty')}</div>`;
-    const locale = currentLang === 'ar' ? 'ar-EG' : 'en-US';
+    const locale = getLang() === 'ar' ? 'ar-EG' : 'en-US';
     return `<ul class="tl-list">${events.map(e => `
         <li class="tl-item ${e.cls}">
             <span class="tl-dot"></span>
@@ -1372,7 +1439,7 @@ function renderMyRequests() {
                 const tracking = getRequestTracking(r);
                 const updated = tracking.updatedAt ? new Date(tracking.updatedAt) : null;
                 const updatedLabel = updated && !Number.isNaN(updated.getTime())
-                    ? updated.toLocaleString(currentLang === 'ar' ? 'ar-EG' : 'en-US')
+                    ? updated.toLocaleString(getLang() === 'ar' ? 'ar-EG' : 'en-US')
                     : '-';
                 return `<div class="request-tracking ${tracking.className}">
                     <span class="tracking-item"><strong>${T('trackingStage')}:</strong> ${escapeHtml(tracking.stage)}</span>
@@ -1391,7 +1458,7 @@ function renderMyRequests() {
             <div class="req-timeline" id="timeline-${Number(r.id)}" ${openTimelines.has(String(r.id)) ? '' : 'hidden'}>${renderTimeline(r)}</div>
             ${renderRequestAttachments(r)}
             <button type="button" class="link-btn" onclick="openMyRequestDownload(${r.id})">
-                <i class="fa-solid fa-download"></i> ${currentLang === 'ar' ? 'تحميل الملف' : 'Download file'}
+                <i class="fa-solid fa-download"></i> ${getLang() === 'ar' ? 'تحميل الملف' : 'Download file'}
             </button>
         </div>
     `).join('');
@@ -1493,7 +1560,7 @@ async function openMyRequestDownload(id) {
         body: { request_id: id }
     });
     if (error || !data?.url) {
-        notify.error(data?.error || (currentLang === 'ar'
+        notify.error(data?.error || (getLang() === 'ar'
             ? 'تعذر إنشاء رابط التحميل المؤقت.'
             : 'Could not create a temporary download link.'));
         return;
