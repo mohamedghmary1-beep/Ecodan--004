@@ -1,0 +1,1617 @@
+<!DOCTYPE html>
+<html lang="ar" id="html-tag">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>رفع ريكوست جديد - MDCEO</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <script>
+      document.write('<script src="../shared/cache-buster.js?v=' + Date.now() + '"><' + '/script>');
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;800;900&family=Tajawal:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+      document.write('<script src="../shared/auth-guard.js?v=' + Date.now() + '"><' + '/script>');
+      document.write('<script src="../shared/notify.js?v=' + Date.now() + '"><' + '/script>');
+      document.write('<script src="../shared/lang.js?v=' + Date.now() + '"><' + '/script>');
+    </script>
+    <style>
+        :root {
+            --primary: #1e40af;
+            --primary-hover: #1d4ed8;
+            --primary-light: #eff6ff;
+            --bg-main: #f8fafc;
+            --bg-card: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.05);
+        }
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--bg-main);
+            color: var(--text-main);
+            direction: rtl;
+            box-sizing: border-box;
+        }
+        *, *:before, *:after { box-sizing: inherit; }
+
+        .header {
+            background: var(--primary);
+            color: #fff;
+            padding: 18px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            font-size: 22px;
+            font-weight: 700;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .top-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            padding: 10px 20px;
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border);
+        }
+        .top-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: #f8fafc;
+            color: var(--text-main);
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        .top-btn:hover { background: var(--primary-light); color: var(--primary); }
+
+        .container { max-width: 780px; margin: 24px auto; padding: 0 16px 60px; }
+
+        .card {
+            background: var(--bg-card);
+            border-radius: 14px;
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--border);
+            padding: 26px;
+            margin-bottom: 24px;
+        }
+        .card h2 {
+            margin: 0 0 4px 0;
+            font-size: 19px;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .card .sub { color: var(--text-muted); font-size: 13px; margin-bottom: 20px; }
+
+        .form-row { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 16px; }
+        .form-group { flex: 1 1 220px; }
+        .form-group label {
+            display: block;
+            font-weight: 700;
+            font-size: 13px;
+            margin-bottom: 6px;
+            color: var(--text-main);
+        }
+        .form-group label .req { color: var(--danger); }
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 14px;
+            background: #f8fafc;
+            color: var(--text-main);
+            font-family: inherit;
+        }
+        .form-group textarea { resize: vertical; min-height: 80px; }
+        .field-hint { font-size: 12px; margin-top: 5px; min-height: 16px; }
+        .field-hint.checking { color: var(--text-muted); }
+        .field-hint.success { color: var(--success); font-weight: 600; }
+        .field-hint.error { color: var(--danger); font-weight: 600; }
+        .field-hint.info { color: #b45309; font-weight: 600; }
+        .use-suggested-btn { margin-inline-start: 6px; padding: 2px 10px; border-radius: 6px; border: 1px solid currentColor; background: transparent; color: var(--primary); font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
+        .use-suggested-btn:hover { background: rgba(0,0,0,0.05); }
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: #fff;
+            box-shadow: 0 0 0 3px rgba(30,64,175,0.12);
+        }
+
+        .file-drop {
+            border: 2px dashed var(--border);
+            border-radius: 10px;
+            padding: 22px;
+            text-align: center;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all .2s;
+            background: #f8fafc;
+        }
+        .file-drop:hover { border-color: var(--primary); background: var(--primary-light); color: var(--primary); }
+        .file-drop i { font-size: 26px; display: block; margin-bottom: 8px; }
+        .file-drop .chosen { font-weight: 700; color: var(--text-main); margin-top: 6px; }
+        .extra-files { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+        .extra-files li {
+            display: flex; align-items: center; justify-content: space-between; gap: 10px;
+            padding: 7px 10px; border: 1px solid var(--border); border-radius: 8px; background: #fff; font-size: 13px;
+        }
+        .extra-files .fname { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+        .extra-files .fsize { color: var(--text-muted); font-size: 12px; margin-inline-start: 6px; }
+        .extra-files button { border: 0; background: none; color: #b91c1c; cursor: pointer; font-size: 15px; padding: 0 4px; }
+
+        .btn-submit {
+            width: 100%;
+            padding: 13px;
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            border-radius: 9px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 6px;
+        }
+        .btn-submit:hover { background: var(--primary-hover); }
+        .btn-submit:disabled { background: #94a3b8; cursor: not-allowed; }
+
+        .msg-box {
+            display: none;
+            padding: 12px 14px;
+            border-radius: 8px;
+            font-size: 14px;
+            margin-bottom: 16px;
+        }
+        .msg-box.error { display: block; background: #fee2e2; color: var(--danger); border: 1px solid #fca5a5; }
+        .msg-box.success { display: block; background: #d1fae5; color: var(--success); border: 1px solid #6ee7b7; }
+
+        .company-welcome {
+            background: linear-gradient(135deg, var(--primary), var(--primary-hover));
+            color: #fff;
+            border-radius: 12px;
+            padding: 16px 20px;
+            margin-bottom: 18px;
+            font-size: 15px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: var(--shadow-md);
+        }
+        .company-welcome i { font-size: 18px; }
+        .company-field {
+            margin-bottom: 16px;
+        }
+        .company-field label {
+            display: block;
+            font-weight: 700;
+            font-size: 13px;
+            margin-bottom: 6px;
+            color: var(--text-main);
+        }
+        .company-field-value {
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 14px;
+            background: #f1f5f9;
+            color: var(--text-main);
+            font-weight: 700;
+        }
+
+        .req-list { display: flex; flex-direction: column; gap: 12px; }
+        .req-card {
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 14px 16px;
+            background: #f8fafc;
+        }
+        .req-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; flex-wrap: wrap; }
+        .req-title { font-weight: 700; font-size: 15px; }
+        .req-meta { color: var(--text-muted); font-size: 12.5px; margin-top: 4px; line-height: 1.7; }
+        .status-pill {
+            padding: 4px 12px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+        .status-pending_admin { background: #fef3c7; color: #b45309; }
+        .status-pending_engineer { background: #dbeafe; color: #1d4ed8; }
+        .status-pending_final_admin { background: #ede9fe; color: #6d28d9; }
+        .status-completed { background: #d1fae5; color: #047857; }
+        .status-rejected_admin, .status-rejected_engineer { background: #fee2e2; color: #b91c1c; }
+        .request-attachments {
+            margin-top: 12px;
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: #fff;
+        }
+        .request-attachments-title { font-size: 13px; font-weight: 800; margin-bottom: 8px; }
+        .request-attachment-list { display: flex; flex-wrap: wrap; gap: 8px; }
+        .request-attachment-button { display: inline-flex; align-items: center; gap: 6px; }
+        .request-attachment-hint { display: block; margin-top: 7px; color: var(--text-muted); font-size: 12px; }
+        .request-tracking {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px 22px;
+            margin: 12px 0;
+            padding: 11px 13px;
+            border: 1px solid #bfdbfe;
+            border-inline-start: 4px solid #2563eb;
+            border-radius: 8px;
+            background: #eff6ff;
+            color: #1e3a8a;
+            font-size: 13px;
+        }
+        .request-tracking.is-complete {
+            border-color: #a7f3d0;
+            border-inline-start-color: #059669;
+            background: #ecfdf5;
+            color: #065f46;
+        }
+        .request-tracking.is-closed {
+            border-color: #fecaca;
+            border-inline-start-color: #dc2626;
+            background: #fef2f2;
+            color: #991b1b;
+        }
+        .tracking-item { display: inline-flex; gap: 5px; align-items: baseline; }
+        .tracking-item strong { font-weight: 800; }
+        .status-withdrawn { background: #e5e7eb; color: #374151; }
+
+        /* Progress stepper */
+        .req-steps { display: flex; align-items: flex-start; margin: 14px 0 6px; padding: 0; list-style: none; }
+        .req-step { flex: 1; position: relative; text-align: center; font-size: 11.5px; color: var(--text-muted); font-weight: 600; }
+        .req-step::before {
+            content: ''; position: absolute; top: 11px; inset-inline-start: -50%; width: 100%; height: 3px;
+            background: #dbe3f0; z-index: 0;
+        }
+        .req-step:first-child::before { display: none; }
+        .req-step .dot {
+            position: relative; z-index: 1; display: flex; align-items: center; justify-content: center;
+            width: 24px; height: 24px; margin: 0 auto 5px; border-radius: 50%;
+            background: #fff; border: 2px solid #cbd5e1; font-size: 11px; color: #94a3b8;
+        }
+        .req-step.done { color: #047857; }
+        .req-step.done::before { background: #10b981; }
+        .req-step.done .dot { background: #10b981; border-color: #10b981; color: #fff; }
+        .req-step.current { color: var(--primary); font-weight: 800; }
+        .req-step.current::before { background: #10b981; }
+        .req-step.current .dot { border-color: var(--primary); color: var(--primary); box-shadow: 0 0 0 4px var(--primary-light); }
+        .req-step.fail { color: #b91c1c; font-weight: 800; }
+        .req-step.fail::before { background: #10b981; }
+        .req-step.fail .dot { background: #ef4444; border-color: #ef4444; color: #fff; }
+
+        .req-actions { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; margin-top: 10px; }
+        .link-btn.danger { color: #b91c1c; }
+
+        /* Timeline */
+        .req-timeline { margin-top: 10px; padding: 12px 14px; border: 1px solid var(--border); border-radius: 8px; background: #fff; }
+        .req-timeline[hidden] { display: none; }
+        .tl-list { list-style: none; margin: 0; padding: 0; }
+        .tl-item { position: relative; padding-inline-start: 24px; padding-bottom: 14px; }
+        .tl-item:last-child { padding-bottom: 0; }
+        .tl-item::before {
+            content: ''; position: absolute; inset-inline-start: 5px; top: 14px; bottom: -2px; width: 2px; background: #dbe3f0;
+        }
+        .tl-item:last-child::before { display: none; }
+        .tl-dot { position: absolute; inset-inline-start: 0; top: 4px; width: 12px; height: 12px; border-radius: 50%; background: #2563eb; }
+        .tl-item.ok .tl-dot { background: #10b981; }
+        .tl-item.bad .tl-dot { background: #ef4444; }
+        .tl-item.neutral .tl-dot { background: #9ca3af; }
+        .tl-title { font-size: 13.5px; font-weight: 700; }
+        .tl-note { font-size: 12.5px; color: #334155; margin-top: 2px; background: #f8fafc; border-radius: 6px; padding: 5px 8px; white-space: pre-wrap; word-break: break-word; }
+        .tl-meta { font-size: 11.5px; color: var(--text-muted); margin-top: 2px; }
+        .empty-state { text-align: center; color: var(--text-muted); padding: 24px; }
+
+        .lock-overlay {
+            display: none;
+            position: fixed; inset: 0; background: rgba(15,23,42,0.55);
+            align-items: center; justify-content: center; z-index: 9999;
+        }
+        .lock-overlay.active { display: flex; }
+        .lock-modal {
+            background: #fff; padding: 26px; border-radius: 14px; max-width: 340px; width: 90%;
+            text-align: center;
+        }
+        .spinner {
+            width: 34px; height: 34px; border: 4px solid var(--primary-light);
+            border-top-color: var(--primary); border-radius: 50%;
+            margin: 0 auto 14px; animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    
+    </style>
+    <link rel="stylesheet" href="../shared/design-system.css?v=3">
+    <script src="../shared/nav-toggle.js?v=4" defer></script>
+<link rel="stylesheet" href="../shared/apple-ui.css?v=6">
+<link rel="stylesheet" href="../shared/mdceo-ui.css?v=1">
+</head>
+<body>
+
+<div class="header">
+    <span class="mdceo-mark"><i class="fa-solid fa-drafting-compass"></i>MDCEO</span>
+    <i class="fa-solid fa-file-circle-plus"></i>
+    <span data-i18n="pageTitle">رفع ريكوست جديد</span>
+</div>
+
+<div class="top-actions">
+    <button onclick="toggleLanguage()" class="top-btn">
+        <i class="fa-solid fa-language"></i> <span id="lang-btn-text">English</span>
+    </button>
+    <button onclick="openChangePasswordModal()" class="top-btn">
+        <i class="fa-solid fa-key"></i> <span data-i18n="navChangePassword">تغيير كلمة المرور</span>
+    </button>
+    <button onclick="logoutUser()" class="top-btn">
+        <i class="fa-solid fa-right-from-bracket"></i> <span data-i18n="navLogout">تسجيل الخروج</span>
+    </button>
+</div>
+
+<div class="container">
+
+    <div class="company-welcome" id="companyWelcome" style="display:none;"></div>
+
+    <div class="card">
+        <h2><i class="fa-solid fa-paper-plane" style="color:var(--primary);"></i> <span data-i18n="formTitle">بيانات الريكوست الجديد</span></h2>
+        <div class="sub" data-i18n="formSub">املأ البيانات، اختار القسم والمهندس المختص، وارفع الملف - هيتراجع من الأدمن الأول قبل ما يوصل للمهندس.</div>
+
+        <div id="msgBox" class="msg-box"></div>
+
+        <div class="company-field" id="companyFieldWrap" style="display:none;">
+            <label data-i18n="lblCompany">اسم الشركة</label>
+            <div class="company-field-value" id="companyFieldValue"></div>
+        </div>
+        <div class="msg-box error" id="companyMissingMsg" style="display:none;" data-i18n="errNoCompanyOnAccount">حسابك لسه ملوش اسم شركة مسجل - كلم الأدمن يضيفه من صفحة الصلاحيات الأول عشان تقدر تبعت ريكوستات.</div>
+
+        <form id="reqForm" onsubmit="handleSubmit(event)">
+            <div class="form-row">
+                <div class="form-group">
+                    <label data-i18n="lblNo">رقم الريكوست (Submittal No.) <span class="req">*</span></label>
+                    <input type="text" id="f-no" required onblur="liveCheckSubmittalNo()">
+                    <div id="no-live-hint" class="field-hint"></div>
+                </div>
+                <div class="form-group">
+                    <label data-i18n="lblTitle">العنوان <span class="req">*</span></label>
+                    <input type="text" id="f-title" required>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label data-i18n="lblDiscipline">القسم <span class="req">*</span></label>
+                    <select id="f-discipline" required>
+                        <option value="" data-i18n="loadingOption">جاري التحميل...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label data-i18n="lblEngineer">المهندس المختص <span class="req">*</span></label>
+                    <select id="f-engineer" required>
+                        <option value="" data-i18n="loadingOption">جاري التحميل...</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label data-i18n="lblActivity">النشاط (Activity) <span class="req">*</span></label>
+                    <select id="f-activity" required>
+                        <option value="" data-i18n="loadingOption">جاري التحميل...</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group" style="flex-basis:100%;">
+                    <label data-i18n="lblNotes">ملاحظات / وصف الريكوست</label>
+                    <textarea id="f-notes"></textarea>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group" style="flex-basis:100%;">
+                    <label data-i18n="lblFile">الملف <span class="req">*</span></label>
+                    <div class="file-drop" onclick="document.getElementById('f-file').click()">
+                        <input type="file" id="f-file" style="display:none" onchange="onFileChosen(this)">
+                        <i class="fa-solid fa-cloud-arrow-up"></i>
+                        <span data-i18n="dropHint">اضغط لاختيار الملف (PDF / Word / Excel / CAD)</span>
+                        <div class="chosen" id="chosenFileName"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group" style="flex-basis:100%;">
+                    <label data-i18n="lblExtraFiles">مرفقات إضافية (اختياري)</label>
+                    <div class="file-drop" onclick="document.getElementById('f-extra').click()">
+                        <input type="file" id="f-extra" multiple style="display:none" onchange="onExtraFilesChosen(this)">
+                        <i class="fa-solid fa-paperclip"></i>
+                        <span data-i18n="extraDropHint">اضغط لإضافة مرفقات بأي نوع ملف (صور، PDF، ZIP، ...)</span>
+                    </div>
+                    <ul class="extra-files" id="chosenExtraFiles"></ul>
+                </div>
+            </div>
+
+            <button type="submit" class="btn-submit" id="submitBtn">
+                <span id="submitBtnText" data-i18n="btnSubmit">إرسال الريكوست</span>
+            </button>
+        </form>
+    </div>
+
+    <div class="card">
+        <h2><i class="fa-solid fa-clock-rotate-left" style="color:var(--primary);"></i> <span data-i18n="myReqTitle">ريكوستاتي المرسلة</span></h2>
+        <div class="sub" data-i18n="myReqSub">متابعة حالة كل الريكوستات اللي رفعتها.</div>
+        <div id="myReqList" class="req-list"><div class="empty-state" data-i18n="loading">جاري التحميل...</div></div>
+    </div>
+
+</div>
+
+<div class="lock-overlay" id="lockOverlay">
+    <div class="lock-modal">
+        <div class="spinner"></div>
+        <div id="lockMsg" style="font-weight:700;" data-i18n="uploading">جاري رفع الريكوست...</div>
+    </div>
+</div>
+
+<script>
+const SUPABASE_URL = "https://uhhtvpxtpayovbtmnstz.supabase.co";
+const SUPABASE_KEY = "sb_publishable_QsS0UhLBORy6mOaBDgW62g_9OacC3oO";
+const supabaseClient = window.__guardClient;
+// اللغة الحالية (ar / en) - بتتقرا من lang.js في كل مرة عشان تتحدّث لما المستخدم يبدّل اللغة.
+// المتغير currentLang كان مستخدم في الصفحة من غير ما يتعرّف، وده اللي كان بيوقف رسم قائمة الريكوستات.
+function getLang() {
+    return (typeof window.getCurrentLang === 'function') ? window.getCurrentLang() : 'ar';
+}
+const ATTACHMENTS_BUCKET = "task-attachments";
+const REQUEST_ATTACHMENTS_BUCKET = "contractor-request-attachments";
+
+const ALLOWED_UPLOAD_EXTENSIONS = ["pdf", "xls", "xlsx", "xlsm", "csv", "doc", "docx", "dwg", "dxf", "dwf"];
+
+const dictionary = {
+    ar: {
+        pageTitle: "رفع ريكوست جديد",
+        formTitle: "بيانات الريكوست الجديد",
+        formSub: "املأ البيانات، اختار القسم والمهندس المختص، وارفع الملف - هيتراجع من الأدمن الأول قبل ما يوصل للمهندس.",
+        lblNo: "رقم الريكوست (Submittal No.)",
+        lblTitle: "العنوان",
+        lblDiscipline: "القسم",
+        lblEngineer: "المهندس المختص",
+        lblActivity: "النشاط (Activity)",
+        lblCompany: "اسم الشركة",
+        welcomeMsg: "أهلاً بيك، {company} 👋",
+        errNoCompanyOnAccount: "حسابك لسه ملوش اسم شركة مسجل - كلم الأدمن يضيفه من صفحة الصلاحيات الأول عشان تقدر تبعت ريكوستات.",
+        lblNotes: "ملاحظات / وصف الريكوست",
+        lblFile: "الملف",
+        extraFilesHint: "يمكن إرفاق ملفين كحد أقصى بأي امتداد. المرفقات للتنزيل فقط ولا يتم فتحها أو تشغيلها داخل البوابة.",
+        requestAttachments: "مرفقات الطلب",
+        noRequestAttachments: "لا توجد مرفقات إضافية.",
+        addRequestAttachments: "إضافة مرفقات",
+        uploadRequestAttachments: "رفع المرفقات",
+        requestAttachmentUploadSuccess: "تم رفع المرفقات وربطها بالطلب.",
+        requestAttachmentUploadError: "تعذر رفع المرفقات. تحقق من الصلاحيات ثم حاول مرة أخرى.",
+        requestAttachmentMigrationRequired: "ميزة مرفقات الطلب تحتاج تطبيق ترحيل contractor_request_attachments.sql على Supabase.",
+        requestAttachmentDownloadError: "تعذر إنشاء رابط آمن لتنزيل المرفق.",
+        dropHint: "اضغط لاختيار الملف (PDF / Word / Excel / CAD)",
+        lblExtraFiles: "مرفقات إضافية (اختياري - حد أقصى 2)",
+        extraDropHint: "اضغط لإضافة مرفقات بأي نوع ملف (حد أقصى ملفين)",
+        errMaxAttachments: "الحد الأقصى للمرفقات الإضافية ملفين فقط لكل ريكوست.",
+        extraUploadPartial: "تم إرسال الريكوست، لكن تعذر رفع بعض المرفقات. تقدر تضيفها من زر \"إضافة مرفقات\" تحت الريكوست.",
+        removeFile: "إزالة",
+        loadingOption: "جاري التحميل...",
+        chooseOption: "اختار...",
+        btnSubmit: "إرسال الريكوست",
+        myReqTitle: "ريكوستاتي المرسلة",
+        myReqSub: "متابعة حالة كل الريكوستات اللي رفعتها.",
+        loading: "جاري التحميل...",
+        uploading: "جاري رفع الريكوست...",
+        checkingDuplicate: "جاري التحقق من رقم الريكوست...",
+        errDuplicateActive: "رقم الريكوست ده لسه قيد المراجعة (متبعتوش تاني لحد ما يتحسم).",
+        errDuplicateApproved: "رقم الريكوست ده معتمد بالفعل - مينفعش يتبعت تاني بنفس الرقم.",
+        errNoRevisionSlots: "رقم الريكوست ده وصل لأقصى عدد مراجعات مسموح (4). كلم الأدمن.",
+        hintIsRevision: "الرقم ده اترفض قبل كده - هيتسجل كمراجعة جديدة (Revision) لو بعتّه.",
+        hintNewNo: "رقم جديد ✓ - مش موجود في النظام",
+        hintExistsInSystem: "الرقم ده موجود في النظام",
+        hintLastInSeries: "آخر رقم في نفس النوع:",
+        hintNextInSeries: "الرقم التالي المتاح:",
+        btnUseSuggested: "استخدمه",
+        noRequests: "مفيش ريكوستات اتبعتت لسه.",
+        errFile: "من فضلك اختار ملف.",
+        errBadExt: "مسموح برفع ملفات PDF / Excel / Word / CAD بس.",
+        errNoDiscipline: "من فضلك اختار القسم.",
+        errNoEngineer: "من فضلك اختار المهندس المختص.",
+        errNoTitle: "من فضلك اكتب العنوان.",
+        errNoSubmittalNo: "من فضلك اكتب رقم الريكوست (Submittal No.).",
+        errNoActivity: "من فضلك اكتب النشاط (Activity).",
+        errNoNotes: "من فضلك اكتب ملاحظات / وصف الريكوست.",
+        errUpload: "حصل خطأ أثناء رفع الملف، حاول تاني.",
+        errSave: "حصل خطأ أثناء حفظ الريكوست، حاول تاني.",
+        successMsg: "تم إرسال الريكوست بنجاح، هيتراجع من الأدمن.",
+        statusPendingAdmin: "بانتظار مراجعة الأدمن",
+        statusPendingEngineer: "بانتظار مراجعة المهندس",
+        statusPendingFinalAdmin: "بانتظار الموافقة النهائية من الأدمن",
+        statusCompleted: "تم الاعتماد",
+        statusRejectedAdmin: "مرفوض من الأدمن",
+        statusRejectedEngineer: "مرفوض من المهندس",
+        trackingStage: "المرحلة الحالية",
+        trackingOwner: "الطلب عند",
+        trackingUpdated: "آخر تحديث",
+        trackingAdminInitial: "مراجعة الأدمن الأولية",
+        trackingEngineer: "مراجعة المهندس",
+        trackingAdminFinal: "الاعتماد النهائي من الأدمن",
+        trackingCompleted: "مكتمل",
+        trackingRejected: "مرفوض ومغلق",
+        trackingUnknown: "الحالة الحالية",
+        statusWithdrawn: "تم سحب الطلب",
+        trackingClosedByYou: "تم سحبه منك",
+        stepSent: "تم الإرسال",
+        stepAdmin: "مراجعة الأدمن",
+        stepEngineer: "مراجعة المهندس",
+        stepFinal: "الاعتماد النهائي",
+        stepDone: "مكتمل",
+        trackBtn: "تتبع الطلب",
+        hideTrackBtn: "إخفاء التتبع",
+        withdrawBtn: "سحب الطلب",
+        withdrawPrompt: "هتسحب الطلب ده وهيتوقف عند الأدمن/المهندس، وتقدر تبعته تاني بعد كده. اكتب سبب السحب (اختياري) واضغط تأكيد:",
+        withdrawOk: "تم سحب الطلب.",
+        withdrawFail: "تعذر سحب الطلب، ممكن يكون اتراجع عليه بالفعل.",
+        tlLoading: "جاري تحميل سجل الطلب...",
+        tlEmpty: "لا توجد حركات مسجلة بعد.",
+        tlError: "تعذر تحميل سجل الطلب.",
+        tlSubmitted: "تم إرسال الطلب",
+        tlAdminApproved: "الأدمن وافق وحوّل الطلب للمهندس",
+        tlReturnedToEngineer: "الأدمن أعاد الطلب للمهندس لتعديل المراجعة",
+        tlEngineerDone: "المهندس أنهى المراجعة - بانتظار الاعتماد النهائي",
+        tlCompleted: "تم اعتماد الطلب نهائيًا",
+        tlRejectedAdmin: "الأدمن رفض الطلب",
+        tlRejectedEngineer: "المهندس رفض الطلب",
+        tlWithdrawn: "تم سحب الطلب",
+        tlBy: "بواسطة",
+        tlReason: "السبب",
+        tlCode: "كود المراجعة",
+        trackingAdminTeam: "فريق الأدمن",
+        trackingNoAction: "لا يوجد إجراء معلّق",
+        trackingDrivePending: "الأدمن - رفع Google Drive",
+        trackingDriveFailed: "الأدمن - إعادة رفع Google Drive",
+        trackingClosedByAdmin: "أُغلق بعد رفض الأدمن",
+        trackingClosedByEngineer: "أُغلق بعد رفض المهندس",
+        engineerLabel: "المهندس",
+        codeLabel: "الكود",
+        commentLabel: "تعليق المهندس",
+        driveUploading: "جاري الرفع النهائي على جوجل درايف...",
+        driveFailed: "حصل خطأ في الرفع النهائي - هيتم إعادة المحاولة"
+    },
+    en: {
+        pageTitle: "Submit New Request",
+        formTitle: "New Request Details",
+        formSub: "Fill in the details, pick the discipline and the responsible engineer, and upload the file - it will be reviewed by the admin before it reaches the engineer.",
+        lblNo: "Submittal No.",
+        lblTitle: "Title",
+        lblDiscipline: "Discipline",
+        lblEngineer: "Responsible Engineer",
+        lblActivity: "Activity",
+        lblCompany: "Company Name",
+        welcomeMsg: "Welcome, {company} 👋",
+        errNoCompanyOnAccount: "Your account doesn't have a company name set yet - ask the admin to add it from the Permissions page before you can submit requests.",
+        lblNotes: "Notes / Request Description",
+        lblFile: "File",
+        extraFilesHint: "Attach up to 2 files with any extension. Attachments are download-only and are not opened or executed in the portal.",
+        requestAttachments: "Request attachments",
+        noRequestAttachments: "No additional attachments.",
+        addRequestAttachments: "Add attachments",
+        uploadRequestAttachments: "Upload attachments",
+        requestAttachmentUploadSuccess: "Attachments uploaded and linked to the request.",
+        requestAttachmentUploadError: "Could not upload attachments. Check permissions and try again.",
+        requestAttachmentMigrationRequired: "Request attachments require applying contractor_request_attachments.sql to Supabase.",
+        requestAttachmentDownloadError: "Could not create a secure download link for the attachment.",
+        dropHint: "Click to choose file (PDF / Word / Excel / CAD)",
+        lblExtraFiles: "Additional attachments (optional - max 2)",
+        extraDropHint: "Click to add attachments of any file type (maximum 2 files)",
+        errMaxAttachments: "You can attach at most 2 additional files per request.",
+        extraUploadPartial: "The request was sent, but some attachments could not be uploaded. You can add them with the \"Add attachments\" button under the request.",
+        removeFile: "Remove",
+        loadingOption: "Loading...",
+        chooseOption: "Choose...",
+        btnSubmit: "Submit Request",
+        myReqTitle: "My Submitted Requests",
+        myReqSub: "Track the status of every request you've submitted.",
+        loading: "Loading...",
+        uploading: "Uploading request...",
+        checkingDuplicate: "Checking the Submittal No...",
+        errDuplicateActive: "This Submittal No. is still under review (please wait until it's resolved).",
+        errDuplicateApproved: "This Submittal No. has already been approved - it can't be submitted again with the same number.",
+        errNoRevisionSlots: "This Submittal No. has reached the maximum number of revisions (4). Please contact the admin.",
+        hintIsRevision: "This number was rejected before - submitting will register it as a new Revision.",
+        hintNewNo: "New number ✓ - not in the system",
+        hintExistsInSystem: "This number already exists in the system",
+        hintLastInSeries: "Last number of this type:",
+        hintNextInSeries: "Next available:",
+        btnUseSuggested: "Use it",
+        noRequests: "No requests submitted yet.",
+        errFile: "Please choose a file.",
+        errBadExt: "Only PDF / Excel / Word / CAD files are allowed.",
+        errNoDiscipline: "Please choose a discipline.",
+        errNoEngineer: "Please choose the responsible engineer.",
+        errNoTitle: "Please enter the title.",
+        errNoSubmittalNo: "Please enter the Submittal No.",
+        errNoActivity: "Please enter the Activity.",
+        errNoNotes: "Please enter notes / a description of the request.",
+        errUpload: "An error occurred while uploading the file, please try again.",
+        errSave: "An error occurred while saving the request, please try again.",
+        successMsg: "Request submitted successfully - it will be reviewed by the admin.",
+        statusPendingAdmin: "Awaiting admin review",
+        statusPendingEngineer: "Awaiting engineer review",
+        statusPendingFinalAdmin: "Awaiting final admin approval",
+        statusCompleted: "Approved",
+        statusRejectedAdmin: "Rejected by admin",
+        statusRejectedEngineer: "Rejected by engineer",
+        trackingStage: "Current stage",
+        trackingOwner: "Currently with",
+        trackingUpdated: "Last updated",
+        trackingAdminInitial: "Initial admin review",
+        trackingEngineer: "Engineer review",
+        trackingAdminFinal: "Final admin approval",
+        trackingCompleted: "Completed",
+        trackingRejected: "Rejected and closed",
+        trackingUnknown: "Current status",
+        statusWithdrawn: "Withdrawn",
+        trackingClosedByYou: "Withdrawn by you",
+        stepSent: "Submitted",
+        stepAdmin: "Admin review",
+        stepEngineer: "Engineer review",
+        stepFinal: "Final approval",
+        stepDone: "Completed",
+        trackBtn: "Track request",
+        hideTrackBtn: "Hide tracking",
+        withdrawBtn: "Withdraw request",
+        withdrawPrompt: "This will pull the request back from the admin/engineer. You can submit it again afterwards. Enter a reason (optional) and confirm:",
+        withdrawOk: "Request withdrawn.",
+        withdrawFail: "Could not withdraw the request - it may already have moved on.",
+        tlLoading: "Loading request history...",
+        tlEmpty: "No activity recorded yet.",
+        tlError: "Could not load the request history.",
+        tlSubmitted: "Request submitted",
+        tlAdminApproved: "Admin approved and sent it to the engineer",
+        tlReturnedToEngineer: "Admin sent it back to the engineer to redo the review",
+        tlEngineerDone: "Engineer finished the review - awaiting final approval",
+        tlCompleted: "Request approved",
+        tlRejectedAdmin: "Admin rejected the request",
+        tlRejectedEngineer: "Engineer rejected the request",
+        tlWithdrawn: "Request withdrawn",
+        tlBy: "by",
+        tlReason: "Reason",
+        tlCode: "Review code",
+        trackingAdminTeam: "Admin team",
+        trackingNoAction: "No action pending",
+        trackingDrivePending: "Admin - Google Drive upload",
+        trackingDriveFailed: "Admin - Google Drive retry",
+        trackingClosedByAdmin: "Closed after admin rejection",
+        trackingClosedByEngineer: "Closed after engineer rejection",
+        engineerLabel: "Engineer",
+        codeLabel: "Code",
+        commentLabel: "Engineer's comment",
+        driveUploading: "Finishing upload to Google Drive...",
+        driveFailed: "The final upload failed - it will be retried"
+    }
+};
+window.registerDictionary(dictionary);
+window.onLanguageChanged = function () { renderMyRequests(); };
+
+let selectedFile = null;
+let engineersList = [];
+
+function getFileExtension(filename) {
+    let parts = (filename || "").toString().trim().split(".");
+    return parts.length > 1 ? parts.pop().toLowerCase() : "";
+}
+
+function onFileChosen(input) {
+    if (input.files.length === 0) { selectedFile = null; return; }
+    let file = input.files[0];
+    if (!ALLOWED_UPLOAD_EXTENSIONS.includes(getFileExtension(file.name))) {
+        notify.error(T('errBadExt'));
+        input.value = "";
+        selectedFile = null;
+        document.getElementById('chosenFileName').textContent = '';
+        return;
+    }
+    selectedFile = file;
+    document.getElementById('chosenFileName').textContent = file.name;
+}
+
+// مرفقات إضافية على الريكوست الجديد - أي امتداد، بدون أي قيود على النوع
+const MAX_EXTRA_ATTACHMENTS = 2;
+let extraFiles = [];
+
+function renderExtraFiles() {
+    const list = document.getElementById('chosenExtraFiles');
+    if (!list) return;
+    list.innerHTML = extraFiles.map((f, i) => `
+        <li>
+            <span><span class="fname">${escapeHtml(f.name)}</span><span class="fsize">${escapeHtml(formatAttachmentSize(f.size))}</span></span>
+            <button type="button" title="${escapeHtml(T('removeFile'))}" aria-label="${escapeHtml(T('removeFile'))}" onclick="removeExtraFile(${i})">&#10005;</button>
+        </li>`).join('');
+}
+
+function onExtraFilesChosen(input) {
+    let overflow = false;
+    Array.from(input.files || []).forEach(f => {
+        if (extraFiles.some(x => x.name === f.name && x.size === f.size && x.lastModified === f.lastModified)) return;
+        if (extraFiles.length >= MAX_EXTRA_ATTACHMENTS) { overflow = true; return; }
+        extraFiles.push(f);
+    });
+    input.value = '';
+    if (overflow) notify.error(T('errMaxAttachments'));
+    renderExtraFiles();
+}
+
+function removeExtraFile(index) {
+    extraFiles.splice(index, 1);
+    renderExtraFiles();
+}
+
+// returns the number of files that failed to upload
+async function uploadExtraFilesForNewRequest(requestId, userId, files) {
+    let failed = 0;
+    for (const file of files) {
+        let filePath = null;
+        try {
+            const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_') || 'attachment';
+            const uniqueId = (typeof crypto !== 'undefined' && crypto.randomUUID)
+                ? crypto.randomUUID() : `${Date.now()}_${Math.random().toString(36).slice(2)}`;
+            filePath = `${userId}/${requestId}/${uniqueId}_${safeName}`;
+            const { error: upErr } = await supabaseClient.storage
+                .from(REQUEST_ATTACHMENTS_BUCKET)
+                .upload(filePath, file, { upsert: false, contentType: file.type || 'application/octet-stream' });
+            if (upErr) throw upErr;
+            const { error: recErr } = await supabaseClient
+                .from('contractor_request_attachments')
+                .insert({
+                    request_id: requestId,
+                    uploaded_by: userId,
+                    file_name: file.name,
+                    file_path: filePath,
+                    file_size: file.size,
+                    content_type: file.type || 'application/octet-stream'
+                });
+            if (recErr) {
+                try { await supabaseClient.storage.from(REQUEST_ATTACHMENTS_BUCKET).remove([filePath]); } catch (_) {}
+                throw recErr;
+            }
+        } catch (err) {
+            console.error('Extra attachment upload failed:', file.name, err);
+            failed++;
+        }
+    }
+    return failed;
+}
+
+function showMsg(text, type) {
+    let box = document.getElementById('msgBox');
+    box.textContent = text;
+    box.className = 'msg-box ' + type;
+}
+
+// ============================================
+// تحميل قائمة الأقسام (من الأقسام الموجودة فعليًا في submittals)
+// وقائمة المهندسين (من profiles اللي عليهم is_engineer = true)
+// ============================================
+async function loadDropdowns() {
+    try {
+        // Same lists for every company (a new company has no submittals yet, so the
+        // old per-company query would give it empty required lists).
+        let disciplines = [], activities = [];
+        const shared = await supabaseClient.rpc('request_form_lists');
+        if (!shared.error && shared.data) {
+            disciplines = (shared.data.disciplines || []).slice().sort((x, y) => x.localeCompare(y));
+            activities = (shared.data.activities || []).slice().sort((x, y) => x.localeCompare(y));
+        } else {
+            const { data: rows, error } = await supabaseClient.from('submittals').select('discipline, activity');
+            if (error) throw error;
+            const uniq = key => Array.from(new Set((rows || [])
+                .map(r => (r[key] || '').toString().trim())
+                .filter(v => v)))
+                .sort((x, y) => x.localeCompare(y));
+            disciplines = uniq('discipline');
+            activities = uniq('activity');
+        }
+
+        let dSel = document.getElementById('f-discipline');
+        dSel.innerHTML = '<option value="">-- ' + T('lblDiscipline') + ' --</option>' +
+            disciplines.map(d => `<option value="${escapeHtml(d)}">${escapeHtml(d)}</option>`).join('');
+
+        // النشاط (Activity) بردو ليستة مقفولة - مش نص حر
+        let aSel = document.getElementById('f-activity');
+        aSel.innerHTML = '<option value="">-- ' + T('lblActivity') + ' --</option>' +
+            activities.map(a => `<option value="${escapeHtml(a)}">${escapeHtml(a)}</option>`).join('');
+    } catch (err) {
+        console.error('Error loading disciplines:', err);
+    }
+
+    try {
+        const { data: rows, error } = await supabaseClient
+            .from('profiles')
+            .select('id, username')
+            .eq('is_engineer', true);
+        if (error) throw error;
+        engineersList = rows || [];
+        engineersList.sort((a, b) => (a.username || '').localeCompare(b.username || ''));
+
+        let eSel = document.getElementById('f-engineer');
+        eSel.innerHTML = '<option value="">-- ' + T('lblEngineer') + ' --</option>' +
+            engineersList.map(e => `<option value="${e.id}">${e.username}</option>`).join('');
+    } catch (err) {
+        console.error('Error loading engineers:', err);
+    }
+}
+
+function openLock(msg) {
+    document.getElementById('lockMsg').textContent = msg;
+    document.getElementById('lockOverlay').classList.add('active');
+}
+function closeLock() {
+    document.getElementById('lockOverlay').classList.remove('active');
+}
+
+// ============================================
+// فحص رقم الريكوست (Submittal No.) مقابل الوضع الحالي في contractor_requests
+// و submittals - نفس الفحص ده بيستخدم في مكانين: فحص فوري (live) لحظة ما
+// المقاول يسيب الخانة، وفحص نهائي إجباري وقت الإرسال الفعلي.
+// يرجع: { ok: true }                              -> مسموح يكمل عادي
+//        { ok: false, key: 'errXxx' }              -> ممنوع، ويوضح السبب
+//        { ok: true, isRevision: true }            -> مسموح، وده Revision جديدة
+// ============================================
+async function checkSubmittalNoStatus(no) {
+    if (!no) return { ok: true };
+
+    // الفحص الأساسي من الخادم (دالة check_submittal_no): بتشوف كل الريكوستات وسجل الـ submittals،
+    // وبترجع كمان الرقم التالي المتاح في نفس النوع (نفس البادئة، مثلاً IT-MD-CIV-IR-).
+    // لو الدالة لسه مش متطبقة على قاعدة البيانات، بنرجع للفحص القديم تحت من غير ما الصفحة تقف.
+    const { data: chk, error: chkErr } = await supabaseClient.rpc('check_submittal_no', { p_no: no });
+    if (!chkErr && chk && chk.state) {
+        const extra = {
+            existsInSystem: !!chk.exists_in_system,
+            existingTitle: chk.existing_title || null,
+            nextRevision: chk.next_revision || null,
+            lastInSeries: chk.last_in_series || null,
+            suggested: chk.suggested_next || null
+        };
+        switch (chk.state) {
+            case 'duplicate_active':    return Object.assign({ ok: false, key: 'errDuplicateActive' }, extra);
+            case 'duplicate_approved':  return Object.assign({ ok: false, key: 'errDuplicateApproved' }, extra);
+            case 'no_revision_slots':   return Object.assign({ ok: false, key: 'errNoRevisionSlots' }, extra);
+            case 'revision':            return Object.assign({ ok: true, isRevision: true }, extra);
+            default:                    return Object.assign({ ok: true }, extra);
+        }
+    }
+    if (chkErr) console.warn('check_submittal_no RPC unavailable, using legacy check:', chkErr.message || chkErr);
+
+    // مقارنة الرقم بتتعمل من غير حساسية لحالة الحروف (case-insensitive)
+    // ومن غير فراغات زيادة، عشان "IT-MD-CIV-IR-038" و"it-md-civ-ir-038"
+    // يتحسبوا نفس الرقم بالظبط. بنعمل escape لأي حرف % أو _ موجود فعلاً
+    // في الرقم نفسه، عشان مايتفسرش كـ wildcard في المقارنة.
+    let noPattern = no.replace(/[%_]/g, '\\$&');
+
+    const { data: activeReqs, error: activeErr } = await supabaseClient
+        .from('contractor_requests')
+        .select('id')
+        .ilike('submittal_no', noPattern)
+        .is('deleted_at', null)
+        .in('status', ['pending_admin', 'pending_engineer', 'pending_final_admin'])
+        .limit(1);
+    if (activeErr) throw activeErr;
+    if (activeReqs && activeReqs.length > 0) {
+        return { ok: false, key: 'errDuplicateActive' };
+    }
+
+    const { data: submittalRows, error: subErr } = await supabaseClient
+        .from('submittals')
+        .select('submitted_on, code, submitted_on_1, code_1, submitted_on_2, code_2, submitted_on_3, code_3')
+        .ilike('no', noPattern)
+        .limit(1);
+    if (subErr) throw subErr;
+
+    if (submittalRows && submittalRows.length > 0) {
+        let row = submittalRows[0];
+        let slots = ['', '_1', '_2', '_3'];
+        let lastFilled = null;
+        slots.forEach(s => { if (row['submitted_on' + s]) lastFilled = s; });
+
+        if (lastFilled !== null) {
+            let lastCode = row['code' + lastFilled];
+            if (lastCode && lastCode !== 'C') {
+                return { ok: false, key: 'errDuplicateApproved' };
+            }
+            if (lastFilled === '_3') {
+                return { ok: false, key: 'errNoRevisionSlots' };
+            }
+            return { ok: true, isRevision: true };
+        }
+    }
+
+    return { ok: true };
+}
+
+// فحص فوري: بيحصل لحظة ما المقاول يسيب خانة "رقم الريكوست" (blur)، عشان
+// يعرف على طول لو في مشكلة قبل ما يكمل باقي الفورم أو يرفع ملف من غير فايدة.
+// ---- عرض نتيجة فحص الرقم: هل موجود في النظام + الرقم التالي في نفس النوع ----
+function setHintHtml(el, html) { el.innerHTML = html; }
+
+function existsDetailsHtml(r) {
+    if (!r || !r.existsInSystem) return '';
+    let t = r.existingTitle ? ' - ' + escapeHtml(r.existingTitle) : '';
+    return '<div style="font-weight:500;margin-top:3px;">' + escapeHtml(T('hintExistsInSystem')) + t + '</div>';
+}
+
+function suggestionHtml(r, typed) {
+    if (!r || !r.suggested) return '';
+    if (String(r.suggested).toLowerCase() === String(typed || '').trim().toLowerCase()) return '';
+    let last = r.lastInSeries
+        ? escapeHtml(T('hintLastInSeries')) + ' <b dir="ltr">' + escapeHtml(r.lastInSeries) + '</b> - '
+        : '';
+    return '<div style="font-weight:500;margin-top:3px;">' + last +
+        escapeHtml(T('hintNextInSeries')) + ' <b dir="ltr">' + escapeHtml(r.suggested) + '</b> ' +
+        '<button type="button" class="use-suggested-btn" data-no="' + escapeHtml(r.suggested) + '" ' +
+        'onclick="useSuggestedNo(this.dataset.no)">' + escapeHtml(T('btnUseSuggested')) + '</button></div>';
+}
+
+function useSuggestedNo(no) {
+    let input = document.getElementById('f-no');
+    input.value = no;
+    liveCheckSubmittalNo();
+    input.focus();
+}
+
+let liveCheckToken = 0;
+async function liveCheckSubmittalNo() {
+    let no = document.getElementById('f-no').value.trim();
+    let hintEl = document.getElementById('no-live-hint');
+    if (!no) { hintEl.className = 'field-hint'; hintEl.textContent = ''; return; }
+
+    let myToken = ++liveCheckToken; // عشان لو المقاول غيّر الرقم بسرعة، النتيجة القديمة تتجاهل
+    hintEl.className = 'field-hint checking';
+    hintEl.textContent = T('checkingDuplicate');
+
+    try {
+        let result = await checkSubmittalNoStatus(no);
+        if (myToken !== liveCheckToken) return; // النتيجة دي بقت قديمة
+
+        if (!result.ok) {
+            hintEl.className = 'field-hint error';
+            setHintHtml(hintEl, T(result.key) + existsDetailsHtml(result) + suggestionHtml(result, no));
+        } else if (result.isRevision) {
+            hintEl.className = 'field-hint info';
+            let rev = result.nextRevision ? ' (R0' + result.nextRevision + ')' : '';
+            setHintHtml(hintEl, T('hintIsRevision') + rev + existsDetailsHtml(result) + suggestionHtml(result, no));
+        } else {
+            hintEl.className = 'field-hint success';
+            setHintHtml(hintEl, T('hintNewNo') + suggestionHtml(result, no));
+        }
+    } catch (err) {
+        if (myToken !== liveCheckToken) return;
+        console.error('Live submittal-no check failed:', err);
+        hintEl.className = 'field-hint';
+        hintEl.textContent = '';
+    }
+}
+
+async function handleSubmit(event) {
+    event.preventDefault();
+    showMsg('', '');
+
+    if (!selectedFile) { showMsg(T('errFile'), 'error'); return; }
+    if (!window.currentCompanyName) { showMsg(T('errNoCompanyOnAccount'), 'error'); return; }
+
+    let discipline = document.getElementById('f-discipline').value;
+    let engineerId = document.getElementById('f-engineer').value;
+    if (!discipline) { showMsg(T('errNoDiscipline'), 'error'); return; }
+    if (!engineerId) { showMsg(T('errNoEngineer'), 'error'); return; }
+
+    let engineerObj = engineersList.find(e => e.id === engineerId);
+    let title = document.getElementById('f-title').value.trim();
+    let no = document.getElementById('f-no').value.trim();
+    let activity = document.getElementById('f-activity').value.trim();
+    let notes = document.getElementById('f-notes').value.trim();
+
+    // كل الحقول بقت إجبارية - حتى لو الـ HTML "required" اتخطى لأي سبب
+    // (مثلاً حد استخدم الكيبورد بشكل غريب)، نتأكد تاني هنا قبل ما نبعت
+    // أي حاجة لقاعدة البيانات.
+    if (!title) { showMsg(T('errNoTitle'), 'error'); return; }
+    if (!no) { showMsg(T('errNoSubmittalNo'), 'error'); return; }
+    if (!activity) { showMsg(T('errNoActivity'), 'error'); return; }
+
+    let submitBtn = document.getElementById('submitBtn');
+    submitBtn.disabled = true;
+    openLock(T('checkingDuplicate'));
+    let uploadedPath = null; // لو الإرسال فشل بعد الرفع، نمسح الملف عشان ما يفضلش يتيم
+
+    try {
+        // نفس فحص رقم الريكوست اللي بيحصل فوري (live) وقت ما يسيب الخانة -
+        // بنعيده هنا كضمانة أخيرة قبل ما نبعت أي حاجة فعليًا لقاعدة البيانات.
+        let statusCheck = await checkSubmittalNoStatus(no);
+        if (!statusCheck.ok) {
+            showMsg(T(statusCheck.key) + (statusCheck.suggested
+                ? ' ' + T('hintNextInSeries') + ' ' + statusCheck.suggested : ''), 'error');
+            submitBtn.disabled = false;
+            closeLock();
+            return;
+        }
+
+        openLock(T('uploading'));
+
+        let session = window.__guardSession;
+        let userId = session ? session.user.id : (await supabaseClient.auth.getSession()).data.session.user.id;
+
+        let safeName = selectedFile.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+        let path = `contractor-requests/${window.getCompanyFolder()}/${Date.now()}_${safeName}`;
+
+        const { error: uploadError } = await supabaseClient.storage
+            .from(ATTACHMENTS_BUCKET)
+            .upload(path, selectedFile, { upsert: false });
+        if (uploadError) throw uploadError;
+
+        // الكتابة المباشرة على الجدول اتقفلت في قاعدة البيانات: الإرسال بيمر عبر دالة الخادم
+        // (بتتحقق من الرقم والملف والمهندس وبتاخد اسم الشركة من بروفايل المقاول).
+        uploadedPath = path;
+        const { data: newRequestId, error: insertError } = await supabaseClient.rpc('submit_contractor_request', {
+            p_payload: {
+                submittal_no: no,
+                title: title,
+                discipline: discipline,
+                activity: activity,
+                notes: notes || null,
+                engineer_id: engineerId,
+                file_name: selectedFile.name,
+                file_link: path
+            }
+        });
+        if (insertError) throw insertError;
+        uploadedPath = null;
+
+        // المرفقات الإضافية (أي نوع ملف) بتترفع بعد ما الريكوست يتسجل؛ لو فشل بعضها
+        // الريكوست نفسه يفضل مرسل ونعرّف المقاول يضيفها من زر المرفقات.
+        let extraFailed = 0;
+        if (extraFiles.length && newRequestId) {
+            openLock(T('uploading'));
+            extraFailed = await uploadExtraFilesForNewRequest(newRequestId, userId, extraFiles);
+        }
+
+        if (extraFailed) showMsg(T('extraUploadPartial'), 'error');
+        else showMsg(T('successMsg'), 'success');
+        document.getElementById('reqForm').reset();
+        selectedFile = null;
+        extraFiles = [];
+        renderExtraFiles();
+        document.getElementById('chosenFileName').textContent = '';
+        loadDropdowns();
+        loadMyRequests();
+    } catch (err) {
+        console.error('Submit error:', err);
+        if (uploadedPath) {
+            try { await supabaseClient.storage.from(ATTACHMENTS_BUCKET).remove([uploadedPath]); } catch (_) {}
+        }
+        const serverMsg = String((err && err.message) || '');
+        let friendly = null;
+        if (/conflicts with an active/i.test(serverMsg)) friendly = T('errDuplicateActive');
+        else if (/permission required/i.test(serverMsg)) friendly = (getLang() === 'ar')
+            ? 'حسابك مش متفعّل لإرسال ريكوستات المقاولين. كلّم الأدمن عشان يفعّله.'
+            : 'Your account is not enabled to submit contractor requests. Please contact the admin.';
+        showMsg(friendly || serverMsg || T('errSave'), 'error');
+    } finally {
+        submitBtn.disabled = false;
+        closeLock();
+    }
+}
+
+// ============================================
+// قائمة الريكوستات اللي رفعها نفس المقاول (RLS بترجع صفوفه بس)
+// ============================================
+let myRequests = [];
+let myRequestsLoading = false;
+let requestAttachmentLoadError = null;
+const requestAttachmentUploads = new Set();
+
+async function loadMyRequests() {
+    if (myRequestsLoading) return;
+    myRequestsLoading = true;
+    try {
+        const { data: rows, error } = await supabaseClient
+            .from('contractor_requests')
+            .select('*')
+            .is('deleted_at', null)
+            .order('requested_at', { ascending: false });
+        if (error) throw error;
+        myRequests = rows || [];
+        requestAttachmentLoadError = null;
+        if (myRequests.length > 0) {
+            const { data: attachments, error: attachmentError } = await supabaseClient
+                .from('contractor_request_attachments')
+                .select('id, request_id, file_name, file_path, file_size, created_at')
+                .in('request_id', myRequests.map(row => row.id))
+                .order('created_at', { ascending: true });
+            if (attachmentError) throw attachmentError;
+            myRequests.forEach(request => {
+                request.attachments = (attachments || []).filter(file => String(file.request_id) === String(request.id));
+            });
+        } else {
+            myRequests = [];
+        }
+        // Opened from a notification (?request=ID): expand that request's tracking once.
+        if (!deepLinkHandled) {
+            deepLinkHandled = true;
+            const wanted = new URLSearchParams(window.location.search).get('request');
+            if (wanted && myRequests.some(row => String(row.id) === String(wanted))) {
+                openTimelines.add(String(wanted));
+                setTimeout(() => {
+                    const el = document.getElementById('timeline-' + wanted);
+                    if (el && el.scrollIntoView) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 300);
+            }
+        }
+        renderMyRequests();
+        openTimelines.forEach(id => { loadRequestHistory(id); });
+    } catch (err) {
+        console.error('Error loading my requests:', err);
+        requestAttachmentLoadError = err;
+        renderMyRequests();
+    } finally {
+        myRequestsLoading = false;
+    }
+}
+
+function statusLabel(status) {
+    switch (status) {
+        case 'pending_admin': return T('statusPendingAdmin');
+        case 'pending_engineer': return T('statusPendingEngineer');
+        case 'pending_final_admin': return T('statusPendingFinalAdmin');
+        case 'completed': return T('statusCompleted');
+        case 'rejected_admin': return T('statusRejectedAdmin');
+        case 'rejected_engineer': return T('statusRejectedEngineer');
+        case 'withdrawn': return T('statusWithdrawn');
+        default: return status;
+    }
+}
+
+function getRequestTracking(request) {
+    const status = request.status;
+    const updatedAt = request.updated_at || request.admin_final_reviewed_at
+        || request.engineer_reviewed_at || request.admin_reviewed_at || request.requested_at;
+
+    if (status === 'pending_admin') {
+        return { stage: T('trackingAdminInitial'), owner: T('trackingAdminTeam'), updatedAt, className: '' };
+    }
+    if (status === 'pending_engineer') {
+        return {
+            stage: T('trackingEngineer'),
+            owner: request.engineer_username || T('engineerLabel'),
+            updatedAt,
+            className: ''
+        };
+    }
+    if (status === 'pending_final_admin') {
+        return { stage: T('trackingAdminFinal'), owner: T('trackingAdminTeam'), updatedAt, className: '' };
+    }
+    if (status === 'completed') {
+        if (request.drive_status === 'failed') {
+            return { stage: T('trackingCompleted'), owner: T('trackingDriveFailed'), updatedAt, className: 'is-complete' };
+        }
+        if (request.drive_status === 'pending') {
+            return { stage: T('trackingCompleted'), owner: T('trackingDrivePending'), updatedAt, className: 'is-complete' };
+        }
+        return { stage: T('trackingCompleted'), owner: T('trackingNoAction'), updatedAt, className: 'is-complete' };
+    }
+    if (status === 'rejected_admin') {
+        return { stage: T('trackingRejected'), owner: T('trackingClosedByAdmin'), updatedAt, className: 'is-closed' };
+    }
+    if (status === 'rejected_engineer') {
+        return { stage: T('trackingRejected'), owner: T('trackingClosedByEngineer'), updatedAt, className: 'is-closed' };
+    }
+    if (status === 'withdrawn') {
+        return { stage: T('statusWithdrawn'), owner: T('trackingClosedByYou'), updatedAt, className: 'is-closed' };
+    }
+    return { stage: statusLabel(status) || T('trackingUnknown'), owner: T('trackingNoAction'), updatedAt, className: '' };
+}
+
+// ============================================
+// تتبع الطلب: ستيبر المراحل + سجل الحركات (contractor_request_history)
+// + سحب الطلب (withdraw_contractor_request)
+// ============================================
+const openTimelines = new Set();
+const historyCache = {};
+let deepLinkHandled = false;
+
+function renderRequestSteps(request) {
+    const labels = [T('stepSent'), T('stepAdmin'), T('stepEngineer'), T('stepFinal'), T('stepDone')];
+    // index of the step the request is currently at (-1 = withdrawn, no stepper)
+    const positions = { pending_admin: 1, pending_engineer: 2, pending_final_admin: 3, completed: 4, rejected_admin: 1, rejected_engineer: 2 };
+    const current = positions[request.status];
+    if (current === undefined) return '';
+    const failed = request.status === 'rejected_admin' || request.status === 'rejected_engineer';
+    return `<ol class="req-steps" aria-label="${escapeHtml(T('trackingStage'))}">${labels.map((label, i) => {
+        let cls = '';
+        let mark = i + 1;
+        if (failed && i === current) { cls = 'fail'; mark = '✕'; }
+        else if (i < current || (request.status === 'completed' && i === current)) { cls = 'done'; mark = '✓'; }
+        else if (i === current) { cls = 'current'; }
+        return `<li class="req-step ${cls}"><span class="dot">${mark}</span>${escapeHtml(label)}</li>`;
+    }).join('')}</ol>`;
+}
+
+function timelineEvent(h, request) {
+    const d = h.details || {};
+    const status = h.new_status;
+    let title = null, note = '', cls = '';
+    if (h.event_type === 'submitted') {
+        title = T('tlSubmitted');
+    } else if (h.event_type === 'status_changed') {
+        if (status === 'pending_engineer') {
+            if (h.old_status === 'pending_final_admin') {
+                title = T('tlReturnedToEngineer'); note = d.admin_final_note || ''; cls = 'neutral';
+            } else {
+                title = T('tlAdminApproved'); cls = 'ok';
+                if (request.engineer_username) title += ` (${request.engineer_username})`;
+            }
+        } else if (status === 'pending_final_admin') {
+            title = T('tlEngineerDone'); cls = 'ok';
+            if (d.code) note = `${T('tlCode')}: ${d.code}`;
+            if (d.engineer_comment) note += (note ? '\n' : '') + d.engineer_comment;
+        } else if (status === 'completed') {
+            title = T('tlCompleted'); cls = 'ok';
+        } else if (status === 'rejected_admin') {
+            title = T('tlRejectedAdmin'); note = d.admin_note || ''; cls = 'bad';
+        } else if (status === 'rejected_engineer') {
+            title = T('tlRejectedEngineer'); note = d.engineer_comment || ''; cls = 'bad';
+        } else if (status === 'withdrawn') {
+            title = T('tlWithdrawn'); cls = 'neutral';
+            if (d.withdraw_reason) note = `${T('tlReason')}: ${d.withdraw_reason}`;
+        } else {
+            title = statusLabel(status);
+        }
+    }
+    return title ? { title, note, cls, actor: h.actor_username, at: h.created_at } : null;
+}
+
+function renderTimeline(request) {
+    const rows = historyCache[request.id];
+    if (rows === undefined) return `<div class="req-meta">${T('tlLoading')}</div>`;
+    if (rows === null) return `<div class="req-meta" style="color:var(--danger);">${T('tlError')}</div>`;
+    const events = rows.map(h => timelineEvent(h, request)).filter(Boolean);
+    if (!events.length) return `<div class="req-meta">${T('tlEmpty')}</div>`;
+    const locale = getLang() === 'ar' ? 'ar-EG' : 'en-US';
+    return `<ul class="tl-list">${events.map(e => `
+        <li class="tl-item ${e.cls}">
+            <span class="tl-dot"></span>
+            <div class="tl-title">${escapeHtml(e.title)}</div>
+            ${e.note ? `<div class="tl-note">${escapeHtml(e.note)}</div>` : ''}
+            <div class="tl-meta">${escapeHtml(new Date(e.at).toLocaleString(locale))}${e.actor ? ` &middot; ${T('tlBy')} ${escapeHtml(e.actor)}` : ''}</div>
+        </li>`).join('')}</ul>`;
+}
+
+async function loadRequestHistory(requestId) {
+    const { data, error } = await supabaseClient
+        .from('contractor_request_history')
+        .select('id, event_type, old_status, new_status, actor_username, details, created_at')
+        .eq('request_id', requestId)
+        .order('created_at', { ascending: true })
+        .order('id', { ascending: true });
+    if (error) {
+        console.error('Error loading request history:', error);
+        historyCache[requestId] = null;
+    } else {
+        historyCache[requestId] = data || [];
+    }
+    const request = myRequests.find(row => String(row.id) === String(requestId));
+    const box = document.getElementById('timeline-' + requestId);
+    if (box && request) box.innerHTML = renderTimeline(request);
+}
+
+async function toggleTimeline(requestId) {
+    const key = String(requestId);
+    if (openTimelines.has(key)) openTimelines.delete(key);
+    else openTimelines.add(key);
+    renderMyRequests();
+    if (openTimelines.has(key)) await loadRequestHistory(requestId);
+}
+
+async function withdrawRequest(requestId) {
+    const reason = await notify.prompt(T('withdrawPrompt'), {
+        confirmLabel: T('withdrawBtn')
+    });
+    if (reason === null) return; // cancelled
+    const { error } = await supabaseClient.rpc('withdraw_contractor_request', {
+        p_request_id: requestId,
+        p_reason: reason
+    });
+    if (error) {
+        console.error('Withdraw failed:', error);
+        notify.error(T('withdrawFail'));
+        await loadMyRequests();
+        return;
+    }
+    notify.success(T('withdrawOk'));
+    delete historyCache[requestId];
+    openTimelines.add(String(requestId));
+    await loadMyRequests();
+}
+
+function formatAttachmentSize(bytes) {
+    const size = Number(bytes);
+    if (!Number.isFinite(size) || size < 0) return '';
+    if (size < 1024) return `${size} B`;
+    if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+    return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function renderRequestAttachments(request) {
+    const attachments = request.attachments || [];
+    const canAddAttachments = ['pending_admin', 'pending_engineer', 'pending_final_admin'].includes(request.status)
+        && attachments.length < MAX_EXTRA_ATTACHMENTS;
+    const filesHtml = attachments.length
+        ? attachments.map((file, index) => {
+            const size = formatAttachmentSize(file.file_size);
+            return `<button type="button" class="link-btn request-attachment-button"
+                onclick="downloadRequestAttachment(${Number(request.id)}, ${index})">
+                <i class="fa-solid fa-paperclip"></i> ${escapeHtml(file.file_name)}
+                ${size ? `<span>(${escapeHtml(size)})</span>` : ''}
+            </button>`;
+        }).join('')
+        : `<span class="req-meta">${T('noRequestAttachments')}</span>`;
+    const uploadInProgress = requestAttachmentUploads.has(String(request.id));
+    const migrationMessage = requestAttachmentLoadError
+        ? `<div class="field-hint error" role="alert">${T('requestAttachmentMigrationRequired')}</div>`
+        : '';
+    return `<section class="request-attachments" aria-label="${T('requestAttachments')}">
+        <div class="request-attachments-title">${T('requestAttachments')} (${attachments.length})</div>
+        <div class="request-attachment-list">${filesHtml}</div>
+        ${migrationMessage}
+        ${canAddAttachments ? `<input type="file" id="request-attachments-${Number(request.id)}" multiple hidden
+            onchange="uploadRequestAttachments(${Number(request.id)}, this)">
+        <button type="button" class="link-btn" ${uploadInProgress || requestAttachmentLoadError ? 'disabled' : ''}
+            onclick="document.getElementById('request-attachments-${Number(request.id)}').click()">
+            <i class="fa-solid fa-paperclip"></i> ${uploadInProgress ? T('uploading') : T('addRequestAttachments')}
+        </button>` : ''}
+        <span class="request-attachment-hint">${T('extraFilesHint')}</span>
+    </section>`;
+}
+
+// SECURITY FIX (Aug 2026): engineer_comment/code/engineer_username are set
+// by a different account (the reviewing engineer/admin) and shown here to
+// the contractor - escape everything before it goes into innerHTML so a
+// malicious comment can't run script in the contractor's session.
+function escapeHtml(str) {
+    return String(str == null ? "" : str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+}
+
+function renderMyRequests() {
+    let listEl = document.getElementById('myReqList');
+    if (myRequests.length === 0) {
+        listEl.innerHTML = requestAttachmentLoadError
+            ? `<div class="empty-state" role="alert">${T('requestAttachmentMigrationRequired')}</div>`
+            : `<div class="empty-state">${T('noRequests')}</div>`;
+        return;
+    }
+    listEl.innerHTML = myRequests.map(r => `
+        <div class="req-card">
+            <div class="req-top">
+                <div>
+                    <div class="req-title">${escapeHtml(r.title)}${r.submittal_no ? ' - ' + escapeHtml(r.submittal_no) : ''}</div>
+                    <div class="req-meta">
+                        ${T('lblDiscipline')}: ${escapeHtml(r.discipline)} &nbsp;|&nbsp; ${T('engineerLabel')}: ${escapeHtml(r.engineer_username || '-')}<br>
+                        ${new Date(r.requested_at).toLocaleString()}
+                        ${r.code ? `<br>${T('codeLabel')}: <b>${escapeHtml(r.code)}</b>` : ''}
+                        ${r.engineer_comment ? `<br>${T('commentLabel')}: ${escapeHtml(r.engineer_comment)}` : ''}
+                        ${r.status === 'completed' && r.drive_status === 'pending' ? `<br><span style="color:var(--warning);">${T('driveUploading')}</span>` : ''}
+                        ${r.status === 'completed' && r.drive_status === 'failed' ? `<br><span style="color:var(--danger);">${T('driveFailed')}</span>` : ''}
+                    </div>
+                </div>
+                <span class="status-pill status-${r.status}">${statusLabel(r.status)}</span>
+            </div>
+            ${renderRequestSteps(r)}
+            ${(() => {
+                const tracking = getRequestTracking(r);
+                const updated = tracking.updatedAt ? new Date(tracking.updatedAt) : null;
+                const updatedLabel = updated && !Number.isNaN(updated.getTime())
+                    ? updated.toLocaleString(getLang() === 'ar' ? 'ar-EG' : 'en-US')
+                    : '-';
+                return `<div class="request-tracking ${tracking.className}">
+                    <span class="tracking-item"><strong>${T('trackingStage')}:</strong> ${escapeHtml(tracking.stage)}</span>
+                    <span class="tracking-item"><strong>${T('trackingOwner')}:</strong> ${escapeHtml(tracking.owner)}</span>
+                    <span class="tracking-item"><strong>${T('trackingUpdated')}:</strong> ${escapeHtml(updatedLabel)}</span>
+                </div>`;
+            })()}
+            <div class="req-actions">
+                <button type="button" class="link-btn" onclick="toggleTimeline(${Number(r.id)})">
+                    <i class="fa-solid fa-route"></i> ${openTimelines.has(String(r.id)) ? T('hideTrackBtn') : T('trackBtn')}
+                </button>
+                ${['pending_admin', 'pending_engineer'].includes(r.status) ? `<button type="button" class="link-btn danger" onclick="withdrawRequest(${Number(r.id)})">
+                    <i class="fa-solid fa-rotate-left"></i> ${T('withdrawBtn')}
+                </button>` : ''}
+            </div>
+            <div class="req-timeline" id="timeline-${Number(r.id)}" ${openTimelines.has(String(r.id)) ? '' : 'hidden'}>${renderTimeline(r)}</div>
+            ${renderRequestAttachments(r)}
+            <button type="button" class="link-btn" onclick="openMyRequestDownload(${r.id})">
+                <i class="fa-solid fa-download"></i> ${getLang() === 'ar' ? 'تحميل الملف' : 'Download file'}
+            </button>
+        </div>
+    `).join('');
+}
+
+async function uploadRequestAttachments(requestId, input) {
+    const request = myRequests.find(row => String(row.id) === String(requestId));
+    let files = Array.from(input.files || []);
+    input.value = '';
+    if (!request || files.length === 0) return;
+    const room = MAX_EXTRA_ATTACHMENTS - (request.attachments || []).length;
+    if (room <= 0) { notify.error(T('errMaxAttachments')); return; }
+    if (files.length > room) { notify.error(T('errMaxAttachments')); files = files.slice(0, room); }
+
+    const session = window.__guardSession || (await supabaseClient.auth.getSession()).data.session;
+    if (!session || !session.user) {
+        notify.error(T('requestAttachmentUploadError'));
+        return;
+    }
+
+    const userId = session.user.id;
+    const uploaded = [];
+    let pendingFilePath = null;
+    requestAttachmentUploads.add(String(requestId));
+    renderMyRequests();
+    try {
+        for (const file of files) {
+            const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_') || 'attachment';
+            const uniqueId = typeof crypto !== 'undefined' && crypto.randomUUID
+                ? crypto.randomUUID()
+                : `${Date.now()}_${Math.random().toString(36).slice(2)}`;
+            const filePath = `${userId}/${requestId}/${uniqueId}_${safeName}`;
+            pendingFilePath = filePath;
+            const { error: uploadError } = await supabaseClient.storage
+                .from(REQUEST_ATTACHMENTS_BUCKET)
+                .upload(filePath, file, {
+                    upsert: false,
+                    contentType: file.type || 'application/octet-stream'
+                });
+            if (uploadError) throw uploadError;
+
+            const { data, error: recordError } = await supabaseClient
+                .from('contractor_request_attachments')
+                .insert({
+                    request_id: request.id,
+                    uploaded_by: userId,
+                    file_name: file.name,
+                    file_path: filePath,
+                    file_size: file.size,
+                    content_type: file.type || 'application/octet-stream'
+                })
+                .select('id, request_id, file_name, file_path, file_size, created_at')
+                .single();
+            if (recordError) throw recordError;
+            uploaded.push(data);
+            pendingFilePath = null;
+        }
+
+        request.attachments = (request.attachments || []).concat(uploaded);
+        notify.success(T('requestAttachmentUploadSuccess'));
+    } catch (error) {
+        console.error('Request attachment upload failed:', error);
+        if (pendingFilePath) {
+            const { error: cleanupError } = await supabaseClient.storage
+                .from(REQUEST_ATTACHMENTS_BUCKET)
+                .remove([pendingFilePath]);
+            if (cleanupError) console.error('Could not remove unlinked request attachment:', cleanupError);
+        }
+        if (uploaded.length) {
+            request.attachments = (request.attachments || []).concat(uploaded);
+            notify.error(`${error.message || T('requestAttachmentUploadError')} (${uploaded.length}/${files.length})`);
+        } else {
+            notify.error(error.message || T('requestAttachmentUploadError'));
+        }
+    } finally {
+        requestAttachmentUploads.delete(String(requestId));
+        renderMyRequests();
+    }
+}
+
+async function downloadRequestAttachment(requestId, attachmentIndex) {
+    const request = myRequests.find(row => String(row.id) === String(requestId));
+    const attachment = request && (request.attachments || [])[attachmentIndex];
+    if (!attachment) return;
+
+    const { data, error } = await supabaseClient.storage
+        .from(REQUEST_ATTACHMENTS_BUCKET)
+        .createSignedUrl(attachment.file_path, 300, { download: attachment.file_name });
+    if (error || !data?.signedUrl) {
+        console.error('Could not create a signed attachment download URL:', error);
+        notify.error(error?.message || T('requestAttachmentDownloadError'));
+        return;
+    }
+    window.open(data.signedUrl, '_blank', 'noopener');
+}
+
+async function openMyRequestDownload(id) {
+    const { data, error } = await window.__guardClient.functions.invoke('contractor-download', {
+        body: { request_id: id }
+    });
+    if (error || !data?.url) {
+        notify.error(data?.error || (getLang() === 'ar'
+            ? 'تعذر إنشاء رابط التحميل المؤقت.'
+            : 'Could not create a temporary download link.'));
+        return;
+    }
+    window.open(data.url, '_blank', 'noopener');
+}
+
+// ============================================
+// اسم الشركة بيتجاب من حساب المقاول نفسه (profiles.company_name عن
+// طريق auth-guard.js) - مش بيتكتب يدوي هنا. بيظهر كترحيب فوق، وبيتحط
+// تلقائيًا مع كل ريكوست بيتبعت عشان الأدمن يقدر يفلتر بيه بعدين.
+// ============================================
+function applyCompanyInfo() {
+    let welcomeEl = document.getElementById('companyWelcome');
+    let fieldWrap = document.getElementById('companyFieldWrap');
+    let fieldValue = document.getElementById('companyFieldValue');
+    let missingMsg = document.getElementById('companyMissingMsg');
+    let submitBtn = document.getElementById('submitBtn');
+    let company = window.currentCompanyName;
+
+    if (company) {
+        welcomeEl.innerHTML = `<i class="fa-solid fa-building-user"></i> ${T('welcomeMsg').replace('{company}', company)}`;
+        welcomeEl.style.display = 'flex';
+        fieldValue.textContent = company;
+        fieldWrap.style.display = 'block';
+        missingMsg.style.display = 'none';
+        submitBtn.disabled = false;
+    } else {
+        welcomeEl.style.display = 'none';
+        fieldWrap.style.display = 'none';
+        missingMsg.style.display = 'block';
+        submitBtn.disabled = true;
+    }
+}
+window.onLanguageChanged = (function (orig) {
+    return function () {
+        if (typeof orig === 'function') orig();
+        applyCompanyInfo();
+    };
+})(window.onLanguageChanged);
+
+document.addEventListener('authguard:ready', function () {
+    applyCompanyInfo();
+    loadDropdowns();
+    loadMyRequests();
+});
+
+setInterval(() => {
+    if (document.visibilityState !== 'hidden' && window.__guardSession) loadMyRequests();
+}, 30000);
+</script>
+
+</body>
+</html>
