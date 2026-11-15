@@ -353,6 +353,9 @@
                 '.mdceo-bell-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:13px 16px;border-bottom:1px solid #e8eefc;font-weight:800;font-size:15px;flex-shrink:0}' +
                 '.mdceo-bell-head button{border:0;background:none;color:#1d4ed8;font:inherit;font-size:12.5px;font-weight:700;cursor:pointer;padding:0}' +
                 '.mdceo-bell-list{overflow:auto;flex:1}' +
+                '.mdceo-bell-row{position:relative;border-bottom:1px solid #f1f5fd}.mdceo-bell-row .mdceo-bell-item{border-bottom:0;padding-inline-end:44px}' +
+                '.mdceo-bell-del{position:absolute;top:8px;inset-inline-end:10px;width:28px;height:28px;border:0;border-radius:8px;background:transparent;color:#94a3b8;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;padding:0}.mdceo-bell-del:hover{background:#fee2e2;color:#dc2626}' +
+                '.mdceo-bell-head .mdceo-bell-actions{display:flex;gap:14px}.mdceo-bell-head button.danger{color:#dc2626}' +
                 '.mdceo-bell-item{display:block;width:100%;border:0;border-bottom:1px solid #f1f5fd;background:#fff;font:inherit;text-align:start;padding:12px 16px;cursor:pointer;white-space:normal}' +
                 '.mdceo-bell-item:hover{background:#f6f9ff}' +
                 '.mdceo-bell-item.unread{background:#eff6ff;border-inline-start:4px solid #2563eb}' +
@@ -371,7 +374,7 @@
             '<button type="button" class="mdceo-bell-btn" aria-haspopup="true" aria-label="Notifications">' +
             '<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path d="M12 2a6 6 0 0 0-6 6v3.6c0 .5-.2 1-.5 1.4L4 15.3c-.7.9-.1 2.2 1.1 2.2h13.8c1.2 0 1.8-1.3 1.1-2.2L18.5 13c-.3-.4-.5-.9-.5-1.4V8a6 6 0 0 0-6-6zm0 20a3 3 0 0 0 2.8-2H9.2A3 3 0 0 0 12 22z"/></svg><span class="mdceo-bell-badge" hidden>0</span></button>' +
             '<div class="mdceo-bell-panel" role="dialog">' +
-            '<div class="mdceo-bell-head"><span data-role="title"></span><button type="button" data-role="readall"></button></div>' +
+            '<div class="mdceo-bell-head"><span data-role="title"></span><span class="mdceo-bell-actions"><button type="button" data-role="readall"></button><button type="button" class="danger" data-role="clearall"></button></span></div>' +
             '<div class="mdceo-bell-list"></div></div>';
 
         document.body.appendChild(wrap);
@@ -381,6 +384,7 @@
         const listEl = wrap.querySelector('.mdceo-bell-list');
         const titleEl = wrap.querySelector('[data-role="title"]');
         const readAllBtn = wrap.querySelector('[data-role="readall"]');
+        const clearAllBtn = wrap.querySelector('[data-role="clearall"]');
         let items = [];
 
         function kindText(kind, fallback) {
@@ -415,6 +419,8 @@
             btn.classList.toggle('has-unread', unread > 0);
             badge.textContent = unread > 99 ? '99+' : String(unread);
             readAllBtn.style.display = unread ? '' : 'none';
+            clearAllBtn.textContent = ar ? 'حذف الكل' : 'Clear all';
+            clearAllBtn.style.display = items.length ? '' : 'none';
             listEl.textContent = '';
             if (!items.length) {
                 const empty = document.createElement('div');
@@ -424,6 +430,21 @@
                 return;
             }
             items.forEach(function (n) {
+                const row = document.createElement('div');
+                row.className = 'mdceo-bell-row';
+                const del = document.createElement('button');
+                del.type = 'button';
+                del.className = 'mdceo-bell-del';
+                del.title = ar ? 'حذف الإشعار' : 'Delete notification';
+                del.setAttribute('aria-label', del.title);
+                del.innerHTML = '<svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" aria-hidden="true"><path d="M9 3h6l1 2h4v2H4V5h4l1-2zm-3 6h12l-1 11a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L6 9z"/></svg>';
+                del.addEventListener('click', async function (e) {
+                    e.stopPropagation();
+                    items = items.filter(function (x) { return x.id !== n.id; });
+                    render();
+                    const r = await guardClient.from('request_notifications').delete().eq('id', n.id);
+                    if (r.error) { console.warn('Delete notification failed', r.error.message); load(); }
+                });
                 const el = document.createElement('button');
                 el.type = 'button';
                 el.className = 'mdceo-bell-item' + (n.is_read ? '' : ' unread');
@@ -440,7 +461,8 @@
                     }
                     window.location.href = targetFor(n);
                 });
-                listEl.appendChild(el);
+                row.appendChild(el); row.appendChild(del);
+                listEl.appendChild(row);
             });
         }
 
@@ -465,6 +487,16 @@
             render();
             await guardClient.from('request_notifications').update({ is_read: true })
                 .eq('recipient', userId).eq('is_read', false);
+        });
+
+        clearAllBtn.addEventListener('click', async function () {
+            const ok = window.notify && window.notify.confirm
+                ? await window.notify.confirm(isAr() ? 'حذف كل الإشعارات؟' : 'Delete all notifications?')
+                : true;
+            if (!ok) return;
+            items = [];
+            render();
+            await guardClient.from('request_notifications').delete().eq('recipient', userId);
         });
 
         render();

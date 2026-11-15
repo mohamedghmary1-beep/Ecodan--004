@@ -207,20 +207,46 @@
     const SUPABASE_KEY = "sb_publishable_QsS0UhLBORy6mOaBDgW62g_9OacC3oO";
     let sharedClient = null;
 
-    function setBadge(count) {
+    // Approvals badge = pending upload_requests (base) + contractor requests
+    // waiting on the admin (window.__contractorPending). Every page that owns
+    // its own badge calls paintPendingBadge(base) so the number is the same
+    // everywhere, without having to open the approvals page.
+    window.paintPendingBadge = function (base) {
         const badge = document.getElementById('pendingNavBadge');
         if (!badge) return;
-        if (count > 0) {
-            badge.textContent = count > 99 ? "99+" : String(count);
+        if (typeof base === 'number') badge.dataset.base = String(base);
+        const total = (Number(badge.dataset.base) || 0) + (Number(window.__contractorPending) || 0);
+        if (total > 0) {
+            badge.textContent = total > 99 ? "99+" : String(total);
             badge.style.display = "flex";
         } else {
             badge.style.display = "none";
         }
-    }
+    };
+    function setBadge(count) { window.paintPendingBadge(count); }
     // Let pages reuse this if they want, without overriding a page-level version.
     if (typeof window.updatePendingBadge !== 'function') {
         window.updatePendingBadge = setBadge;
     }
+
+    // Contractor requests waiting for the admin's first review (admins only).
+    async function refreshContractorPending() {
+        try {
+            const role = window.currentUserRole;
+            if (!window.__guardClient || (role !== 'admin' && role !== 'super_admin')) return;
+            if (/approvals\.html$/.test(location.pathname)) return; // that page has its own counter
+            const { count, error } = await window.__guardClient
+                .from('contractor_requests')
+                .select('id', { count: 'exact', head: true })
+                .eq('status', 'pending_admin')
+                .is('deleted_at', null);
+            if (error) throw error;
+            window.__contractorPending = count || 0;
+            window.paintPendingBadge();
+        } catch (e) { console.warn('Contractor pending count unavailable', e); }
+    }
+    document.addEventListener('authguard:ready', refreshContractorPending);
+    setInterval(function () { if (!document.hidden) refreshContractorPending(); }, 30000);
 
     async function refreshPendingApprovalsBadge() {
         const badge = document.getElementById('pendingNavBadge');
