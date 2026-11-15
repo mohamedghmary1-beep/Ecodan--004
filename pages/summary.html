@@ -1031,6 +1031,7 @@ async function loadSummaryData() {
         if (error) throw error;
         allRows = rows || [];
 
+        await loadPendingContractorRows();
         await loadExtraAttachments();
         processData();
     } catch (err) {
@@ -1039,6 +1040,26 @@ async function loadSummaryData() {
     }
 }
 loadSummaryData();
+
+// طلبات المقاولين اللي لسه ماخلصتش الاعتماد (عند الأدمن/المهندس) مش موجودة في
+// جدول submittals لحد الاعتماد النهائي - فبنضيفها هنا كـ "قيد الانتظار" عشان تتعد.
+async function loadPendingContractorRows() {
+    try {
+        const { data, error } = await supabaseClient.rpc('get_pending_contractor_requests');
+        if (error) throw error;
+        const known = new Set(allRows.map(r => (r.no || '').trim().toLowerCase()).filter(Boolean));
+        (data || []).forEach(r => {
+            const no = (r.submittal_no || '').trim();
+            if (no && known.has(no.toLowerCase())) return;
+            allRows.push({
+                id: null, no: no, title: r.title, discipline: r.discipline, activity: r.activity,
+                action_by: r.company_name || '', _contractorStatus: r.status
+            });
+        });
+    } catch (err) {
+        console.warn('Pending contractor requests unavailable:', err);
+    }
+}
 
 // المرفقات الإضافية التي تُرفع من صفحة "task-list" (زر Add Attachment) —
 // تُعرض هنا بجانب الطلب الخاص بها، وليس فقط الرابط الأساسي (link) للمراجعة.
@@ -1352,6 +1373,14 @@ function renderTasks(filteredData) {
 
                 let isClosed = lastActiveRev && (lastActiveRev.code || "").trim() !== "";
                 let statusText = isClosed ? "CLOSED" : "OPEN PENDING";
+                if (row._contractorStatus) {
+                    const ar = currentLang === 'ar';
+                    statusText = ({
+                        pending_admin: ar ? 'طلب مقاول - بانتظار الأدمن' : 'Contractor request - awaiting admin',
+                        pending_engineer: ar ? 'طلب مقاول - عند المهندس' : 'Contractor request - with engineer',
+                        pending_final_admin: ar ? 'طلب مقاول - بانتظار الاعتماد النهائي' : 'Contractor request - final approval'
+                    })[row._contractorStatus] || statusText;
+                }
                 let statusClass = isClosed ? "closed" : "open";
 
                 // مرفقات إضافية اترفعت من صفحة الـ Task List على نفس الطلب ده
