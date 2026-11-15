@@ -1372,14 +1372,7 @@ async function loadPendingRequests() {
 }
 
 function updatePendingBadge(count) {
-    let badge = document.getElementById('pendingNavBadge');
-    if (!badge) return;
-    if (count > 0) {
-        badge.textContent = count > 99 ? "99+" : count;
-        badge.style.display = "flex";
-    } else {
-        badge.style.display = "none";
-    }
+    if (window.paintPendingBadge) window.paintPendingBadge(count);
 }
 
 async function loadTaskAttachments() {
