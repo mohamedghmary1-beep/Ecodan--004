@@ -466,12 +466,12 @@
         <button class="tab-btn active" id="tab-pending" onclick="setTab('pending')" data-i18n="tabPending">قيد المراجعة</button>
         <button class="tab-btn" id="tab-approved" onclick="setTab('approved')" data-i18n="tabApproved">تمت الموافقة</button>
         <button class="tab-btn" id="tab-rejected" onclick="setTab('rejected')" data-i18n="tabRejected">مرفوضة</button>
-        <button class="tab-btn" id="tab-contractor" onclick="setTab('contractor')" data-i18n="tabContractor">
-            طلبات المقاولين
+        <button class="tab-btn" id="tab-contractor" onclick="setTab('contractor')">
+            <span data-i18n="tabContractor">طلبات المقاولين</span>
             <span id="contractorNavBadge" class="nav-badge" style="position:static; display:inline-flex; margin-inline-start:6px;">0</span>
         </button>
-        <button class="tab-btn" id="tab-final" onclick="setTab('final')" data-i18n="tabFinal" style="display:none;">
-            <i class="fa-solid fa-stamp"></i> الموافقة النهائية
+        <button class="tab-btn" id="tab-final" onclick="setTab('final')" style="display:none;">
+            <i class="fa-solid fa-stamp"></i> <span data-i18n="tabFinal">الموافقة النهائية</span>
             <span id="finalNavBadge" class="nav-badge" style="position:static; display:inline-flex; margin-inline-start:6px;">0</span>
         </button>
     </div>
@@ -509,6 +509,17 @@ const dictionary = {
         tabApproved: "تمت الموافقة",
         tabRejected: "مرفوضة",
         tabContractor: "طلبات المقاولين",
+        tabFinal: "الموافقة النهائية",
+        finalEmpty: "مفيش ريكوستات محتاجة موافقتك النهائية دلوقتي.",
+        finalDiscipline: "القسم",
+        finalEngineer: "المهندس",
+        finalContractor: "المقاول",
+        finalSentAt: "تاريخ إرسال المهندس",
+        finalCode: "الكود",
+        finalEngComment: "تعليق المهندس",
+        finalPreview: "معاينة الملف",
+        finalReturn: "رفض ورجّعه للمهندس",
+        finalApprove: "اعتماد نهائي وإرسال لجوجل درايف",
         noContractorPending: "لا يوجد ريكوستات جديدة من المقاولين بانتظار المراجعة.",
         contractorNo: "رقم الريكوست",
         contractorTitle: "العنوان",
@@ -571,6 +582,17 @@ const dictionary = {
         tabApproved: "Approved",
         tabRejected: "Rejected",
         tabContractor: "Contractor Requests",
+        tabFinal: "Final Approval",
+        finalEmpty: "No requests are waiting for your final approval.",
+        finalDiscipline: "Discipline",
+        finalEngineer: "Engineer",
+        finalContractor: "Contractor",
+        finalSentAt: "Engineer sent on",
+        finalCode: "Code",
+        finalEngComment: "Engineer's comment",
+        finalPreview: "Preview file",
+        finalReturn: "Reject & return to engineer",
+        finalApprove: "Final approve & send to Google Drive",
         noContractorPending: "No new contractor requests awaiting review.",
         contractorNo: "Submittal No.",
         contractorTitle: "Title",
@@ -1012,19 +1034,24 @@ async function finalLoadRequests() {
         finalRequests = data || [];
     }
 
-    let badge = document.getElementById('finalNavBadge');
-    if (badge) {
-        badge.textContent = finalRequests.length;
-        badge.style.display = finalRequests.length > 0 ? 'inline-flex' : 'none';
-    }
+    updateFinalBadge();
     if (currentTab === 'final') render();
+}
+
+function updateFinalBadge() {
+    let badge = document.getElementById('finalNavBadge');
+    if (!badge) return;
+    badge.textContent = finalRequests.length;
+    badge.style.display = finalRequests.length > 0 ? 'inline-flex' : 'none';
 }
 
 function renderFinalTab() {
     let listEl = document.getElementById('list');
+    let t = dictionary[currentLang];
+    let locale = currentLang === 'ar' ? 'ar-EG' : 'en-US';
 
     if (finalRequests.length === 0) {
-        listEl.innerHTML = `<div class="empty-state">مفيش ريكوستات محتاجة موافقتك النهائية دلوقتي.</div>`;
+        listEl.innerHTML = `<div class="empty-state">${t.finalEmpty}</div>`;
         return;
     }
 
@@ -1034,22 +1061,22 @@ function renderFinalTab() {
                 <div>
                     <div class="req-title">${escapeHtml(r.title)}${r.submittal_no ? ' - ' + escapeHtml(r.submittal_no) : ''}</div>
                     <div class="req-meta">
-                        القسم: ${escapeHtml(r.discipline)} &nbsp;|&nbsp; المهندس: ${escapeHtml(r.engineer_username || '-')} &nbsp;|&nbsp; المقاول: ${escapeHtml(r.contractor_name || r.contractor_username || '-')}<br>
-                        تاريخ إرسال المهندس: ${r.engineer_reviewed_at ? new Date(r.engineer_reviewed_at).toLocaleString() : '-'}<br>
-                        الكود: <span class="code-pill">${escapeHtml(r.code || '-')}</span> ${escapeHtml(FINAL_CODE_LABELS[r.code] || '')}
-                        ${r.engineer_comment ? `<br>تعليق المهندس: ${escapeHtml(r.engineer_comment)}` : ''}
+                        ${t.finalDiscipline}: ${escapeHtml(r.discipline)} &nbsp;|&nbsp; ${t.finalEngineer}: ${escapeHtml(r.engineer_username || '-')} &nbsp;|&nbsp; ${t.finalContractor}: ${escapeHtml(r.contractor_name || r.contractor_username || '-')}<br>
+                        ${t.finalSentAt}: ${r.engineer_reviewed_at ? new Date(r.engineer_reviewed_at).toLocaleString(locale) : '-'}<br>
+                        ${t.finalCode}: <span class="code-pill">${escapeHtml(r.code || '-')}</span> ${escapeHtml(FINAL_CODE_LABELS[r.code] || '')}
+                        ${r.engineer_comment ? `<br>${t.finalEngComment}: ${escapeHtml(r.engineer_comment)}` : ''}
                     </div>
                 </div>
             </div>
             <div class="actions-row">
                 <button class="btn btn-view" onclick="finalReviewRequest(${r.id})">
-                    <i class="fa-solid fa-eye"></i> معاينة الملف
+                    <i class="fa-solid fa-eye"></i> ${t.finalPreview}
                 </button>
                 <button class="btn btn-reject" onclick="finalRejectRequest(${r.id})">
-                    <i class="fa-solid fa-xmark"></i> رفض ورجّعه للمهندس
+                    <i class="fa-solid fa-xmark"></i> ${t.finalReturn}
                 </button>
                 <button class="btn btn-approve" onclick="finalApproveRequest(${r.id})">
-                    <i class="fa-solid fa-check-double"></i> اعتماد نهائي وإرسال لجوجل درايف
+                    <i class="fa-solid fa-check-double"></i> ${t.finalApprove}
                 </button>
             </div>
         </div>
@@ -1094,6 +1121,7 @@ async function finalApproveRequest(id) {
         const linkColumn = finalized && finalized.link_column;
 
         finalRequests = finalRequests.filter(r => r.id !== id);
+        updateFinalBadge();
         renderFinalTab();
 
         finalOpenLock('جاري رفع الملف على جوجل درايف...');
@@ -1177,6 +1205,7 @@ async function finalRejectRequest(id) {
         if (error) throw error;
 
         finalRequests = finalRequests.filter(r => r.id !== id);
+        updateFinalBadge();
         renderFinalTab();
     } catch (err) {
         console.error('finalRejectRequest error:', err);
