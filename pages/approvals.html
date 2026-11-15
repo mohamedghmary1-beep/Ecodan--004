@@ -559,6 +559,9 @@ const dictionary = {
         missingClassification: "⚠️ تصنيف ناقص - راجع قبل الموافقة",
         attachmentTag: "📎 مرفق إضافي",
         download: "تنزيل",
+        downloadAttachments: "تنزيل المرفقات",
+        noRequestAttachments: "لا يوجد مرفقات لهذا الطلب.",
+        downloadFailed: "تعذر تنزيل الملف. حاول مرة أخرى.",
         confirmApprove: "تأكيد الموافقة على ملف",
         confirmApproveEnd: "وتحديث الرابط الرسمي؟",
         confirmApproveMissingClassification: "تنبيه: التصنيف (Discipline/Activity) ناقص لهذا الطلب. هل تريد الموافقة رغم ذلك؟",
@@ -632,6 +635,9 @@ const dictionary = {
         missingClassification: "⚠️ Missing classification - review before approving",
         attachmentTag: "📎 Extra Attachment",
         download: "Download",
+        downloadAttachments: "Download attachments",
+        noRequestAttachments: "This request has no attachments.",
+        downloadFailed: "Could not download the file. Please try again.",
         confirmApprove: "Confirm approving the file",
         confirmApproveEnd: "and updating the official link?",
         confirmApproveMissingClassification: "Warning: Discipline/Activity classification is missing for this request. Approve anyway?",
@@ -832,6 +838,81 @@ async function downloadApprovedFile(id) {
         return;
     }
     window.location.assign(data.url);
+}
+
+function saveBlobAs(blob, fileName) {
+    let objUrl = URL.createObjectURL(blob);
+    let a = document.createElement('a');
+    a.href = objUrl;
+    a.download = fileName || 'file';
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { URL.revokeObjectURL(objUrl); a.remove(); }, 1500);
+}
+
+// تنزيل الملف الأساسي لطلب مقاول: source = 'contractor' (تبويب طلبات المقاولين) أو 'final' (الموافقة النهائية)
+async function downloadContractorFile(id, source) {
+    let t = dictionary[currentLang];
+    let list = source === 'final' ? finalRequests : contractorRequests;
+    let req = list.find(r => String(r.id) === String(id));
+    if (!req) return;
+    let link = (source === 'final' && req.final_file_link) || req.drive_file_url || req.file_link;
+    if (!link) { notify.error(t.downloadFailed); return; }
+
+    try {
+        if (!/^https?:/i.test(link)) {
+            // ملف في التخزين المؤقت: رابط موقّع قصير العمر وتنزيل مباشر
+            let signed = await window.getAttachmentSignedUrl(link, ATTACHMENTS_BUCKET, 300);
+            let resp = await fetch(signed);
+            if (!resp.ok) throw new Error('HTTP ' + resp.status);
+            saveBlobAs(await resp.blob(), req.file_name);
+            return;
+        }
+        // ملف على درايف: رابط تنزيل مؤقت من الدالة (بتتأكد من الصلاحية)
+        const { data, error } = await supabaseClient.functions.invoke('contractor-download', {
+            body: { request_id: id }
+        });
+        if (error || !data?.url) throw new Error((data && data.error) || 'no url');
+        window.location.assign(data.url);
+    } catch (err) {
+        console.error('downloadContractorFile error:', err);
+        notify.error(t.downloadFailed);
+    }
+}
+
+// تنزيل مرفقات المقاول الإضافية (الأدمن يقدر يقرأها من سياسات القاعدة)
+async function downloadContractorAttachments(id) {
+    let t = dictionary[currentLang];
+    try {
+        const { data: atts, error } = await supabaseClient
+            .from('contractor_request_attachments')
+            .select('file_name, file_path')
+            .eq('request_id', id)
+            .order('created_at', { ascending: true });
+        if (error) throw error;
+        if (!atts || !atts.length) { notify.error(t.noRequestAttachments); return; }
+        let failed = 0;
+        for (const att of atts) {
+            try {
+                const { data: signed, error: signErr } = await supabaseClient.storage
+                    .from('contractor-request-attachments')
+                    .createSignedUrl(att.file_path, 300, { download: att.file_name });
+                if (signErr || !signed?.signedUrl) throw (signErr || new Error('no url'));
+                const resp = await fetch(signed.signedUrl);
+                if (!resp.ok) throw new Error('HTTP ' + resp.status);
+                saveBlobAs(await resp.blob(), att.file_name);
+                await new Promise(res => setTimeout(res, 400));
+            } catch (e) {
+                console.error('Attachment download failed:', att.file_name, e);
+                failed++;
+            }
+        }
+        if (failed) notify.error(t.downloadFailed);
+    } catch (err) {
+        console.error('downloadContractorAttachments error:', err);
+        notify.error(t.downloadFailed);
+    }
 }
 
 function closeReviewModal() {
@@ -1072,6 +1153,12 @@ function renderFinalTab() {
                 <button class="btn btn-view" onclick="finalReviewRequest(${r.id})">
                     <i class="fa-solid fa-eye"></i> ${t.finalPreview}
                 </button>
+                <button class="btn btn-review" onclick="downloadContractorFile(${r.id}, 'final')">
+                    <i class="fa-solid fa-download"></i> ${t.download}
+                </button>
+                <button class="btn btn-review" onclick="downloadContractorAttachments(${r.id})">
+                    <i class="fa-solid fa-paperclip"></i> ${t.downloadAttachments}
+                </button>
                 <button class="btn btn-reject" onclick="finalRejectRequest(${r.id})">
                     <i class="fa-solid fa-xmark"></i> ${t.finalReturn}
                 </button>
@@ -1309,6 +1396,8 @@ function renderContractorTab() {
             </div>
             <div class="actions">
                 <button class="btn btn-review" onclick="reviewContractorRequest(${r.id})"><i class="fa-solid fa-eye"></i> ${t.review}</button>
+                <button class="btn btn-review" onclick="downloadContractorFile(${r.id}, 'contractor')"><i class="fa-solid fa-download"></i> ${t.download}</button>
+                <button class="btn btn-review" onclick="downloadContractorAttachments(${r.id})"><i class="fa-solid fa-paperclip"></i> ${t.downloadAttachments}</button>
                 ${isPending ? `
                     <button class="btn btn-approve" onclick="approveContractorRequest(${r.id})"><i class="fa-solid fa-check"></i> ${t.approve}</button>
                     <button class="btn btn-reject" onclick="rejectContractorRequest(${r.id})"><i class="fa-solid fa-xmark"></i> ${t.reject}</button>
