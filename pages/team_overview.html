@@ -576,7 +576,14 @@ async function loadPendingBadge() {
             .select('id')
             .eq('status', 'pending');
         if (error) throw error;
-        if (window.paintPendingBadge) window.paintPendingBadge((rows || []).length);
+        let badge = document.getElementById('pendingNavBadge');
+        let count = (rows || []).length;
+        if (count > 0) {
+            badge.textContent = count > 99 ? "99+" : count;
+            badge.style.display = "flex";
+        } else {
+            badge.style.display = "none";
+        }
     } catch (err) {
         console.error(err);
     }

@@ -1078,6 +1078,7 @@ const supabaseClient = window.__guardClient;
 const GOOGLE_SCRIPT_UPLOAD_URL = "https://script.google.com/macros/s/AKfycbxP9S7qbgK888SHhCejIGZUx-wXN7pFtJ0OHbFvAUV9ARbtfxtI1_KwUNaU3c-LTubKnw/exec";
 
 const CONTRACTOR_BUCKET_KEY = "__contractor__";
+const REQUEST_ATTACHMENTS_BUCKET = "contractor-request-attachments";
 let contractorRequests = [];
 let selectedContractorCode = {};
 let expandedContractorCards = {};
@@ -1170,6 +1171,10 @@ const dictionary = {
         contractorCommentPlaceholder: "اكتب تعليقك هنا...",
         contractorReviewFile: "معاينة الملف",
         contractorDownloadFile: "تحميل الملف",
+        contractorDownloadAttachments: "تحميل المرفقات",
+        contractorNoAttachments: "لا يوجد مرفقات",
+        contractorAttachmentsErr: "تعذر تحميل المرفقات. حاول مرة أخرى.",
+        contractorAttachmentsLoadErr: "تعذر قراءة مرفقات المقاول (المرفقات بتظهر للمهندس بعد مراجعة الأدمن).",
         contractorDownloadUnavailable: "لا يوجد ملف متاح للتحميل لهذا الطلب.",
         contractorDownloadExpired: "انتهت صلاحية رابط التحميل. أعد المحاولة لإنشاء رابط جديد.",
         contractorSubmitBtn: "اعتماد وإرسال",
@@ -1270,6 +1275,10 @@ const dictionary = {
         contractorCommentPlaceholder: "Write your comment here...",
         contractorReviewFile: "Preview File",
         contractorDownloadFile: "Download File",
+        contractorDownloadAttachments: "Download Attachments",
+        contractorNoAttachments: "No attachments",
+        contractorAttachmentsErr: "Could not download the attachments. Please try again.",
+        contractorAttachmentsLoadErr: "Could not read the contractor attachments (attachments become visible to the engineer after admin review).",
         contractorDownloadUnavailable: "No downloadable file is available for this request.",
         contractorDownloadExpired: "The download link has expired. Try again to generate a new link.",
         contractorSubmitBtn: "Approve & Submit",
@@ -1372,7 +1381,14 @@ async function loadPendingRequests() {
 }
 
 function updatePendingBadge(count) {
-    if (window.paintPendingBadge) window.paintPendingBadge(count);
+    let badge = document.getElementById('pendingNavBadge');
+    if (!badge) return;
+    if (count > 0) {
+        badge.textContent = count > 99 ? "99+" : count;
+        badge.style.display = "flex";
+    } else {
+        badge.style.display = "none";
+    }
 }
 
 async function loadTaskAttachments() {
@@ -2443,7 +2459,23 @@ async function loadContractorRequests() {
             .order('requested_at', { ascending: true });
         if (error) throw error;
 
-        contractorRequests = (rows || []).map(r => Object.assign({ type: 'contractor' }, r));
+        contractorRequests = (rows || []).map(r => Object.assign({ type: 'contractor', attachments: [] }, r));
+
+        // مرفقات المقاول الإضافية (بتتحمل بزرار "تحميل المرفقات" في كارت المهندس)
+        if (contractorRequests.length) {
+            const { data: atts, error: attErr } = await supabaseClient
+                .from('contractor_request_attachments')
+                .select('id, request_id, file_name, file_path, file_size')
+                .in('request_id', contractorRequests.map(r => r.id))
+                .order('created_at', { ascending: true });
+            if (attErr) {
+                console.warn('Could not load contractor attachments:', attErr);
+            } else {
+                contractorRequests.forEach(r => {
+                    r.attachments = (atts || []).filter(a => String(a.request_id) === String(r.id));
+                });
+            }
+        }
 
         let key = myTaskBucketKey();
         if (key) {
@@ -2574,6 +2606,45 @@ async function openContractorDownload(id) {
     document.body.appendChild(a);
     a.click();
     setTimeout(() => a.remove(), 1500);
+}
+
+// زرار المهندس: بينزّل كل المرفقات الإضافية اللي المقاول بعتها مع الطلب (حد أقصى 2)
+function buildContractorAttachmentsBtn(r) {
+    let list = r.attachments || [];
+    if (!list.length) {
+        return `<button type="button" class="link-btn" disabled style="opacity:.55; cursor:not-allowed;">
+            <i class="fa-solid fa-paperclip"></i> ${T('contractorNoAttachments')}
+        </button>`;
+    }
+    let names = list.map(a => a.file_name).join(' | ');
+    return `<button type="button" class="link-btn view-btn" style="background:#8b5cf6;" title="${escapeHtml(names)}" onclick="downloadContractorAttachments(${r.id}, this)">
+        <i class="fa-solid fa-paperclip"></i> ${T('contractorDownloadAttachments')} (${list.length})
+    </button>`;
+}
+
+async function downloadContractorAttachments(id, btn) {
+    const req = contractorRequests.find(r => String(r.id) === String(id));
+    const list = (req && req.attachments) || [];
+    if (!list.length) { notify.error(T('contractorNoAttachments')); return; }
+    if (btn) btn.disabled = true;
+    let failed = 0;
+    for (const att of list) {
+        try {
+            const { data: signed, error } = await supabaseClient.storage
+                .from(REQUEST_ATTACHMENTS_BUCKET)
+                .createSignedUrl(att.file_path, 300, { download: att.file_name });
+            if (error || !signed || !signed.signedUrl) throw (error || new Error('no url'));
+            const resp = await fetch(signed.signedUrl);
+            if (!resp.ok) throw new Error('HTTP ' + resp.status);
+            saveBlobAs(await resp.blob(), att.file_name);
+            await new Promise(res => setTimeout(res, 400)); // فاصل بسيط عشان المتصفح ما يمنعش التحميل المتتابع
+        } catch (err) {
+            console.error('Attachment download failed:', att.file_name, err);
+            failed++;
+        }
+    }
+    if (btn) btn.disabled = false;
+    if (failed) notify.error(T('contractorAttachmentsErr'));
 }
 
 function openLock(msg) {
@@ -2713,6 +2784,7 @@ function buildContractorCard(r, animDelay) {
                 <button type="button" class="link-btn view-btn" title="${escapeHtml(r.file_name || '')}" onclick="openContractorDownload(${r.id})">
                     <i class="fa-solid fa-download"></i> ${T('contractorDownloadFile')}
                 </button>
+                ${buildContractorAttachmentsBtn(r)}
             </div>
         </div>
         <div class="status-container">
