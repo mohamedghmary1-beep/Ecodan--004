@@ -489,6 +489,8 @@
 const SUPABASE_URL = "https://uhhtvpxtpayovbtmnstz.supabase.co";
 const SUPABASE_KEY = "sb_publishable_QsS0UhLBORy6mOaBDgW62g_9OacC3oO";
 const supabaseClient = window.__guardClient;
+// currentLang was referenced by this page but never defined; derive it from lang.js
+Object.defineProperty(window, 'currentLang', { get: function () { return (window.getCurrentLang ? window.getCurrentLang() : (localStorage.getItem('portalLang') || 'ar')); } });
 const ATTACHMENTS_BUCKET = "task-attachments";
 const REQUEST_ATTACHMENTS_BUCKET = "contractor-request-attachments";
 
