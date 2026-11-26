@@ -1031,6 +1031,9 @@ async function loadSummaryData() {
         if (error) throw error;
         allRows = rows || [];
 
+        // ريكوستات المقاول (اللي وصلت للمهندس ولسه ما اتراجعتش) بتتعد كـ "قيد الانتظار"
+        allRows = allRows.concat(await loadContractorRows());
+
         await loadExtraAttachments();
         processData();
     } catch (err) {
@@ -1039,6 +1042,39 @@ async function loadSummaryData() {
     }
 }
 loadSummaryData();
+
+// ريكوستات المقاول بنفس شكل صف الـ submittals، من غير أكواد، فبتنحسب "Pending".
+// RLS: الأدمن يشوف كل الريكوستات، والمهندس يشوف بتاعته بس.
+async function loadContractorRows() {
+    try {
+        const { data: reqs, error } = await supabaseClient
+            .from('contractor_requests')
+            .select('id, submittal_no, title, discipline, activity, engineer_id, requested_at')
+            .eq('status', 'pending_engineer')
+            .is('deleted_at', null)
+            .order('requested_at', { ascending: true });
+        if (error) throw error;
+        if (!reqs || !reqs.length) return [];
+
+        let nameById = {};
+        const ids = [...new Set(reqs.map(r => r.engineer_id).filter(Boolean))];
+        if (ids.length) {
+            const { data: profs } = await supabaseClient.from('profiles').select('id, username').in('id', ids);
+            (profs || []).forEach(p => { nameById[p.id] = (p.username || '').trim(); });
+        }
+        return reqs.map(r => ({
+            no: r.submittal_no || '',
+            title: r.title || '',
+            discipline: r.discipline || '',
+            activity: r.activity || '',
+            action_by: nameById[r.engineer_id] || '',
+            _contractor: true
+        }));
+    } catch (err) {
+        console.warn('Could not load contractor requests:', err);
+        return [];
+    }
+}
 
 // المرفقات الإضافية التي تُرفع من صفحة "task-list" (زر Add Attachment) —
 // تُعرض هنا بجانب الطلب الخاص بها، وليس فقط الرابط الأساسي (link) للمراجعة.
@@ -1398,6 +1434,7 @@ function renderTasks(filteredData) {
                             <div class="task-row-footer">
                                 <span class="status-tag ${statusClass}">${statusText}</span>
                                 <span style="font-size:12px; font-weight:600; color:var(--text-muted); white-space: nowrap;"><i class="fa-regular fa-user"></i> ${row.action_by || 'Staff'}</span>
+                                ${row._contractor ? `<span class="attachment-chip pending" style="margin-inline-start:6px;">${currentLang === 'ar' ? 'طلب مقاول' : 'Contractor request'}</span>` : ''}
                             </div>
                         </div>
                         ${extraAttachmentsHtml}

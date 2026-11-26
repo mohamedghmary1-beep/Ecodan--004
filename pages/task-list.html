@@ -2450,13 +2450,16 @@ async function loadContractorRequests() {
         let session = window.__guardSession || (await supabaseClient.auth.getSession()).data.session;
         if (!session || !session.user) { contractorRequests = []; renderSidebar(); return; }
 
-        const { data: rows, error } = await supabaseClient
+        // الأدمن يشوف ريكوستات كل المهندسين (كل واحد تحت اسمه)، والمهندس يشوف بتاعته بس
+        const adminView = isAdminRole();
+        let reqQuery = supabaseClient
             .from('contractor_requests')
             .select('*')
-            .eq('engineer_id', session.user.id)
             .eq('status', 'pending_engineer')
             .is('deleted_at', null)
             .order('requested_at', { ascending: true });
+        if (!adminView) reqQuery = reqQuery.eq('engineer_id', session.user.id);
+        const { data: rows, error } = await reqQuery;
         if (error) throw error;
 
         contractorRequests = (rows || []).map(r => Object.assign({ type: 'contractor', attachments: [] }, r));
@@ -2477,12 +2480,36 @@ async function loadContractorRequests() {
             }
         }
 
-        let key = myTaskBucketKey();
-        if (key) {
-            let myOtherTasks = (data[key] || []).filter(t => t.type !== 'contractor');
-            data[key] = myOtherTasks.concat(contractorRequests);
-            if (currentEmployee === key) selected = data[key];
-            else if (!currentEmployee) selectEmployee(key);
+        if (adminView) {
+            // اسم كل مهندس من جدول profiles
+            let nameById = {};
+            const engIds = [...new Set(contractorRequests.map(r => r.engineer_id).filter(Boolean))];
+            if (engIds.length) {
+                const { data: profs, error: profErr } = await supabaseClient
+                    .from('profiles')
+                    .select('id, username')
+                    .in('id', engIds);
+                if (profErr) console.warn('Could not load engineer names:', profErr);
+                (profs || []).forEach(p => { nameById[p.id] = (p.username || '').trim(); });
+            }
+            // شيل أي ريكوستات مقاول قديمة من كل المهندسين قبل ما نضيفها من جديد
+            Object.keys(data).forEach(k => { data[k] = (data[k] || []).filter(t => t.type !== 'contractor'); });
+            contractorRequests.forEach(r => {
+                const name = nameById[r.engineer_id];
+                if (!name) { console.warn('Contractor request without engineer name:', r.id); return; }
+                const key = Object.keys(data).find(e => e !== CONTRACTOR_BUCKET_KEY && e.trim().toLowerCase() === name.toLowerCase()) || name;
+                if (!data[key]) data[key] = [];
+                data[key].push(r);
+            });
+            if (currentEmployee && data[currentEmployee]) selected = data[currentEmployee];
+        } else {
+            let key = myTaskBucketKey();
+            if (key) {
+                let myOtherTasks = (data[key] || []).filter(t => t.type !== 'contractor');
+                data[key] = myOtherTasks.concat(contractorRequests);
+                if (currentEmployee === key) selected = data[key];
+                else if (!currentEmployee) selectEmployee(key);
+            }
         }
 
         renderIfNoActiveSelections();
