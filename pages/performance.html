@@ -301,6 +301,7 @@
     .topbar-sub{border-top:1px solid rgba(255,255,255,0.15) !important;}
     .btn-edit, .btn-logout, .btn-print{display:none !important;}
     .nav-container{display:none !important;}
+    .mdceo-bell, .mdceo-bell-panel{display:none !important;}  /* أيقونة الإشعارات تختفي في الطباعة */
     .panel{box-shadow:none;break-inside:avoid;}
     .chart-logo-slot{border:none;}
     .topbar-logo-slot{border:none;background:transparent;}
@@ -439,7 +440,7 @@
 <div class="bar-track"><div class="bar-fill" id="barVat" style="width:82%;"></div></div>
 <div class="bar-value" id="valVat">-</div>
 </div>
-<div class="row-label" style="font-weight:400;">Approved Change Order</div>
+<div class="row-label" style="font-weight:400;">Change Order (with VAT)</div>
 <div id="valChangeOrder" style="font-size:12px;margin-bottom:10px;">-</div>
 </div>
 
@@ -513,7 +514,7 @@
 <div class="field-grid">
 <div class="field"><label>Contract Value without VAT</label><input id="f_contract_value_no_vat" step="0.01" type="number"/></div>
 <div class="field"><label>Contract Value with VAT</label><input id="f_contract_value_vat" step="0.01" type="number"/></div>
-<div class="field"><label>Approved Change Order</label><input id="f_approved_change_order" type="text"/></div>
+<div class="field"><label>Change Order (with VAT)</label><input id="f_approved_change_order" type="text"/></div>
 </div>
 <div class="edit-section-title">Project Dates</div>
 <div class="field-grid">
